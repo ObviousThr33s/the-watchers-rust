@@ -1,11 +1,8 @@
-using utils/util;
+pub mod utility;
 
-fn main() {
+use utility::utils::utils as utils;
 
-	//importing a public module
-
-	use ;
-
-	play("the j");
-
+fn main(){
+ 	utils::foo();	
+	
 }
