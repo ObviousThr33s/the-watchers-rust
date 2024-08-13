@@ -1,0 +1,10 @@
+[package]
+name = "the-watchers-rust"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+[[bin]]
+name = "The Watchers Rust"
+path = "main.rs"
