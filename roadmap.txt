@@ -1,0 +1,74 @@
+Hello! This is the most important part of anythign ever in software dev.This pro
+-ject is a simple exercise in developing a gripping text based game. This will 
+also act as a simple design doc.
+
+Components:
+	-I/O (files)
+		--event scripting
+		--saves
+
+	-I/O (user)
+		-events
+			--???
+		-utils
+			--print at place on screen
+			--print at time(?)
+	
+Things that need to be planned:
+	Scenes (which either contain multiple events or act as an event space)
+	Character scripting
+
+Story in brief:
+	The terminal is alive, a person is trapped in it. They are trying to commun-
+	icate with you (the user). Basically that movie with the light bikes, or 
+	that trilogy that rhymes with paul. Most of the world building already exis-
+	ts in a few pieces that I wrote a while ago. 
+
+	Act 1:
+		-intro, get used to the environment
+		-meet the lynx
+	Act 2:
+		-help the lynx
+		-meet lumos who was hinted at in act 1 but appeared as one and the same
+		-choose who to back
+	Act 3:
+		-Theatrics! Explosions! Theatrics and explosions???
+		-delete sys32
+		-the end
+	
+	I want it to feel real. The goal is to really get in the head of the user
+	and make them believe that there is really something at steak. Mmmm steak.
+
+The way it worked in other versions and on paper:
+	For the UX in respect to the game, the events were essentially hard coded,
+	although there were functions that controlled the speed at wich text would 
+	appear, or the rate at which it would appear. Giving the effect of typing
+	or the terminal outputting at a certain rate. The idea was to be able to 
+	give the effect of CRT rolling with the text, as well as 'dazzles' which 
+	would cause the text on the screen to turn into fragments in real time, or
+	the text might shimmer changing here and there, and finnally an explosion 
+	effect/'resolution' similar to the shimmer but in a controlled manner.
+
+	There was also an event system which was intended to be FIFO in terms of
+	a node structure. Where in this specific case the events would be the same
+	as 'places'. So wherever the player was, there was a current event. 
+	Difficult to say the least.
+
+	My initial approach is to take a set of circular nodes, and relate a certain
+	preset number of points on ther circumfrence which would give points of cont
+	-act onto other nodes. When the contact points would roll onto one another
+	the distance between the two centers could be computed and the final event 
+	structure could be compiled dynamically. The way that would be done would be
+	a template story structure of nodes would be given, which would then be used
+	depending on the distance given by the two nodes. The struggle of course 
+	comes when trying to determine the magnitude of the node. Which I believe 
+	could be solved by one (or a few nodes along the way as well) having an init
+	-ial node magnitude which would then dynamically choose the next nodes with
+	a psuedo random walk tuned to what works best. The final question(s) left 
+	were whether or not I could get that far, and how to create believable nodes
+	in the first place. 
+
+	So I think the true scope of this project lay in just creating believable
+	events with effects that followed a general structure with some random elem-
+	ents. The hope is that with rust the modules can be portable enough to use 
+	the approach that I outlined above (the weird circle node thing).
