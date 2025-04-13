@@ -1,0 +1,16 @@
+add tick counter
+
+add logging
+
+add tests
+
+//
+
+add buffer frames in so that the context can switch
+
+add input
+
+milestone: hashtag moving on period grid from keyboard input 
+|
+V
+integrate wgpu
