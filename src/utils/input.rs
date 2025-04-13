@@ -9,7 +9,7 @@ impl Input {
 		match io::stdin().read_line(&mut input) {
 			Ok(_n) => {
 				//println!("{n} bytes read");
-				//println!("{input}");
+				println!("{input}");
 			}Err(error) => println!("error: {error}"),
 		}
 		////

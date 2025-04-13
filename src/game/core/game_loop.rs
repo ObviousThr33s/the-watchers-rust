@@ -1,19 +1,31 @@
 use  crate::{logic::event::Event, utils::file::game_file::{SaveFile, SaveFileObject}};
 
-use super::game_state::{GameState, GameStates};
+use super::game_states::{GameStates};
 
 pub struct GameLoop {
 	pub game_state: GameStates,
 	pub running: bool,
 	pub save_file: SaveFile,
 }
+pub trait Loop {
+	fn new() ->  Self;
+	fn update(&mut self);
+	fn init(&mut self);
 
+	fn run(&mut self) {
+		println!("Game is running...");
+	}
 
-impl GameState for GameLoop {
+	fn exit(&mut self) {
+		println!("Game exited!");
+	}
+}
+
+impl Loop for GameLoop {
 	
 	fn new() -> GameLoop {
 		GameLoop {
-			game_state:GameStates::Running,
+			game_state:GameStates::Init,
 			running: false,
 			save_file: SaveFile::new(),
 		}
@@ -35,7 +47,7 @@ impl GameState for GameLoop {
 	fn init(&mut self) {
 		self.running = true;
 		self.game_state = GameStates::Running;
-		self.update();
+		self.run();
 	}
 	
 	fn exit(&mut self){
@@ -52,6 +64,7 @@ impl GameState for GameLoop {
 		// Use save_file to save the game state
 		
 		//self.save_file.clone().save();
+		println!("foo");
 	}
 
 	
