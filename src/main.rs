@@ -1,11 +1,13 @@
 
-use the_watchers_rust::game::core::game_loop::{GameLoop, Loop};
+use the_watchers_rust::game_loop::game_loop_main::GameLoopMain;
+use the_watchers_rust::utils::logger::Logger;
+use the_watchers_rust::utils::{self, time, time::Time};
 
 pub fn main(){
-	let mut base_game_state:GameLoop = GameLoop::new();
+	let start:Time = Time::new();
+	let mut game:GameLoopMain = GameLoopMain::new(start);
+	
 
-	//let mut save_file:FileObject = FileObject::new();
-
-	base_game_state.init();
+	game.init();
 
 }
