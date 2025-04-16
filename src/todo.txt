@@ -1,3 +1,5 @@
+see if game is crahsing on input 
+
 add tick counter
 
 add logging
