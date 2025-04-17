@@ -1,4 +1,4 @@
-struct Terrain {
+pub struct Terrain {
 	height_map:Vec<i16>,
 	chunk_size_x:i16,
 	chunk_size_y:i16,
@@ -13,24 +13,24 @@ struct Terrain {
 	//for now, dungeons and crawling, or rather labs since this game is cyberpunk
 }
 
-enum TerrainTypes {
+pub enum TerrainTypes {
 	Field,
 }
 
 impl Terrain {
-	fn new(terrain_type:TerrainTypes, ) -> Self{
+	pub fn new(terrain_type:TerrainTypes, ) -> Self{
 		Terrain { 
 			height_map: Vec::new(),
-			chunk_size_x: 0,
-			chunk_size_y: 0,
-			chunk_size_z: 0,
+			chunk_size_x: 10,
+			chunk_size_y: 10,
+			chunk_size_z: 10,
 			terrain_type: terrain_type 
 		}
 		
 	}
 
-	fn make_terrain_base(&mut self, terrain_type:TerrainTypes){
-		match terrain_type {
+	pub fn make_terrain_base(&mut self){
+		match self.terrain_type {
 			TerrainTypes::Field => Self::gen_field(self)
 		}
 
@@ -45,7 +45,7 @@ impl Terrain {
 		}
 
 		for _ in 0..size{
-			self.height_map.push(0);
+			self.height_map.push(63);
 		}
 	}
 

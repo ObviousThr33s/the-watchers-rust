@@ -6,7 +6,8 @@ pub struct GameLoopMain{
 	state:GameStates,
 	pub start: Time,
 	pub logger:Logger,
-	pub world:World
+	pub world:World,
+	output:String
 }
 
 #[derive(PartialEq)]
@@ -18,13 +19,13 @@ pub enum GameStates{
 
 impl GameLoopMain {
 	pub fn new(start_time:Time) -> GameLoopMain {
-	
 		GameLoopMain { 
 			tick: 0, 
 			state: GameStates::Init,
 			start:start_time.clone(),
 			logger: Logger::new(start_time.clone()),
-			world: World::new()
+			world: World::new(),
+			output:String::new()
 		}
 	}
 
@@ -37,10 +38,13 @@ impl GameLoopMain {
 	}
 
 	pub fn init(&mut self) {
-		self.logger.log("Initializing", self.tick);
+		self.logger.log("Initializing...");
 		
 		//neeed multithreading here, am lazy
-		self.world.clone().init(self.logger.clone(), self.tick);
+		self.output = self.world.clone().init(self.logger.clone());
+		self.tick += 1;
+
+		self.logger.log("Initializing done");
 
 		self.state = GameStates::Run;
 		self.state_loop();
@@ -56,7 +60,7 @@ impl GameLoopMain {
 		//transform the sub groups
 
 		loop{
-			self.logger.log("Running", self.tick);
+			self.logger.log("Running");
 			
 			if self.tick > tick_max as i64{
 				break
@@ -69,7 +73,10 @@ impl GameLoopMain {
 	}
 
 	pub fn exit(&mut self){
-		self.logger.log("Exiting", self.tick);
+
+		self.logger.log(&self.output);
+
+		self.logger.log("Exiting");
 		std::process::exit(0x0);
 	}
 
