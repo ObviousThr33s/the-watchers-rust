@@ -6,7 +6,7 @@ struct FileData {
 	filepath:Path::Path,
 }
 
-impl WriteWorldData{
+impl WriteData{
 	pub fn write(self, path_to:String, data:String){
 		self.filepath = Path::new(path_to);
 		
@@ -16,7 +16,7 @@ impl WriteWorldData{
 		};
 	}
 
-	pub fn create_file(path_to:String){
+	pub fn create_file(path_to:String) -> file{
 		let mut file = match File::create(&path_to) {
 			Err(why) => panic!("couldn't create {}: {}", display, why),
 			Ok(file) => file,
