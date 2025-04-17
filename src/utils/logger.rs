@@ -20,13 +20,13 @@ impl Logger {
 		}
 	}
 
-	pub fn log(&mut self, message:&str, tick:i64){
+	pub fn log(&mut self, message:&str){
 		
 
 		self.log_file.insert(0, String::from(message));
 		//let t:f64 = self.start_time.elapsed().unwrap().as_secs_f64();
 		let s:String = self.start_time.to_string();
-		print!("[{}]<{}> {}\n", s, tick, message);
+		print!("[{}] {}\n", s, message);
 	}
 
 }
