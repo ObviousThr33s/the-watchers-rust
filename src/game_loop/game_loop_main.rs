@@ -1,10 +1,12 @@
-
 use crate::utils::{logger::Logger, time::Time};
+use crate::game::spaces::world::World;
+
 pub struct GameLoopMain{
 	tick:i64,
 	state:GameStates,
-	logger:Logger,
-	start: Time
+	pub start: Time,
+	pub logger:Logger,
+	pub world:World
 }
 
 #[derive(PartialEq)]
@@ -15,16 +17,18 @@ pub enum GameStates{
 }
 
 impl GameLoopMain {
-	pub fn new(start_time:Time) -> GameLoopMain{
+	pub fn new(start_time:Time) -> GameLoopMain {
+	
 		GameLoopMain { 
 			tick: 0, 
 			state: GameStates::Init,
 			start:start_time.clone(),
 			logger: Logger::new(start_time.clone()),
+			world: World::new()
 		}
 	}
 
-	pub fn state_loop(&mut self){
+	pub fn state_loop(&mut self) -> () {
 		match self.state {
 			GameStates::Exit => self.exit(),
 			GameStates::Run  => self.run(),
@@ -35,14 +39,16 @@ impl GameLoopMain {
 	pub fn init(&mut self) {
 		self.logger.log("Initializing", self.tick);
 		
+		//neeed multithreading here, am lazy
+		self.world.clone().init(self.logger.clone(), self.tick);
+
 		self.state = GameStates::Run;
 		self.state_loop();
-		
 	}
 
 	pub fn run(&mut self){
 		
-		let tick_max = 1200;//10f64.powf(127.0);
+		let tick_max = 20;//10f64.powf(127.0);
 		
 		//element que
 		//gen world closure

@@ -1,10 +1,10 @@
 extern crate chrono;
 
-use std::time::{Duration, SystemTime, SystemTimeError, UNIX_EPOCH};
+use std::time::SystemTime;
 use chrono::prelude::DateTime;
 use chrono::Utc;
 
-pub struct Time{
+pub struct Time {
 	pub start_time: SystemTime,
 }
 
@@ -31,7 +31,7 @@ impl ToString for Time {
 	}
 }
 
-impl Time{
+impl Time {
 	pub fn new() -> Self{
 	
 		Time { start_time: Self::get_system_time() }

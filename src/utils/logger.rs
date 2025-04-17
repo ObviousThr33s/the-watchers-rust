@@ -1,9 +1,15 @@
 
 use super::time::Time;
 
-pub struct Logger{
+pub struct Logger {
 	log_file: Vec<String>,
 	start_time: Time
+}
+
+impl Clone for Logger {
+	fn clone(&self) -> Self {
+		Self { log_file: self.log_file.clone(), start_time: self.start_time.clone() }
+	}
 }
 
 impl Logger {
@@ -22,4 +28,5 @@ impl Logger {
 		let s:String = self.start_time.to_string();
 		print!("[{}]<{}> {}\n", s, tick, message);
 	}
+
 }
