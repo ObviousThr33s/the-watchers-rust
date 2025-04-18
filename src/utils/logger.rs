@@ -1,7 +1,6 @@
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-use crate::looper;
 
 use super::{file_io::{FileData, FileOperations, FileOutStream}, time::Time};
 
@@ -45,11 +44,10 @@ impl Logger {
 		//print!("[{}] {}\n", s, message);
 	}
 
-	pub fn get_latest_log(self) -> String{
-		let log_entry: String = self.log_file.get(0)
-									.cloned()
-									.unwrap_or_else(|| 
-										String::from("No logs available"));
+	pub fn get_log_at(self, i:usize) -> String{
+		
+		let log_entry: String = self.log_file.get(i).cloned().unwrap_or_else(|| String::from("\n"));
+		
 		log_entry
 	}
 
