@@ -1,10 +1,13 @@
 [package]
 name = "the-watchers-rust"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 
 [dependencies]
 chrono = "0.4.40"
+rand = "0.9.1"
+ratatui = "0.29.0"
+tokio = { version = "1.44.2", features = ["full"] }
 
 [[bin]]
 name = "the-watchers-rust"

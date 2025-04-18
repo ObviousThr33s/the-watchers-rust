@@ -1,12 +1,15 @@
 
-use the_watchers_rust::game_loop::game_loop_main::GameLoopMain;
+use the_watchers_rust::looper::looper::{self, Looper};
 use the_watchers_rust::utils::time::Time;
 
-pub fn main(){
+#[tokio::main]
+pub async fn main(){
 	let start:Time = Time::new();
-	let mut game:GameLoopMain = GameLoopMain::new(start);
+	let mut terminal = ratatui::init();
+	
+	let mut game:looper::Looper = Looper::new(start, terminal);
 	
 
-	game.init();
+	game.init().await;
 
 }
