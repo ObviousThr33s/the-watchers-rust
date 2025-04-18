@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
-use std::path::{self, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
 pub struct FileData {
 	pub file_path: PathBuf,

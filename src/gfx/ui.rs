@@ -1,9 +1,11 @@
-use Constraint::{Fill, Length, Min};
+use Constraint::{Length};
 use ratatui::{
-    layout::{Constraint, Layout, Margin}, style::{Color, Style, Stylize}, symbols, text::Text, widgets::{Block, Paragraph}, Frame
+    layout::{Constraint, Layout, Margin, Rect}, style::{Color, Style, Stylize}, symbols, text::Text, widgets::{block::Title, Block, BorderType, Paragraph}, Frame
 };
 
 use crate::utils::logger::{self, Logger};
+
+use super::lamp::{self, Lamp};
 
 struct UI {
 
@@ -11,33 +13,40 @@ struct UI {
 
 pub(crate) fn draw_(frame: &mut Frame, log:Logger) {
 
-	let vertical = Layout::vertical([Length(5), Min(2), Length(5)]);
-	let [title_area, main_area, status_area] = vertical.areas(frame.area());
-	let horizontal = Layout::horizontal([Constraint::Percentage(100)]);
-	let [main_area] = horizontal.areas(main_area);
-
+	let title_area = Rect::new(0, 0, 80, 10);
+	let main_area = Rect { x: 0, y: title_area.bottom(), width: 80, height: 20, };
+	let stat_area = Rect { x: 0, y: main_area.bottom(), width:80, height:10, };
 	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);
 
-
-
 	let top_block = Block::bordered()
-			.border_set(symbols::border::DOUBLE)
 			.title("The Watchers")
 			.title_style(style)
-			.clone();
+			.border_type(BorderType::Double);
 
-	let center_screen = Block::new()
+	let center_screen = Block::default()
 		.style(style);
 
-	let log_line:String = log.get_latest_log();
-	let log_para = Paragraph::new(Text::from(log_line)).block(top_block.clone());
-
-	frame.render_widget(log_para, title_area);
-	frame.render_widget(center_screen, main_area);
-	frame.render_widget(Block::bordered().title("Status Bar"), status_area);
+	frame.render_widget(top_block, title_area);
 	
-	let paragraph = Paragraph::new(Text::from("bonjour"));
+	////
+	let mut lamp:Lamp = Lamp::init(80,40, lamp::CHARSETS::Charset0);
+	lamp.make_lamp();
 
-	frame.render_widget(paragraph, main_area.inner(Margin::new(1, 1)));
+	let paragraph = Text::from(lamp.to_string());
 	
+	frame.render_widget(paragraph,main_area);
+	
+	frame.render_widget(Block::bordered().title("Status Bar"), stat_area);
+	
+	let s:Vec<String> = Vec::new();
+
+	let mut s:String = String::new();
+
+	for i in 0..title_area.height{
+		s.push_str(&log.clone().get_log_at(i.into()));
+	}
+
+	let Paragraph = Text::from(s);
+	
+	frame.render_widget(Paragraph, title_area.inner(Margin { horizontal: 1, vertical: 1 }));
 }

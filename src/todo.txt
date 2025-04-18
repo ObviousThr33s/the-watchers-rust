@@ -1,18 +1,13 @@
-see if game is crahsing on input 
 
-add tick counter
 
-add logging
+add path creation to logger
 
 add tests
 
-//
+add simple 2.5 map from terrain
+integrate generative graphics
+integrate 
 
-add buffer frames in so that the context can switch
 
-add input
 
-milestone: hashtag moving on period grid from keyboard input 
-|
-V
 integrate wgpu
