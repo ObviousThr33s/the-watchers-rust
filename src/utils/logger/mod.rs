@@ -8,7 +8,8 @@ pub struct Logger {
 	log_stream: Vec<String>,
 	start_time: Time,
 	pub tick:usize,
-	f_io:FileOutStream
+	f_io:FileOutStream,
+	vers:String
 }
 
 impl Clone for Logger {
@@ -17,6 +18,7 @@ impl Clone for Logger {
 				start_time: self.start_time.clone(),
 				tick: self.tick.clone(),
 				f_io: self.f_io.clone(),
+				vers: self.vers.clone()
 		}
 	}
 }
@@ -26,13 +28,13 @@ impl Logger {
 	///
 	/// # Parameters
 	/// - `start_time`: The starting time used to initialize the logger.
-	pub fn new(start_time:Time) -> Self {
-		
+	pub fn new(start_time:Time, version:String) -> Self {
 		Logger { 
 			log_stream: Vec::new(),
 			start_time: start_time,
 			tick: 0,
 			f_io:file_outstream::FileOutStream::new(),
+			vers: version
 		}
 	}
 
@@ -49,6 +51,10 @@ impl Logger {
 		split_stream.reverse();
 		let stream: Vec<String> = split_stream.to_owned();
 		stream
+	}
+
+	pub fn get_version(self) -> String {
+		self.vers
 	}
 
 	pub async  fn save_log(&mut self) {
