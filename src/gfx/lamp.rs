@@ -2,6 +2,8 @@ use std::vec;
 
 use rand::Rng;
 
+use crate::game::transforms::{generators, terrain};
+
 use super::screen::Screen;
 
 pub struct Lamp{
@@ -77,6 +79,17 @@ impl Lamp {
 	}
 
 	pub fn update(&mut self) {
+	}
+
+	pub fn _make_lamp(&mut self) {
+		self.lamp.screen.clear();
+
+		//let terrain = terrain::generate();
+		let depth = 5;
+		//generators::gen_field::gen_field(terrain, depth);
+
+
+		self._make_lamp();
 	}
 
 	pub fn make_lamp(&mut self) {

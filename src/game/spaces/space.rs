@@ -1,4 +1,4 @@
-use crate::utils::logger::{self, Logger};
+use crate::utils::logger::Logger;
 
 pub trait Space {
 	fn new() -> Self;
