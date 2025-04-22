@@ -1,7 +1,6 @@
 pub mod ui;
 pub mod lamp;
 mod screen;
-use std::io::Stdout;
 
 use crate::utils::logger::Logger;
 

@@ -1,13 +1,13 @@
-use std::process::Stdio;
+use std::thread::Thread;
+use std::time::Duration;
 
-use ratatui::crossterm::terminal;
-use ratatui::prelude::CrosstermBackend;
-use ratatui::{DefaultTerminal, Terminal};
+use ratatui::DefaultTerminal;
+use tokio::time;
 
-use crate::game::world_generation::world_event::EventManager;
 use crate::gfx::{self, render};
 use crate::input::handle_events;
-use crate::utils;
+use crate::utils::file_io::file_outstream::FileOutStream;
+use crate::utils::file_io::FileOperations;
 use crate::utils::{logger::Logger, time::Time};
 use crate::game::spaces::world::World;
 
@@ -16,6 +16,7 @@ pub struct Looper{
 	state:GameStates,
 	pub start: Time,
 	pub logger:Logger,
+	pub f_io:FileOutStream,
 	pub world:World,
 	output:String,
 	terminal:DefaultTerminal
@@ -36,6 +37,7 @@ impl Looper {
 			state: GameStates::Init,
 			start:start_time.clone(),
 			logger: Logger::new(start_time.clone()),
+			f_io:FileOutStream::new(),
 			world: World::new(),
 			output:String::new(),
 			terminal:terminal
@@ -61,7 +63,6 @@ impl Looper {
 		self.logger.log("Initializing...");
 		
 		//neeed multithreading here, am lazy
-		self.output = self.world.clone().init(self.logger.clone());
 		self.tick += 1;
 
 		self.logger.log("Initializing done");
@@ -71,7 +72,7 @@ impl Looper {
 
 	pub async fn run(&mut self){
 		
-		let tick_max = 20;//10f64.powf(127.0);
+		let _tick_max = 20;//10f64.powf(127.0);
 		
 		//element que
 		//gen world closure
@@ -84,6 +85,7 @@ impl Looper {
 			
 			let _ = render(&mut self.terminal, &mut self.logger).await;
 			
+			
 			if handle_events(&mut self.terminal).unwrap_or(false) {
 				break
 			}
@@ -95,16 +97,21 @@ impl Looper {
 
 	pub async fn exit(&mut self) {
 
-		self.logger.log(&self.output);
-
 		self.logger.log("Exiting");
 		
 		let _ = render(&mut self.terminal, &mut self.logger).await;
+		std::thread::sleep(Duration::from_secs(1));
 
 		gfx::clear(&mut self.terminal);
 
-		self.logger.clone().save_log();
+		std::thread::sleep(Duration::from_secs(1));
 
+
+		self.logger.save_log().await;
+		self.f_io.write_all();
+
+		std::thread::sleep(Duration::from_secs(1));
+		
 		std::process::exit(0x0);
 	}
 
