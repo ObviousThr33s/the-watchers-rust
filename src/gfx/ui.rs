@@ -1,52 +1,82 @@
-use Constraint::{Length};
 use ratatui::{
-    layout::{Constraint, Layout, Margin, Rect}, style::{Color, Style, Stylize}, symbols, text::Text, widgets::{block::Title, Block, BorderType, Paragraph}, Frame
+	layout::{self, Constraint, Direction, Layout, Margin, Rect}, style::{Color, Style, Stylize}, symbols::line, text::Text, widgets::{self, Block, BorderType, Borders, Paragraph}, Frame
 };
-
 use crate::utils::logger::{self, Logger};
-
-use super::lamp::{self, Lamp};
+use super::{lamp::{self, Lamp}, screen};
 
 struct UI {
 
 }
 
-pub(crate) fn draw_(frame: &mut Frame, log:Logger) {
+pub(crate) fn draw_(frame: &mut Frame, log_:Logger) {
+	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);
+	let line_count:usize = 3; 
+	let mut lines_combined:Vec<String> = Vec::new();
 
-	let title_area = Rect::new(0, 0, 80, 10);
-	let main_area = Rect { x: 0, y: title_area.bottom(), width: 80, height: 20, };
-	let stat_area = Rect { x: 0, y: main_area.bottom(), width:80, height:10, };
 	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);
 
 	let top_block = Block::bordered()
-			.title("The Watchers")
-			.title_style(style)
-			.border_type(BorderType::Double);
+		.title("The Watchers")
+		.title_style(style)
+		.border_type(BorderType::Double)
+		.borders(Borders::ALL);
+	let middle_block = Block::new().title_bottom("*Live*");
 
-	let center_screen = Block::default()
-		.style(style);
+	let bot_block = Block::bordered()
+		.title("Stats")
+		.title_style(style)
+		.border_type(BorderType::Double)
+		.borders(Borders::TOP);
 
-	frame.render_widget(top_block, title_area);
 	
-	////
-	let mut lamp:Lamp = Lamp::init(80,40, lamp::CHARSETS::Charset0);
+	let layout = Layout::default()
+		.direction(
+			Direction::Vertical)
+		.constraints(vec![
+				Constraint::Percentage(10),
+				Constraint::Percentage(60),
+				Constraint::Percentage(20)
+			]).split(frame.area());
+
+		
+	let bottom_layout = Layout::default()
+			.direction(Direction::Horizontal)
+			.constraints(vec![
+				Constraint::Percentage(70),
+				Constraint::Percentage(30)
+			])
+			.split(layout[2]);
+
+	
+
+	
+	//top block widgets
+	let logger_ui:Paragraph = Paragraph::new(
+								Text::from(log_.get_log(line_count)
+												.concat()))
+				.block(top_block);
+
+	//middle block widgets
+	let mut lamp:Lamp = Lamp::init(frame.area().width.into(),
+								   frame.area().height.into(), 
+								   lamp::CHARSETS::Charset1
+								  );
+	
 	lamp.make_lamp();
-
-	let paragraph = Text::from(lamp.to_string());
 	
-	frame.render_widget(paragraph,main_area);
+	let frame_ui:Paragraph = Paragraph::new(Text::from(lamp.to_string())).block(middle_block);
 	
-	frame.render_widget(Block::bordered().title("Status Bar"), stat_area);
-	
-	let s:Vec<String> = Vec::new();
+	//bottom block widgets
+	let stats:Paragraph = Paragraph::new("Stats").block(bot_block.clone());
+	let invty:Paragraph = Paragraph::new("Inventory").block(bot_block);
 
-	let mut s:String = String::new();
+	//frame render calls 
+	///top
+	frame.render_widget(logger_ui,layout[0]);
+	///mid
+	frame.render_widget(frame_ui, layout[1]);
+	///bot
+	frame.render_widget(stats, bottom_layout[0]);
+	frame.render_widget(invty, bottom_layout[1]);
 
-	for i in 0..title_area.height{
-		s.push_str(&log.clone().get_log_at(i.into()));
-	}
-
-	let Paragraph = Text::from(s);
-	
-	frame.render_widget(Paragraph, title_area.inner(Margin { horizontal: 1, vertical: 1 }));
 }

@@ -1,4 +1,4 @@
-use std::{boxed, os::windows::thread, vec};
+use std::vec;
 
 use rand::Rng;
 
@@ -10,6 +10,7 @@ pub struct Lamp{
 
 }
 
+#[derive(Copy, Clone)]
 pub enum CHARSETS {
 	Charset0 = 0,
 	Charset1 = 1,
@@ -65,17 +66,14 @@ impl Lamp {
 		let sets:Vec<_> = vec![_charset_0, _charset_1, _charset_2, _charset_3];
 		
 		let r = match i {
-			CHARSETS::Charset0 => sets.get(CHARSETS::Charset0 as usize).cloned(),
-			CHARSETS::Charset1 => sets.get(CHARSETS::Charset1 as usize).cloned(),
-			CHARSETS::Charset2 => sets.get(CHARSETS::Charset2 as usize).cloned(),
-			CHARSETS::Charset3 => sets.get(CHARSETS::Charset3 as usize).cloned(),
+			CHARSETS::Charset0 => sets.get(0).unwrap(),
+			CHARSETS::Charset1 => sets.get(1).unwrap(),
+			CHARSETS::Charset2 => sets.get(2).unwrap(),
+			CHARSETS::Charset3 => sets.get(3).unwrap(),
 		};
+		
+		r.iter().collect::<String>()
 
-		if let Some(charset) = r {
-			charset.into_iter().collect()
-		} else {
-			String::new()
-		}
 	}
 
 	pub fn update(&mut self) {
@@ -85,15 +83,15 @@ impl Lamp {
 
 		self.lamp.screen.clear();
 
-		let charset: String = Self::get_charset(self.clone().charset);
+		let charset: String = Self::get_charset(self.charset);
 		
 		let s_x:usize = self.lamp.x;
 		let s_y:usize = self.lamp.y;
-		let c_s:usize = charset.len();
+		let _c_s:usize = charset.len();
 
 		//turn into loc list at some point
-		let loc_x:i32 = 0;
-		let loc_y:i32 = 0;
+		let _loc_x:i32 = 0;
+		let _loc_y:i32 = 0;
 	
 		let mut _rng = rand::rng();
 		

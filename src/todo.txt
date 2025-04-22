@@ -1,4 +1,6 @@
 
+add transform terrain heightmap to render target
+add simple skill and character containers
 
 add path creation to logger
 
