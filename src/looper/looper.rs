@@ -1,9 +1,8 @@
-use std::thread::Thread;
+
 use std::time::Duration;
 
 use ratatui::DefaultTerminal;
-use tokio::time;
-
+use crate::game::spaces::space::Space;
 use crate::gfx::{self, render};
 use crate::input::handle_events;
 use crate::utils::file_io::file_outstream::FileOutStream;
@@ -12,14 +11,16 @@ use crate::utils::{logger::Logger, time::Time};
 use crate::game::spaces::world::World;
 
 pub struct Looper{
-	tick:i64,
-	state:GameStates,
 	pub start: Time,
 	pub logger:Logger,
 	pub f_io:FileOutStream,
 	pub world:World,
-	output:String,
-	terminal:DefaultTerminal
+
+	state:GameStates,
+	tick:i64,
+	
+	terminal:DefaultTerminal,
+	output:String
 }
 
 #[derive(PartialEq)]
@@ -32,11 +33,13 @@ pub enum GameStates{
 
 impl Looper {
 	pub fn new(start_time:Time, terminal:DefaultTerminal) -> Looper {
+		
+
 		Looper { 
 			tick: 0, 
 			state: GameStates::Init,
 			start:start_time.clone(),
-			logger: Logger::new(start_time.clone()),
+			logger: Logger::new(start_time, "0.1.9".to_string()),
 			f_io:FileOutStream::new(),
 			world: World::new(),
 			output:String::new(),
@@ -67,6 +70,10 @@ impl Looper {
 
 		self.logger.log("Initializing done");
 		self.state = GameStates::Run;
+
+		let _world:World = World::new();
+
+
 		self.state_loop().await;
 	}
 
