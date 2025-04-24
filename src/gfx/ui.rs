@@ -1,19 +1,22 @@
 use ratatui::{
-	layout::{self, Constraint, Direction, Layout, Margin, Rect}, style::{Color, Style, Stylize}, symbols::{border, line}, text::Text, widgets::{self, Block, BorderType, Borders, Paragraph}, Frame
+	layout::{Constraint, Direction, Layout}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Paragraph}, Frame
 };
 use crate::utils::logger::{self, Logger};
-use super::{lamp::{self, Lamp}, screen};
 
-struct UI {
+use super::render::{self, Render};
+
+struct _UI {
 
 }
 
 fn draw_lamp<'a>(width: u16, height: u16) -> Paragraph<'a> {
+
+	
 	let middle_block = Block::new().title_bottom("*Live*");
 	
-	let mut lamp: Lamp = Lamp::init(width.into(), height.into(), lamp::CHARSETS::Charset1);
+	let mut lamp: Render = Render::init(width.into(), height.into(), render::CHARSETS::Charset1);
 	
-	lamp.make_lamp();
+	lamp.rasterize();
 	
 	let frame_ui: Paragraph = Paragraph::new(Text::from(lamp.to_string())).block(middle_block);
 
@@ -58,7 +61,10 @@ fn draw_log <'a> (style:Style, border:BorderType, line_count:usize, log_:Logger)
 	logger_ui
 }
 
-pub(crate) fn draw_(frame: &mut Frame, log_:Logger) {
+pub(crate) fn draw_(frame: &mut Frame, mut log_:Logger) {
+	
+	log_.log("Drawing UI...".to_string().as_str());
+	
 	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);
 	let border:BorderType = BorderType::Double;
 
@@ -91,13 +97,13 @@ pub(crate) fn draw_(frame: &mut Frame, log_:Logger) {
 			.split(layout[2]);
 
 	//frame render calls 
-	///top
+	//top
 	let logger_ui:Paragraph = draw_log(style, border, line_count, log_);
 	frame.render_widget(logger_ui,layout[0]);
-	///mid
+	//mid
 	frame.render_widget(frame_render, layout[1]);
 
-	///Bottom UI
+	//Bottom UI
 	let outter_bottom:Block = Block::bordered().border_type(border).borders(Borders::TOP);
 
 	frame.render_widget(outter_bottom.clone(), layout[2]);

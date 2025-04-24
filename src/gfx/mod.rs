@@ -1,5 +1,5 @@
 pub mod ui;
-pub mod lamp;
+pub mod render;
 mod screen;
 
 use crate::utils::logger::Logger;
