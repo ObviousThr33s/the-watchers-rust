@@ -1,15 +1,14 @@
 use std::vec;
 
-use rand::Rng;
 
-use crate::game::transforms::{generators, terrain};
+
+use crate::game::{self, entity::{self, Entity}};
 
 use super::screen::Screen;
 
-pub struct Lamp{
+pub struct Render{
 	pub lamp: Screen,
 	pub charset: CHARSETS,
-
 }
 
 #[derive(Copy, Clone)]
@@ -20,34 +19,36 @@ pub enum CHARSETS {
 	Charset3 = 3
 }
 
-impl Clone for Lamp {
+impl Clone for Render {
 	fn clone(&self) -> Self { 
-		let mut lamp_:Lamp = Lamp::init(self.lamp.x, self.lamp.y, CHARSETS::Charset0);
+		let mut lamp_:Render = Render::init(self.lamp.x, self.lamp.y, CHARSETS::Charset0);
 		lamp_.lamp = self.lamp.clone();
 		lamp_
 	} 
 }
 
-impl ToString for Lamp {
+impl ToString for Render {
 	fn to_string(&self) -> String {
+
 		self.lamp.screen.iter().collect()
 	}
 }
-impl Lamp {
+impl Render {
 
 	pub fn init(width:usize, height:usize, charset:CHARSETS) -> Self{
 		let scr:Screen = Screen::new(width, height);
-		let lamp_ = Lamp {			
+		let lamp_ = Render {			
 			lamp: scr,
 			charset: charset,
 		};
-	
+		
+		
 		
 		lamp_
 	}
 	
 	pub fn get_charset(i:CHARSETS) -> String{
-		let _charset_0:Vec<char> = vec!['*','.',',','+','=','-',' ', ' '];
+		let _charset_0:Vec<char> = vec!['.',',','-','=','+','*','#','▓'];
 
 		let _charset_1:Vec<char> = vec!['░','▒','▓'];
 
@@ -78,58 +79,22 @@ impl Lamp {
 
 	}
 
-	pub fn update(&mut self) {
-	}
 
-	pub fn _make_lamp(&mut self) {
-		self.lamp.screen.clear();
-
-		//let terrain = terrain::generate();
-		let depth = 5;
-		//generators::gen_field::gen_field(terrain, depth);
-
-
-		self._make_lamp();
-	}
-
-	pub fn make_lamp(&mut self) {
+	pub fn rasterize(&mut self){ //add a screen buffer here{
 
 		self.lamp.screen.clear();
 
-		let charset: String = Self::get_charset(self.charset);
-		
-		let s_x:usize = self.lamp.x;
-		let s_y:usize = self.lamp.y;
-		let _c_s:usize = charset.len();
+		let entities:Vec<game::entity::Entity> = vec![Entity::new(10, 10, 'c')];
 
-		//turn into loc list at some point
-		let _loc_x:i32 = 0;
-		let _loc_y:i32 = 0;
-	
-		let mut _rng = rand::rng();
-		
-		let full_size = s_x*s_y;
-		
-		for i in 0..full_size-1 {
-			let n_r = _rng.random_range(0..charset.len());
-			let c: char = charset.chars().nth(n_r).unwrap_or(' ');
-
-			self.lamp.screen.insert(i, c);
+		for i in 0..self.lamp.y {
+			for j in 0..self.lamp.x {
+				if entities[0].x == j && entities[0].y == i {
+					self.lamp.screen.push(entities[0].self_);
+				}else {
+					self.lamp.screen.push(' ');
+				}
+			}
+			self.lamp.screen.push('\n');
 		}
-		for j in 0..s_y+1{
-			self.lamp.screen.insert(s_x*j, '\n');
-		}
-		
-
-	}
-
-	fn get_char(charset:CHARSETS, n:usize) -> char {
-		if let Some(c) = Self::get_charset(charset).as_str().chars().nth(n) {
-			c
-		} else {
-			' '
-		}
-	}
-
-	
+	}	
 }

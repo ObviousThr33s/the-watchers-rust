@@ -6,7 +6,10 @@ use ratatui::{
 
 use crossterm::event::{self, Event, KeyCode};
 
-pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>) -> std::io::Result<bool> {
+use crate::utils::logger::{self, Logger};
+
+#[allow(unused_mut)]
+pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logger:&mut Logger) -> std::io::Result<bool> {
 	match event::read()? {
 		Event::Key(key) if key.kind == KeyEventKind::Press => match key.code {
 			KeyCode::Char('q') => return Ok(true),
@@ -16,6 +19,7 @@ pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>) -> std::i
 		
 		// handle other events
 		Event::Resize(_,_) => {
+			logger.log("Resizing terminal");
 			terminal.autoresize()?;
 		}
 

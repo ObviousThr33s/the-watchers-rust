@@ -12,5 +12,4 @@ pub mod entities;
 pub mod world;*/
 
 pub mod event;
-pub mod spaces;
-pub mod transforms;
+pub mod entity;
