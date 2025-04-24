@@ -1,14 +1,17 @@
 
+use std::fs::{self, File};
+use std::io::Write;
 use std::path::PathBuf;
-use super::file_io::{file_outstream, FileOperations};
 
-use super::{file_io::{file_data::FileData, file_outstream::FileOutStream}, time::Time};
+use ratatui::symbols::line;
+
+use super::time::Time;
+
 
 pub struct Logger {
 	log_stream: Vec<String>,
 	start_time: Time,
 	pub tick:usize,
-	f_io:FileOutStream,
 	vers:String
 }
 
@@ -17,7 +20,6 @@ impl Clone for Logger {
 		Self {	log_stream: self.log_stream.clone(), 
 				start_time: self.start_time.clone(),
 				tick: self.tick.clone(),
-				f_io: self.f_io.clone(),
 				vers: self.vers.clone()
 		}
 	}
@@ -33,7 +35,6 @@ impl Logger {
 			log_stream: Vec::new(),
 			start_time: start_time,
 			tick: 0,
-			f_io:file_outstream::FileOutStream::new(),
 			vers: version
 		}
 	}
@@ -50,14 +51,18 @@ impl Logger {
 		let mut split_stream = self.log_stream.split_off(lines);
 		split_stream.reverse();
 		let stream: Vec<String> = split_stream.to_owned();
-		stream
+		stream.clone()
 	}
 
 	pub fn get_version(self) -> String {
 		self.vers
 	}
-
-	pub async  fn save_log(&mut self) {
-		self.f_io.add_file(String::from("\\res\\logs\\"),String::from("log"));
+	pub async fn save_log(&mut self) {
+		let mut file = File::create("res\\logs\\log.txt").expect("Unable to create file");
+		for line in &self.log_stream {
+			file.write_all(line.as_bytes()).expect("Unable to write data");
+		}
+		file.flush().expect("Unable to flush data");
+		self.log_stream.clear();
 	}
 }
