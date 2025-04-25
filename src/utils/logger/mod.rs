@@ -1,6 +1,12 @@
 
+use std::env;
 use std::fs::File;
 use std::io::Write;
+use std::os::windows::thread;
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::thread::{sleep, Thread};
+use std::time::Duration;
 
 
 use super::time::Time;
@@ -15,7 +21,8 @@ pub struct Logger {
 
 impl Clone for Logger {
 	fn clone(&self) -> Self {
-		Self {	log_stream: self.log_stream.clone(), 
+		Self {
+				log_stream: self.log_stream.clone(), 
 				start_time: self.start_time.clone(),
 				tick: self.tick.clone(),
 				vers: self.vers.clone()
@@ -55,12 +62,18 @@ impl Logger {
 	pub fn get_version(self) -> String {
 		self.vers
 	}
+
+	#[allow(unused)]
 	pub async fn save_log(&mut self) {
-		let mut file = File::create("res\\logs\\log.txt").expect("Unable to create file");
+
+		
+		let mut file = File::create("..\\bin\\log.txt").expect("Could not create file...");
+
 		for line in &self.log_stream {
-			file.write_all(line.as_bytes()).expect("Unable to write data");
+			file.write_all(line.as_bytes());
 		}
-		file.flush().expect("Unable to flush data");
-		self.log_stream.clear();
+
+		std::thread::sleep(Duration::from_secs(10));
+		
 	}
 }

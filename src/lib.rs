@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 pub mod utils;
 pub mod looper;
 pub mod game;

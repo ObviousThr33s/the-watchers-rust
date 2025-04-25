@@ -2,7 +2,7 @@
 use std::time::Duration;
 
 use ratatui::DefaultTerminal;
-use crate::game::entity::Entity;
+use crate::game::entity::{self, Entity};
 use crate::gfx::{self, render};
 use crate::input::handle_events;
 use crate::utils::{logger::Logger, time::Time};
@@ -74,26 +74,40 @@ impl Looper {
 	pub async fn run(&mut self){
 		
 		let mut entities_: Vec<Entity> = Vec::new();
+		let mut player:Entity = Entity { x: 10, y: 10, self_: '@' };
+
 
 		loop {
-			
-			render(&mut self.terminal, &mut self.logger, &mut entities_).await;
-			self.tick += 1;
-			
-			if handle_events(&mut self.terminal, &mut self.logger).unwrap_or(false) {
-				break;
-			}
+			let e:Entity = handle_events(&mut self.terminal, &mut self.logger, &mut player).clone();
 			self.tick += 1;
 
 			let mut ml: MainLoop = loops::main_loop::MainLoop::new();
-			let tick;
-			(entities_, tick) = ml.main_loop(Vec::new()).await;
+			//let tick;
+			//tick = ml.main_loop(&mut event_manager).await;
 			
-			self.tick += tick;
+			self.tick += 1;
+			
+			//let mov_x = 1;
+			//let mov_y = 1;
 
+			entities_ = vec![
+				e
+			];
+
+			entities_ = render(&mut self.terminal, &mut self.logger, &mut vec![
+				entities_[0].clone()
+			]).await;
+
+			self.logger.log(&format!("({},{})", entities_[0].x, entities_[0].y));
+			self.logger.log("Rendering finished");
+
+			self.tick += 1;
+
+			// Break the loop when transitioning to the Exit state
+			if self.state == GameStates::Exit {
+				break;
+			}
 		}
-
-		self.state = GameStates::Exit;
 		self.state_loop().await;
 	}
 
@@ -107,7 +121,7 @@ impl Looper {
 
 		std::thread::sleep(Duration::from_secs(1));
 		self.logger.log("Saving log...");
-		let _ = self.logger.save_log().await;
+		self.logger.save_log().await;
 
 		std::thread::sleep(Duration::from_secs(1));
 		

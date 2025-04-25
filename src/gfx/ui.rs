@@ -16,12 +16,7 @@ fn draw_lamp<'a>(width: u16, height: u16, entity_array:&mut Vec<Entity>) -> Para
 	
 	let mut lamp: Render = Render::init(width.into(), height.into(), render::CHARSETS::Charset1);
 	
-	//make entity array 
-
-	entity_array.push(entity::Entity::new(0, 0, 'a'));
-
-	let en:entity::Entity = entity_array[0].clone();
-	lamp.rasterize(vec![en.clone()]);
+	lamp.rasterize(entity_array.to_vec());
 	
 	let frame_ui: Paragraph = Paragraph::new(Text::from(lamp.to_string())).block(middle_block);
 
@@ -88,7 +83,7 @@ pub(crate) fn draw_(frame: &mut Frame, mut log_:Logger, mut entities:&mut Vec<En
 	
 
 	//middle block widgets
-	
+	log_.log("drawing lamp");
 	let frame_render = draw_lamp(frame.area().width, frame.area().height, &mut entities);
 	
 	//bottom block widgets
