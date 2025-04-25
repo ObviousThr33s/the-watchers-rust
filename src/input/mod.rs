@@ -6,7 +6,7 @@ use ratatui::{
 
 use crossterm::event::{self, Event, KeyCode};
 
-use crate::utils::logger::{self, Logger};
+use crate::utils::logger::Logger;
 
 #[allow(unused_mut)]
 pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logger:&mut Logger) -> std::io::Result<bool> {

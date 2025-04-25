@@ -2,7 +2,7 @@ use std::vec;
 
 
 
-use crate::game::{self, entity::{self, Entity}};
+use crate::game::{self};
 
 use super::screen::Screen;
 
