@@ -1,7 +1,7 @@
 use ratatui::{
-	layout::{Constraint, Direction, Layout}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Paragraph}, Frame
+	layout::{Constraint, Direction, Layout}, style::{Color, Style}, text::Text, widgets::{canvas::Rectangle, Block, BorderType, Borders, Paragraph}, Frame
 };
-use crate::utils::logger::{self, Logger};
+use crate::{game::{entity, generators::gen_rectangle}, utils::logger::{self, Logger}};
 
 use super::render::{self, Render};
 
@@ -16,7 +16,14 @@ fn draw_lamp<'a>(width: u16, height: u16) -> Paragraph<'a> {
 	
 	let mut lamp: Render = Render::init(width.into(), height.into(), render::CHARSETS::Charset1);
 	
-	lamp.rasterize();
+	//make entity array 
+
+	let mut entity_array:Vec<entity::Entity> =  gen_rectangle::Rectangle::new(0, 0, 10, 10).get_entities().to_vec();
+
+	entity_array.push(entity::Entity::new(0, 0, 'a'));
+
+	let en:entity::Entity = entity_array[0].clone();
+	lamp.rasterize(vec![en.clone()]);
 	
 	let frame_ui: Paragraph = Paragraph::new(Text::from(lamp.to_string())).block(middle_block);
 
@@ -75,7 +82,7 @@ pub(crate) fn draw_(frame: &mut Frame, mut log_:Logger) {
 			Direction::Vertical)
 		.constraints(vec![
 				Constraint::Percentage(10),
-				Constraint::Percentage(60),
+				Constraint::Percentage(70),
 				Constraint::Percentage(20)
 			]).split(frame.area());
 	

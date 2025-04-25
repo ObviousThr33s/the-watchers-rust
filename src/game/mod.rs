@@ -11,5 +11,7 @@ pub mod levels;
 pub mod entities;
 pub mod world;*/
 
-pub mod event;
+
+pub mod generators;
+pub mod terrain;
 pub mod entity;

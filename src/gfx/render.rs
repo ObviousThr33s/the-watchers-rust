@@ -80,18 +80,18 @@ impl Render {
 	}
 
 
-	pub fn rasterize(&mut self){ //add a screen buffer here{
+	pub fn rasterize(&mut self, entities:Vec<game::entity::Entity>){ //add a screen buffer here{
 
 		self.lamp.screen.clear();
 
-		let entities:Vec<game::entity::Entity> = vec![Entity::new(10, 10, 'c')];
-
 		for i in 0..self.lamp.y {
 			for j in 0..self.lamp.x {
-				if entities[0].x == j && entities[0].y == i {
-					self.lamp.screen.push(entities[0].self_);
-				}else {
-					self.lamp.screen.push(' ');
+				for e in entities.iter() {
+					if e.x == j && e.y == i {
+						self.lamp.screen.push(e.self_);
+					}else {
+						self.lamp.screen.push(' ');
+					}
 				}
 			}
 			self.lamp.screen.push('\n');
