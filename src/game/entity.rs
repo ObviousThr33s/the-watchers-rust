@@ -1,3 +1,5 @@
+use std::clone;
+
 pub struct Entity {
 	pub x: usize,
 	pub y: usize,
@@ -17,5 +19,15 @@ impl Entity {
 	
 	pub fn get_position(&self) -> (usize, usize) {
 		(self.x, self.y)
+	}
+}
+
+impl Clone for Entity {
+	fn clone(&self) -> Self {
+		Entity {
+			x: self.x,
+			y: self.y,
+			self_: self.self_,
+		}
 	}
 }

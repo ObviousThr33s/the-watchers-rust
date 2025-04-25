@@ -1,4 +1,5 @@
-use crate::game::transforms::terrain::Terrain;
+
+use crate::game::terrain::Terrain;
 
 pub fn gen_field(terra: &mut Terrain, depth:i8){
 	let size:i64 = (terra.chunk_size_y*terra.chunk_size_x*terra.chunk_size_z).into();
