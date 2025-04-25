@@ -10,6 +10,12 @@ impl Entity {
 		Entity { x, y, self_ }
 	}
 
+	pub fn update(mut self, e:Entity){
+		self.x = e.x;
+		self.y = e.y;
+		self.self_ = e.self_;
+	}
+
 	pub fn set_position(&mut self, new_x: usize, new_y: usize) {
 		self.x = new_x;
 		self.y = new_y;
