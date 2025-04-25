@@ -2,16 +2,20 @@
 use std::time::Duration;
 
 use ratatui::DefaultTerminal;
+use crate::game::entity::Entity;
 use crate::gfx::{self, render};
 use crate::input::handle_events;
 use crate::utils::{logger::Logger, time::Time};
+
+use super::loops::main_loop::MainLoop;
+use super::loops::{self};
 
 pub struct Looper{
 	pub start: Time,
 	pub logger:Logger,
 
 	state:GameStates,
-	tick:i64,
+	tick:usize,
 	
 	terminal:DefaultTerminal,
 	_output:String
@@ -21,8 +25,7 @@ pub struct Looper{
 pub enum GameStates{
 	Init = 0,
 	Run  = 1,
-	Render = 2,
-	Exit = 3
+	Exit = 2
 }
 
 impl Looper {
@@ -33,6 +36,7 @@ impl Looper {
 			tick: 0, 
 			state: GameStates::Init,
 			start:start_time.clone(),
+		
 			logger: Logger::new(start_time, "0.1.9".to_string()),
 			_output:String::new(),
 			terminal:terminal,
@@ -45,7 +49,6 @@ impl Looper {
 			match self.state {
 				GameStates::Exit   => self.exit().await,
 				GameStates::Run    => self.run().await,
-				GameStates::Render => gfx::render(&mut self.terminal, &mut self.logger).await, //may panic?
 				GameStates::Init   => self.init().await,
 			}
 		})
@@ -70,23 +73,24 @@ impl Looper {
 
 	pub async fn run(&mut self){
 		
-		let _tick_max = 20;//10f64.powf(127.0);
-		
-		//element que
-		//gen world closure
-		//gen one sub group
-		//transform the sub groups
+		let mut entities_: Vec<Entity> = Vec::new();
 
-		loop{
+		loop {
+			
+			render(&mut self.terminal, &mut self.logger, &mut entities_).await;
 			self.tick += 1;
-			self.logger.log("Running");
-			
-			let _ = render(&mut self.terminal, &mut self.logger).await;
-			
 			
 			if handle_events(&mut self.terminal, &mut self.logger).unwrap_or(false) {
-				break
+				break;
 			}
+			self.tick += 1;
+
+			let mut ml: MainLoop = loops::main_loop::MainLoop::new();
+			let tick;
+			(entities_, tick) = ml.main_loop(Vec::new()).await;
+			
+			self.tick += tick;
+
 		}
 
 		self.state = GameStates::Exit;
@@ -97,7 +101,6 @@ impl Looper {
 
 		self.logger.log("Exiting");
 		
-		let _ = render(&mut self.terminal, &mut self.logger).await;
 		std::thread::sleep(Duration::from_secs(1));
 
 		gfx::clear(&mut self.terminal);
@@ -109,11 +112,5 @@ impl Looper {
 		std::thread::sleep(Duration::from_secs(1));
 		
 		std::process::exit(0x0);
-	}
-
-	pub async fn draw_menu(mut self){
-		
-		self.state = GameStates::Exit;
-		self.state_loop().await;
 	}
 }

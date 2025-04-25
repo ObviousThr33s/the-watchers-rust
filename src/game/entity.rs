@@ -1,5 +1,3 @@
-use std::clone;
-
 pub struct Entity {
 	pub x: usize,
 	pub y: usize,

@@ -1,7 +1,7 @@
 use ratatui::{
-	layout::{Constraint, Direction, Layout}, style::{Color, Style}, text::Text, widgets::{canvas::Rectangle, Block, BorderType, Borders, Paragraph}, Frame
+	layout::{Constraint, Direction, Layout}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Paragraph}, Frame
 };
-use crate::{game::{entity, generators::gen_rectangle}, utils::logger::{self, Logger}};
+use crate::{game::entity::{self, Entity}, utils::logger::Logger};
 
 use super::render::{self, Render};
 
@@ -9,7 +9,7 @@ struct _UI {
 
 }
 
-fn draw_lamp<'a>(width: u16, height: u16) -> Paragraph<'a> {
+fn draw_lamp<'a>(width: u16, height: u16, entity_array:&mut Vec<Entity>) -> Paragraph<'a> {
 
 	
 	let middle_block = Block::new().title_bottom("*Live*");
@@ -17,8 +17,6 @@ fn draw_lamp<'a>(width: u16, height: u16) -> Paragraph<'a> {
 	let mut lamp: Render = Render::init(width.into(), height.into(), render::CHARSETS::Charset1);
 	
 	//make entity array 
-
-	let mut entity_array:Vec<entity::Entity> =  gen_rectangle::Rectangle::new(0, 0, 10, 10).get_entities().to_vec();
 
 	entity_array.push(entity::Entity::new(0, 0, 'a'));
 
@@ -68,7 +66,7 @@ fn draw_log <'a> (style:Style, border:BorderType, line_count:usize, log_:Logger)
 	logger_ui
 }
 
-pub(crate) fn draw_(frame: &mut Frame, mut log_:Logger) {
+pub(crate) fn draw_(frame: &mut Frame, mut log_:Logger, mut entities:&mut Vec<Entity>) {
 	
 	log_.log("Drawing UI...".to_string().as_str());
 	
@@ -91,7 +89,7 @@ pub(crate) fn draw_(frame: &mut Frame, mut log_:Logger) {
 
 	//middle block widgets
 	
-	let frame_render = draw_lamp(frame.area().width, frame.area().height);
+	let frame_render = draw_lamp(frame.area().width, frame.area().height, &mut entities);
 	
 	//bottom block widgets
 
