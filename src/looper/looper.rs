@@ -108,22 +108,21 @@ impl Looper {
 				break;
 			}
 		}
+
+		self.state = GameStates::Exit;
 		self.state_loop().await;
 	}
 
 	pub async fn exit(&mut self) {
+		std::thread::sleep(Duration::from_secs(3));
 
 		self.logger.log("Exiting");
 		
-		std::thread::sleep(Duration::from_secs(1));
-
-		gfx::clear(&mut self.terminal);
-
-		std::thread::sleep(Duration::from_secs(1));
-		self.logger.log("Saving log...");
 		self.logger.save_log().await;
-
-		std::thread::sleep(Duration::from_secs(1));
+		
+		println!("Saving log...");
+		
+		
 		
 		std::process::exit(0x0);
 	}
