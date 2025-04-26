@@ -1,14 +1,10 @@
 
-use std::clone;
-use std::os::windows::thread;
-use std::path::Path;
 use std::time::Duration;
 
 use ratatui::DefaultTerminal;
 use tokio::time::sleep;
-use crate::game::entity::{self, Entity};
-use crate::game::terrain;
-use crate::gfx::{self, render};
+use crate::game::entity::Entity;
+use crate::gfx::render;
 use crate::input::handle_events;
 use crate::utils::{logger::Logger, time::Time};
 
@@ -63,7 +59,7 @@ impl Looper {
 	pub async fn state_loop(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + '_>> {
 		
 		Box::pin(async move {
-			sleep(Duration::from_secs(1)).await;
+			//sleep(Duration::from_secs(1)).await;
 			match self.state {
 				GameStates::Exit   => self.exit().await,
 				GameStates::Run    => self.run().await,
@@ -91,13 +87,15 @@ impl Looper {
 	pub async fn run(&mut self){
 		
 		//create a list of entities to display and the player
-		let mut entities_: Vec<Entity> = Vec::new();
 		let mut player:Entity = Entity { x: 10, y: 10, self_: '@' };
+		let mut entities_: Vec<Entity> = vec![player];
+		
 
 		//main loop here
 		loop {
+			let r = rand::rng();
 			//return the player movement, needs to return signals instead
-			let new_state = handle_events(&mut self.terminal, &mut self.logger, &mut player);
+			let new_state = handle_events(&mut self.terminal, &mut self.logger, &mut entities_);
 			
 			self.state = new_state;
 			self.tick += 1;
@@ -105,7 +103,8 @@ impl Looper {
 			//create a special new main loop for non systems game logic only 
 			let mut ml: MainLoop = loops::main_loop::MainLoop::new();
 			//let tick;
-			//tick = ml.main_loop(&mut event_manager).await;
+
+			(entities_, self.tick) = ml.main_loop(&mut self.logger, entities_, self.tick, r.clone()).await;
 			
 			self.tick += 1;
 			
@@ -113,14 +112,7 @@ impl Looper {
 			//let mov_y = 1;
 
 			//the current entities on screen
-			entities_ = vec![
-				player.clone(),
-				Entity{
-					x:0,
-					y:0,
-					self_:'E',
-				}
-			];
+			
 			
 			//render objects and entities, for now, only the logger, soon the inv, and stats, 
 			//as well as a map and maybe a compas bar.

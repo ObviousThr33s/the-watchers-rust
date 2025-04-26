@@ -1,5 +1,5 @@
 pub mod ui;
-pub mod render;
+pub mod mipmap;
 
 pub mod charset;
 

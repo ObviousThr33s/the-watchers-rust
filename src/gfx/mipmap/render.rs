@@ -1,13 +1,7 @@
-use std::vec;
-
-
-
-use crate::game::{self};
-
-use super::{charset::CHARSETS, screen::Screen};
+use crate::{game::{self}, gfx::{charset::CHARSETS, screen::Screen}};
 
 pub struct Render{
-	lamp: Screen,
+	render: Screen,
 	charset: CHARSETS,
 }
 
@@ -15,15 +9,14 @@ pub struct Render{
 
 impl Clone for Render {
 	fn clone(&self) -> Self { 
-		let mut lamp_:Render = Render::init(self.lamp.x, self.lamp.y, CHARSETS::Charset0);
-		lamp_.lamp = self.lamp.clone();
-		lamp_
+		let render:Render = Render { render: self.render.clone(), charset: self.charset };
+		render
 	} 
 }
 
 impl ToString for Render {
 	fn to_string(&self) -> String {
-		self.lamp.screen.iter().collect()
+		self.render.screen.iter().collect()
 	}
 }
 
@@ -32,7 +25,7 @@ impl Render {
 	pub fn init(width:usize, height:usize, charset:CHARSETS) -> Self{
 		let scr:Screen = Screen::new(width, height);
 		let lamp_ = Render {			
-			lamp: scr,
+			render: scr,
 			charset: charset,
 		};
 		
@@ -43,19 +36,19 @@ impl Render {
 	
 	pub fn rasterize(&mut self, entities:Vec<game::entity::Entity>){ //add a screen buffer here{
 
-		self.lamp.screen.clear();
+		self.render.screen.clear();
 
-		for i in 0..self.lamp.y {
-			for j in 0..self.lamp.x {
+		for i in 0..self.render.y {
+			for j in 0..self.render.x {
 				for e in entities.iter() {
 					if e.x == j && e.y == i {
-						self.lamp.screen.push(e.self_);
+						self.render.screen.push(e.self_);
 					}else {
-						self.lamp.screen.push(' ');
+						self.render.screen.push(' ');
 					}
 				}
 			}
-			self.lamp.screen.push('\n');
+			self.render.screen.push('\n');
 		}
 	}	
 }
