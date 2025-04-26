@@ -3,7 +3,7 @@ use std::env;
 use std::fs::File;
 use std::io::Write;
 use std::os::windows::thread;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::thread::{sleep, Thread};
 use std::time::Duration;
@@ -65,15 +65,12 @@ impl Logger {
 
 	#[allow(unused)]
 	pub async fn save_log(&mut self) {
+		let dir = "C:\\Users\\kfman\\Desktop\\Portfolio\\Software\\Rust\\the-watchers-rust";
+		let file_name = "log.txt";
 
-		
-		let mut file = File::create("..\\bin\\log.txt").expect("Could not create file...");
+		let mut file_path = PathBuf::from(dir);
+		file_path.push(file_name);
 
-		for line in &self.log_stream {
-			file.write_all(line.as_bytes());
-		}
-
-		std::thread::sleep(Duration::from_secs(10));
 		
 	}
 }
