@@ -47,7 +47,7 @@ impl Logger {
 		self.log_stream.push(s1);
 	}
 
-	pub fn get_log(mut self, lines: usize) -> Vec<String> {
+	pub fn get_log(self, lines: usize) -> Vec<String> {
 		let mut stream: Vec<String> = self.log_stream.to_owned();
 		
 		if lines >= stream.len() {

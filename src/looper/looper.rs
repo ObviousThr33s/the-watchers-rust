@@ -87,16 +87,23 @@ impl Looper {
 	pub async fn run(&mut self){
 		
 		//create a list of entities to display and the player
-		let mut player:Entity = Entity { x: 10, y: 10, self_: '@' };
-		let mut entities_: Vec<Entity> = vec![player];
-		let mut frame_sizes: Vec<(u16,u16)> = Vec::new();
+		let player:Entity = Entity { x: 40, y: 5, self_: '@' };
+		let foo:Entity    = Entity { x: 0, y: 0, self_: '@' };
+		
+
+		let mut entities_: Vec<Entity> = vec![player, foo];
+		let _frame_sizes: Vec<(&mut u16, &mut u16)> = Vec::new();
 
 		let r = rand::rng();
-		let mut ml: MainLoop = loops::main_loop::MainLoop::new();			
+		let mut ml: MainLoop = loops::main_loop::MainLoop::new();
+		
+		
+
+		
 
 		//main loop here
 		loop {
-			rand::rng().reseed();
+			let _ = rand::rng().reseed();
 			//return the player movement, needs to return signals instead
 			let new_state = handle_events(&mut self.terminal, &mut self.logger, &mut entities_);
 			
@@ -105,7 +112,6 @@ impl Looper {
 
 			//create a special new main loop for non systems game logic only 
 			//let tick;
-
 			
 			self.tick += 1;
 			
@@ -117,16 +123,18 @@ impl Looper {
 			
 			//render objects and entities, for now, only the logger, soon the inv, and stats, 
 			//as well as a map and maybe a compas bar.
-			(entities_, frame_sizes) = render(
+			(entities_) = render(
 				&mut self.terminal, 
 				self.logger.clone(), 
 				&mut entities_
 			).await;
 
-			(entities_, self.tick) = ml.main_loop(&mut self.logger, entities_, self.tick, r.clone()).await;
+			//(entities_, self.tick) = ml.main_loop(&mut self.logger, entities_,self.tick, r.clone()).await;
 			
-
-			self.logger.log(&format!("({},{})", entities_[0].x, entities_[0].y));
+			//self.logger.log(&format!("Entity ({},{})", entities_[1].x, entities_[1].y));
+			let e_y = entities_[0].x.clone();
+			let e_x = entities_[0].y.clone();
+			self.logger.log(&format!("Player ({},{})", e_x, e_y).to_string());
 
 			self.tick += 1;
 
