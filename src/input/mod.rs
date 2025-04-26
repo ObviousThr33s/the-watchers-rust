@@ -9,9 +9,19 @@ use crossterm::event::{self, Event, KeyCode};
 use crate::{game::entity::Entity, looper::looper::GameStates, utils::logger::Logger};
 
 
+#[derive(PartialEq)]
+pub enum PlayerMove {
+	UP,
+	DOWN,
+	LEFT,
+	RIGHT,
+	NONE
+}
+
 #[allow(unused_mut)]
-pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logger:&mut Logger, mut e: &mut Vec<Entity>) -> GameStates {
+pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logger:&mut Logger, mut e: &mut Vec<Entity>) -> (GameStates, PlayerMove) {
 	let mut gs:GameStates = GameStates::Run;
+	let mut mv:PlayerMove = PlayerMove::NONE;
 
 	match event::read() {
 		Ok(Event::Key(key)) if key.kind == KeyEventKind::Press => match key.code {
@@ -22,27 +32,26 @@ pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logge
 			// handle other key events
 			KeyCode::Char('w') => {
 				logger.log("w pressed");
-				e[0].move_up();
-				
+				mv = PlayerMove::UP;
 			}
 			KeyCode::Char('a') => {
 				logger.log("a pressed");
-				e[0].move_left();
+				mv = PlayerMove::LEFT;
 			}
 			KeyCode::Char('s') => {
 				logger.log("s pressed");
-				e[0].move_down();
+				mv = PlayerMove::DOWN;
 			}
 			KeyCode::Char('d') => {
 				logger.log("d pressed");
-				e[0].move_right();
+				mv = PlayerMove::RIGHT;
 			}
 			KeyCode::Char(' ') => {
 				let _ = terminal.autoresize();
 				logger.log("space pressed and auto resize");
 			}
 
-			_ => {} // Handle all other KeyCode variants
+			_ => {mv = PlayerMove::NONE} // Handle all other KeyCode variants
 		},
 		
 		
@@ -53,8 +62,8 @@ pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logge
 			let _ = terminal.autoresize();
 		}
 
-		_ => ()
+		_ => { mv = PlayerMove::NONE }
 	}
 
-	gs
+	(gs, mv)
 }

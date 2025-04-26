@@ -8,7 +8,8 @@ mod screen;
 use crate::{game::entity::Entity, utils::logger::Logger};
 
 pub async fn render(terminal: &mut ratatui::DefaultTerminal, log:Logger, entities:&mut Vec<Entity>) -> Vec<Entity>{
-	let _ = terminal.draw(|frame| ui::draw_(frame, &mut entities.clone(), log) );
+	
+	let _ = terminal.draw(|frame| { ui::draw_(frame, &mut entities.clone(), log) });
 	
 	entities.to_vec()
 }

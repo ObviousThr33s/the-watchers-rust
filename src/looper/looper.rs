@@ -1,11 +1,14 @@
 
+use std::sync::Arc;
 use std::time::Duration;
 
-use ratatui::DefaultTerminal;
+use rand::Rng;
+use ratatui::{DefaultTerminal, Terminal};
 use tokio::time::sleep;
 use crate::game::entity::Entity;
+use crate::game::group::{self, Group};
 use crate::gfx::render;
-use crate::input::handle_events;
+use crate::input::{handle_events, PlayerMove};
 use crate::utils::{logger::Logger, time::Time};
 
 use super::loops::main_loop::MainLoop;
@@ -85,29 +88,70 @@ impl Looper {
 	//running section of the main loop
 	//always a work in progress
 	pub async fn run(&mut self){
+
+
 		
 		//create a list of entities to display and the player
-		let player:Entity = Entity { x: 40, y: 5, self_: '@' };
-		let foo:Entity    = Entity { x: 0, y: 0, self_: '@' };
+		
+		
+		
+		let player:Entity = Entity { x: 40, y: 5, self_: '@', id:"Player".to_owned() };
+		let foo:Entity    = Entity { 
+			x: 10,
+			y: 10, 
+			self_: 'E' ,
+			id:"Entity 1".to_owned()
+		};
 		
 
-		let mut entities_: Vec<Entity> = vec![player, foo];
-		let _frame_sizes: Vec<(&mut u16, &mut u16)> = Vec::new();
+		let mut current_world:Group = Group::new(vec![player,foo]);
 
-		let r = rand::rng();
+		let mut r = rand::rng();
 		let mut ml: MainLoop = loops::main_loop::MainLoop::new();
-		
-		
 
-		
+		pub fn change_entity(){
+			 = Entity { x: r.random_range(0..100), y: r.random_range(0..100), self_: 'e' };
+		}
 
 		//main loop here
 		loop {
 			let _ = rand::rng().reseed();
 			//return the player movement, needs to return signals instead
-			let new_state = handle_events(&mut self.terminal, &mut self.logger, &mut entities_);
+			let (new_state, player_move) = handle_events(&mut self.terminal, &mut self.logger, &mut entities_);
 			
-			self.state = new_state;
+			if new_state == GameStates::Exit {
+				
+				self.logger.log("Exited");
+					render(
+						&mut self.terminal, 
+						self.logger.clone(), 
+						&mut entities_
+					).await;	
+				std::thread::sleep(Duration::from_secs(3));
+				self.terminal.clear();
+				break;
+			}else{
+				self.state = new_state;
+			}
+
+
+			if player_move == PlayerMove::UP {
+				entities_[0].move_up();
+			}
+			if player_move == PlayerMove::DOWN {
+				entities_[0].move_down();
+			}
+			if player_move == PlayerMove::LEFT {
+				entities_[0].move_left();
+			}
+			if player_move == PlayerMove::RIGHT {
+				entities_[0].move_right();
+
+			}
+
+			
+		
+
 			self.tick += 1;
 
 			//create a special new main loop for non systems game logic only 
@@ -131,22 +175,19 @@ impl Looper {
 
 			//(entities_, self.tick) = ml.main_loop(&mut self.logger, entities_,self.tick, r.clone()).await;
 			
-			//self.logger.log(&format!("Entity ({},{})", entities_[1].x, entities_[1].y));
-			let e_y = entities_[0].x.clone();
-			let e_x = entities_[0].y.clone();
-			self.logger.log(&format!("Player ({},{})", e_x, e_y).to_string());
+			self.logger.log(&entities_[0].to_string());
+			
 
 			self.tick += 1;
 
 			// Break the loop when transitioning to the Exit state
-			if self.state == GameStates::Exit {
-				break;
-			}
+			
 		}
-		std::thread::sleep(Duration::from_secs(3));
-		self.logger.log("Exiting");
+
+
 		self.state = GameStates::Exit;
 		self.state_loop().await.await;
+	
 	}
 
 	pub async fn exit(&mut self) {
