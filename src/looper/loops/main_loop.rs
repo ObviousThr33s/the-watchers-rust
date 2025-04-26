@@ -1,6 +1,8 @@
 
 
-use crate::{game::{entity, group::Group}, input::PlayerMove, looper::{self, looper::Looper}};
+use rand::Rng;
+
+use crate::{game::{entity::{self, Entity}, group::Group}, input::PlayerMove, looper::{self, looper::Looper}};
 
 
 
@@ -12,6 +14,17 @@ impl MainLoop {
 
 
 	pub async fn main_loop(mut entity:Group, player_move:PlayerMove) -> Group{
+		let mut rng = rand::rng();
+
+		if let Some(entity) = entity.entities.get_mut("Entity"){
+			entity.update(Entity{
+				x: rng.random_range(0..50),
+				y: rng.random_range(0..30),
+				self_: 'E',
+				id: "Entity".to_owned(),
+			});
+		}
+
 		let g = Self::player_move(entity, player_move).await;
 		g
 	}

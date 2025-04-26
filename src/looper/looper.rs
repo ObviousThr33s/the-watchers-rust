@@ -1,19 +1,17 @@
 
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::time::Duration;
 
-use rand::Rng;
-use ratatui::{DefaultTerminal, Terminal};
+use rand::rngs::ThreadRng;
+use ratatui::DefaultTerminal;
 use tokio::time::sleep;
-use crate::game::entity::{self, Entity};
-use crate::game::group::{self, Group};
+use crate::game::entity::Entity;
+use crate::game::group::Group;
 use crate::gfx::render;
-use crate::input::{handle_events, PlayerMove};
+use crate::input::handle_events;
 use crate::utils::{logger::Logger, time::Time};
 
 use super::loops::main_loop::MainLoop;
-use super::loops::{self};
 
 
 //declare the main loop as a struct
@@ -97,8 +95,16 @@ impl Looper {
 		Entity {
 			x: 0,
 			y: 0,
-			self_: 'C', 
+			self_: '@', 
 			id: "Player".to_owned() 
+		});
+
+		self.entity.entities.insert("Entity".to_owned(), 
+		Entity {
+			x: 10,
+			y: 10,
+			self_: 'E', 
+			id: "Entity".to_owned() 
 		});
 
 
@@ -106,7 +112,7 @@ impl Looper {
 
 		loop {
 
-			let (new_state, player_move) = 
+			let (new_state, player_input) = 
 				handle_events(&mut self.terminal, &mut self.logger);
 			
 			if new_state == GameStates::Exit {
@@ -118,30 +124,17 @@ impl Looper {
 						Group::new()
 					).await;	
 				std::thread::sleep(Duration::from_secs(3));
-				self.terminal.clear();
+				let _ = self.terminal.clear();
 				break;
 			}else{
 				self.state = new_state;
 			}
 
-			let entity = loops::main_loop::MainLoop::main_loop(self.entity.clone(), player_move);
+			let entity = 
+				MainLoop::main_loop(self.entity.clone(), player_input);
+
 			self.entity = entity.await.clone();
 
-			self.tick += 1;
-
-			//create a special new main loop for non systems game logic only 
-			//let tick;
-			
-			self.tick += 1;
-			
-			//let mov_x = 1;
-			//let mov_y = 1;
-
-			//the current entities on screen
-			
-			
-			//render objects and entities, for now, only the logger, soon the inv, and stats, 
-			//as well as a map and maybe a compas bar.
 			render(
 				&mut self.terminal,
 				
@@ -150,11 +143,6 @@ impl Looper {
 				self.entity.clone()
 			).await;
 
-			
-
-			self.tick += 1;
-
-			// Break the loop when transitioning to the Exit state
 			
 		}
 
@@ -165,10 +153,6 @@ impl Looper {
 	}
 
 	pub async fn exit(&mut self) {
-		
-		
-		
-		//sleep(Duration::from_millis(1000)).await;
 		
 		println!("Saving log...");
 		sleep(Duration::from_secs(1)).await;
