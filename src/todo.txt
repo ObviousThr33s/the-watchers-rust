@@ -1,15 +1,6 @@
 
-add transform terrain heightmap to render target
-add simple skill and character containers
-
-add path creation to logger
-
-add tests
+fix weird memory bug where character movement is tracked wrong 
+cast a ray using the old lava lamp code(?)
 
 add simple 2.5 map from terrain
-integrate generative graphics
-integrate 
 
-
-
-integrate wgpu
