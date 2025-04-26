@@ -48,10 +48,15 @@ impl Logger {
 	}
 
 	pub fn get_log(mut self, lines: usize) -> Vec<String> {
-		let mut split_stream = self.log_stream.split_off(lines);
-		split_stream.reverse();
-		let stream: Vec<String> = split_stream.to_owned();
-		stream.clone()
+		let mut stream: Vec<String> = self.log_stream.to_owned();
+		
+		if lines >= stream.len() {
+			return vec!["Not enough log lines input...".to_string()];
+		} 
+		
+		stream.reverse();
+		let s:Vec<String> = stream.to_owned();
+		s
 	}
 
 	pub fn get_version(self) -> String {

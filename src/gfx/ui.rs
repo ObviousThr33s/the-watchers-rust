@@ -1,7 +1,7 @@
 use ratatui::{
 	layout::{Constraint, Direction, Layout}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Paragraph}, Frame
 };
-use crate::{game::entity::Entity, utils::logger::Logger};
+use crate::{game::entity::Entity, utils::logger::Logger, utils};
 
 use super::{charset::CHARSETS, mipmap::render::Render};
 
@@ -11,7 +11,6 @@ struct _UI {
 
 fn draw_center<'a>(width: u16, height: u16, entity_array:&mut Vec<Entity>) -> Paragraph<'a> {
 
-	
 	let middle_block = Block::new().title_bottom("*Live*");
 	
 	let mut lamp: Render = Render::init(width.into(), height.into(), CHARSETS::Charset0);
@@ -37,7 +36,7 @@ fn draw_stats<'a> (style:Style, border:BorderType) -> Paragraph <'a>{
 
 fn draw_invty<'a> (style:Style, border:BorderType) -> Paragraph <'a>{
 	let bot_block_left = Block::bordered()
-		.title("Mipmap")
+		.title("Inventory")
 		.title_style(style)
 		.border_type(border)
 		.borders(Borders::RIGHT);
@@ -61,10 +60,9 @@ fn draw_log <'a> (style:Style, border:BorderType, line_count:usize, log_:Logger)
 	logger_ui
 }
 
-pub(crate) fn draw_(frame: &mut Frame, mut log_:Logger, mut entities:&mut Vec<Entity>) {
-	
-	log_.log("Drawing UI...".to_string().as_str());
-	
+pub(crate) fn draw_(frame: &mut Frame, mut entities:&mut Vec<Entity>, log_:Logger) -> Vec<(u16,u16)>{
+	let mut frame_sizes: Vec<( u16, u16)> = Vec::new();
+
 	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);
 	let border:BorderType = BorderType::Double;
 
@@ -74,25 +72,25 @@ pub(crate) fn draw_(frame: &mut Frame, mut log_:Logger, mut entities:&mut Vec<En
 		.direction(
 			Direction::Vertical)
 		.constraints(vec![
-				Constraint::Percentage(10),
-				Constraint::Percentage(70),
-				Constraint::Percentage(20)
+				Constraint::Percentage(30),
+				Constraint::Percentage(30),
+				Constraint::Percentage(30)
 			]).split(frame.area());
 	
 	//top block widgets
 	
 
 	//middle block widgets
-	log_.log("drawing lamp");
-	let frame_render = draw_center(frame.area().width, frame.area().height, &mut entities);
+	let frame0 = draw_center(frame.area().width, frame.area().height, &mut entities);
 	
 	//bottom block widgets
 
 	let bottom_layout = Layout::default()
 			.direction(Direction::Horizontal)
 			.constraints(vec![
-				Constraint::Percentage(70),
-				Constraint::Percentage(30)
+				Constraint::Percentage(20),
+				Constraint::Percentage(40),
+				Constraint::Percentage(40)
 			])
 			.split(layout[2]);
 
@@ -101,7 +99,7 @@ pub(crate) fn draw_(frame: &mut Frame, mut log_:Logger, mut entities:&mut Vec<En
 	let logger_ui:Paragraph = draw_log(style, border, line_count, log_);
 	frame.render_widget(logger_ui,layout[0]);
 	//mid
-	frame.render_widget(frame_render, layout[1]);
+	//frame.render_widget(frame0, layout[1]);
 
 	//Bottom UI
 	let outter_bottom:Block = Block::bordered().border_type(border).borders(Borders::TOP);
@@ -111,10 +109,16 @@ pub(crate) fn draw_(frame: &mut Frame, mut log_:Logger, mut entities:&mut Vec<En
 	let stats:Paragraph = draw_stats(style, border);
 	let invty:Paragraph = draw_invty(style, border);
 	let inner_left = outter_bottom.inner(bottom_layout[0]);
-	let inner_right = outter_bottom.inner(bottom_layout[1]);
-	
+	let inner_cent = outter_bottom.inner(bottom_layout[1]);
+	let inner_right = outter_bottom.inner(bottom_layout[2]);
 	
 	frame.render_widget(invty, inner_left);
+	frame.render_widget(frame0, inner_cent);
 	frame.render_widget(stats, inner_right);
+
+	let (mm_size_x, mm_size_y) = (inner_cent.width, inner_cent.height);
+	frame_sizes.append(&mut vec![(mm_size_x, mm_size_y)]);
+	//frame_sizes[0] is the minimap
+	frame_sizes
 	
 }

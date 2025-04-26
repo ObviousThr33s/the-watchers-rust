@@ -89,11 +89,14 @@ impl Looper {
 		//create a list of entities to display and the player
 		let mut player:Entity = Entity { x: 10, y: 10, self_: '@' };
 		let mut entities_: Vec<Entity> = vec![player];
-		
+		let mut frame_sizes: Vec<(u16,u16)> = Vec::new();
+
+		let r = rand::rng();
+		let mut ml: MainLoop = loops::main_loop::MainLoop::new();			
 
 		//main loop here
 		loop {
-			let r = rand::rng();
+			rand::rng().reseed();
 			//return the player movement, needs to return signals instead
 			let new_state = handle_events(&mut self.terminal, &mut self.logger, &mut entities_);
 			
@@ -101,10 +104,8 @@ impl Looper {
 			self.tick += 1;
 
 			//create a special new main loop for non systems game logic only 
-			let mut ml: MainLoop = loops::main_loop::MainLoop::new();
 			//let tick;
 
-			(entities_, self.tick) = ml.main_loop(&mut self.logger, entities_, self.tick, r.clone()).await;
 			
 			self.tick += 1;
 			
@@ -116,14 +117,16 @@ impl Looper {
 			
 			//render objects and entities, for now, only the logger, soon the inv, and stats, 
 			//as well as a map and maybe a compas bar.
-			entities_ = render(
+			(entities_, frame_sizes) = render(
 				&mut self.terminal, 
-				&mut self.logger, 
+				self.logger.clone(), 
 				&mut entities_
 			).await;
 
+			(entities_, self.tick) = ml.main_loop(&mut self.logger, entities_, self.tick, r.clone()).await;
+			
+
 			self.logger.log(&format!("({},{})", entities_[0].x, entities_[0].y));
-			self.logger.log("Rendering finished");
 
 			self.tick += 1;
 
