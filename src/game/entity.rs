@@ -2,18 +2,20 @@ pub struct Entity {
 	pub x: usize,
 	pub y: usize,
 	pub self_: char,
+	pub id:String
 }
 
 impl Entity {
 	
-	pub fn new(x: usize, y: usize, self_: char) -> Self {
-		Entity { x, y, self_ }
+	pub fn new(x: usize, y: usize, self_: char, id:String) -> Self {
+		Entity { x, y, self_, id }
 	}
 
-	pub fn update(mut self, e:Entity){
+	pub fn update(&mut self, e: Entity) {
 		self.x = e.x;
 		self.y = e.y;
 		self.self_ = e.self_;
+		self.id = e.id.clone();
 	}
 
 	pub fn move_up(&mut self){
@@ -59,6 +61,16 @@ impl Clone for Entity {
 			x: self.x,
 			y: self.y,
 			self_: self.self_,
+			id:self.id.clone()
 		}
+	}
+}
+
+impl ToString for Entity {
+	fn to_string(&self) -> String {
+		let e_y = self.x.clone();
+		let e_x = self.y.clone();
+		let s:String = format!("{} ({},{})",self.id, e_x, e_y);
+		s.clone()
 	}
 }
