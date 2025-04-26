@@ -18,7 +18,7 @@ impl MainLoop {
 
 		if let Some(entity) = entity.entities.get_mut("Entity"){
 			entity.update(Entity{
-				x: rng.random_range(0..50),
+				x: rng.random_range(0..40),
 				y: rng.random_range(0..30),
 				self_: 'E',
 				id: "Entity".to_owned(),

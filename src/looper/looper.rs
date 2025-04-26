@@ -22,7 +22,7 @@ use super::loops::main_loop::MainLoop;
 pub struct Looper{
 	pub start: Time,
 	pub logger:Logger,
-	pub entity:Group,
+	pub entities:Group,
 
 	state:GameStates,
 	tick:usize,
@@ -46,7 +46,7 @@ impl Looper {
 			tick: 0, 
 			state: GameStates::Init,
 			start:start_time.clone(),
-			entity:Group { entities: HashMap::new() },
+			entities:Group { entities: HashMap::new() },
 			//Set game version here
 
 			logger: Logger::new(start_time, "0.2.2".to_string()),
@@ -91,7 +91,7 @@ impl Looper {
 	//always a work in progress
 	pub async fn run(&mut self){
 
-		self.entity.entities.insert("Player".to_owned(), 
+		self.entities.entities.insert("Player".to_owned(), 
 		Entity {
 			x: 0,
 			y: 0,
@@ -99,12 +99,20 @@ impl Looper {
 			id: "Player".to_owned() 
 		});
 
-		self.entity.entities.insert("Entity".to_owned(), 
+		self.entities.entities.insert("Entity".to_owned(), 
 		Entity {
 			x: 10,
 			y: 10,
 			self_: 'E', 
 			id: "Entity".to_owned() 
+		});
+
+		self.entities.entities.insert("Obol".to_owned(), 
+		Entity {
+			x: 15,
+			y: 15,
+			self_: 'O', 
+			id: "Obol".to_owned() 
 		});
 
 
@@ -131,16 +139,18 @@ impl Looper {
 			}
 
 			let entity = 
-				MainLoop::main_loop(self.entity.clone(), player_input);
+				MainLoop::main_loop(self.entities.clone(), player_input);
 
-			self.entity = entity.await.clone();
+			self.entities = entity.await.clone();
+
+			self.logger.log(&self.entities.get_entity("Player".to_owned()).unwrap().to_string());
 
 			render(
 				&mut self.terminal,
 				
 				self.logger.clone(),
 				
-				self.entity.clone()
+				self.entities.clone()
 			).await;
 
 			
