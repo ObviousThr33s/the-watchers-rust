@@ -6,16 +6,17 @@ use ratatui::{
 
 use crossterm::event::{self, Event, KeyCode};
 
-use crate::{game::entity::Entity, utils::logger::Logger};
+use crate::{game::entity::Entity, looper::looper::GameStates, utils::logger::Logger};
 
 
 #[allow(unused_mut)]
-pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logger:&mut Logger, mut e: &mut Entity) -> Entity {
-	
+pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logger:&mut Logger, mut e: &mut Entity) -> GameStates {
+	let mut gs:GameStates = GameStates::Run;
+
 	match event::read() {
 		Ok(Event::Key(key)) if key.kind == KeyEventKind::Press => match key.code {
 			KeyCode::Char('q') => {
-				std::process::exit(0x0);
+				gs = GameStates::Exit;
 			},
 			// handle other key events
 			KeyCode::Char('w') => {
@@ -54,5 +55,5 @@ pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logge
 		_ => ()
 	}
 
-	e.clone()
+	gs
 }

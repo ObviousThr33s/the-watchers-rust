@@ -63,14 +63,30 @@ impl Logger {
 		self.vers
 	}
 
-	#[allow(unused)]
-	pub async fn save_log(&mut self) {
-		let dir = "C:\\Users\\kfman\\Desktop\\Portfolio\\Software\\Rust\\the-watchers-rust";
+	pub fn save_log(&mut self) {
+		let dir = "./res/";
 		let file_name = "log.txt";
 
 		let mut file_path = PathBuf::from(dir);
 		file_path.push(file_name);
 
-		
+		// Ensure the directory exists
+		if let Err(e) = std::fs::create_dir_all(dir) {
+			eprintln!("Failed to create directory: {}", e);
+			return;
+		}
+
+		let mut f: File = match File::create(file_path) {
+			Ok(file) => file,
+			Err(e) => {
+				eprintln!("Failed to create file: {}", e);
+				return;
+			}
+		};
+
+		let log_data = self.log_stream.join("").into_bytes();
+		if let Err(e) = f.write_all(&log_data) {
+			eprintln!("Failed to write to file: {}", e);
+		}
 	}
 }
