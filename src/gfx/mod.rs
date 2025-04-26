@@ -1,5 +1,8 @@
 pub mod ui;
 pub mod render;
+
+pub mod charset;
+
 mod screen;
 
 use crate::{game::entity::Entity, utils::logger::Logger};
