@@ -18,7 +18,10 @@ impl Entity {
 
 	pub fn move_up(&mut self){
 		let (x, mut y) = self.get_position();
-		y -= 1;
+		if y != 0 {
+			y -= 1;
+		}
+
 		self.set_position(x, y);
 	}
 	pub fn move_down(&mut self){
@@ -28,7 +31,9 @@ impl Entity {
 	}
 	pub fn move_left(&mut self){
 		let (mut x, y) = self.get_position();
-		x -= 1;
+		if x != 0 {
+			x -= 1;
+		}
 		self.set_position(x, y);
 	}
 	pub fn move_right(&mut self){
