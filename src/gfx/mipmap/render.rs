@@ -1,4 +1,4 @@
-use crate::{game::{self}, gfx::{charset::CHARSETS, screen::Screen}};
+use crate::{game::{self, entity, group::Group}, gfx::{charset::CHARSETS, screen::Screen}};
 
 pub struct Render{
 	render: Screen,
@@ -34,15 +34,15 @@ impl Render {
 		lamp_
 	}
 	
-	pub fn rasterize(&mut self, entities:Vec<game::entity::Entity>){ //add a screen buffer here{
+	pub fn rasterize(&mut self, entity:&mut Group){ //add a screen buffer here{
 
 		self.render.screen.clear();
 
 		for i in 0..self.render.y {
 			for j in 0..self.render.x {
-				for e in entities.iter() {
-					if e.x == j && e.y == i {
-						self.render.screen.push(e.self_);
+				for e in entity.entities.iter() {
+					if e.1.x == j && e.1.y == i {
+						self.render.screen.push(e.1.self_);
 					}else {
 						self.render.screen.push(' ');
 					}

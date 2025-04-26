@@ -1,32 +1,46 @@
 
-use rand::rngs::ThreadRng;
 
-use crate::{game::entity::Entity, utils::logger::Logger};
+use crate::{game::{entity, group::Group}, input::PlayerMove, looper::{self, looper::Looper}};
+
 
 
 pub(crate) struct MainLoop {
-	tick:usize,
+	event:Box::<()>
 }
 
 impl MainLoop {
 
 
-	pub fn new() -> MainLoop {
-		MainLoop { 
-			tick: 0, 
+	pub async fn main_loop(mut entity:Group, player_move:PlayerMove) -> Group{
+		let g = Self::player_move(entity, player_move).await;
+		g
+	}
+
+	pub async fn player_move(mut entity:Group, player_move:PlayerMove) -> Group{
+		if player_move == PlayerMove::UP {
+			if let Some(entity) = entity.entities.get_mut("Player") {
+				entity.move_up();
+			}
 		}
+		if player_move == PlayerMove::DOWN {
+			if let Some(entity) = entity.entities.get_mut("Player") {
+				entity.move_down();
+			}
+		}
+		if player_move == PlayerMove::LEFT {
+			if let Some(entity) = entity.entities.get_mut("Player") {
+				entity.move_left();
+			}
+		}
+		if player_move == PlayerMove::RIGHT {
+			if let Some(entity) = entity.entities.get_mut("Player") {
+				entity.move_right();
+			}
+	
+		}
+
+		entity
+	
 	}
 
-	#[allow(unused)]
-	pub async fn main_loop(&mut self, mut logger:&mut Logger, mut entities:Vec<Entity>, tick:usize, mut r:ThreadRng) -> (Vec<Entity>, usize){
-
-		logger.log("Main loop ending...");
-
-		(entities, self.tick)
-	}
-
-	pub fn place_entity(e:&mut Entity, x:usize, y:usize){
-		e.x = x;
-		e.y = y;
-	}
 }

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use super::entity::{self, Entity};
 
 pub struct Group {
-	entities:HashMap<String,Entity>
+	pub entities:HashMap<String,Entity>
 }
 
 impl Clone for Group {
