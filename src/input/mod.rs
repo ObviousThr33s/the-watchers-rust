@@ -16,6 +16,7 @@ pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logge
 	match event::read() {
 		Ok(Event::Key(key)) if key.kind == KeyEventKind::Press => match key.code {
 			KeyCode::Char('q') => {
+				logger.log("Exiting...");
 				gs = GameStates::Exit;
 			},
 			// handle other key events

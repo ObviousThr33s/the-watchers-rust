@@ -1,7 +1,7 @@
 use ratatui::{
 	layout::{Constraint, Direction, Layout}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Paragraph}, Frame
 };
-use crate::{game::entity::Entity, utils::logger::Logger, utils};
+use crate::{game::entity::Entity, utils::logger::Logger};
 
 use super::{charset::CHARSETS, mipmap::render::Render};
 
@@ -60,7 +60,7 @@ fn draw_log <'a> (style:Style, border:BorderType, line_count:usize, log_:Logger)
 	logger_ui
 }
 
-pub(crate) fn draw_(frame: &mut Frame, mut entities:&mut Vec<Entity>, log_:Logger) -> Vec<(u16,u16)>{
+pub(crate) fn draw_(frame: &mut Frame, mut entities:&mut Vec<Entity>, log_:Logger) {
 	let mut frame_sizes: Vec<( u16, u16)> = Vec::new();
 
 	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);
@@ -115,10 +115,5 @@ pub(crate) fn draw_(frame: &mut Frame, mut entities:&mut Vec<Entity>, log_:Logge
 	frame.render_widget(invty, inner_left);
 	frame.render_widget(frame0, inner_cent);
 	frame.render_widget(stats, inner_right);
-
-	let (mm_size_x, mm_size_y) = (inner_cent.width, inner_cent.height);
-	frame_sizes.append(&mut vec![(mm_size_x, mm_size_y)]);
-	//frame_sizes[0] is the minimap
-	frame_sizes
 	
 }

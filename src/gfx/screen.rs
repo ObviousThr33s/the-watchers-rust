@@ -43,7 +43,7 @@ impl Screen{
 		screen
 	}
 	
-	pub fn get_size(&self) -> usize{
+	pub fn _get_size(&self) -> usize{
 		self.x*self.y
 	}
 }

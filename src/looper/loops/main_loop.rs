@@ -1,8 +1,7 @@
-use std::thread::Thread;
 
-use rand::{rngs::ThreadRng, Rng};
+use rand::rngs::ThreadRng;
 
-use crate::{game::entity::Entity, utils::logger::{self, Logger}};
+use crate::{game::entity::Entity, utils::logger::Logger};
 
 
 pub(crate) struct MainLoop {
@@ -21,21 +20,7 @@ impl MainLoop {
 	#[allow(unused)]
 	pub async fn main_loop(&mut self, mut logger:&mut Logger, mut entities:Vec<Entity>, tick:usize, mut r:ThreadRng) -> (Vec<Entity>, usize){
 
-		if entities.len() < 2 {
-			let mut new_entities:Vec<Entity> = vec![Entity {
-				x:r.random_range(0..10),
-				y:r.random_range(0..10),
-				self_:'E',
-			}];	
-
-			entities.append(&mut new_entities);
-			logger.
-			log("Drew entity");
-		}
-
-		Self::place_entity(&mut entities[1], r.random_range(0..10), r.random_range(0..10));
-
-		logger.log("Main Loop finished");
+		logger.log("Main loop ending...");
 
 		(entities, self.tick)
 	}
