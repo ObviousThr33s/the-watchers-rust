@@ -1,15 +1,15 @@
 use ratatui::{
 	layout::{Constraint, Direction, Layout}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Paragraph}, Frame
 };
-use crate::{game::entity::{self, Entity}, utils::logger::Logger};
+use crate::{game::entity::Entity, utils::logger::Logger};
 
-use super::{charset::CHARSETS, render::{self, Render}};
+use super::{charset::CHARSETS, mipmap::render::Render};
 
 struct _UI {
 
 }
 
-fn draw_lamp<'a>(width: u16, height: u16, entity_array:&mut Vec<Entity>) -> Paragraph<'a> {
+fn draw_center<'a>(width: u16, height: u16, entity_array:&mut Vec<Entity>) -> Paragraph<'a> {
 
 	
 	let middle_block = Block::new().title_bottom("*Live*");
@@ -37,7 +37,7 @@ fn draw_stats<'a> (style:Style, border:BorderType) -> Paragraph <'a>{
 
 fn draw_invty<'a> (style:Style, border:BorderType) -> Paragraph <'a>{
 	let bot_block_left = Block::bordered()
-		.title("Inventory")
+		.title("Mipmap")
 		.title_style(style)
 		.border_type(border)
 		.borders(Borders::RIGHT);
@@ -84,7 +84,7 @@ pub(crate) fn draw_(frame: &mut Frame, mut log_:Logger, mut entities:&mut Vec<En
 
 	//middle block widgets
 	log_.log("drawing lamp");
-	let frame_render = draw_lamp(frame.area().width, frame.area().height, &mut entities);
+	let frame_render = draw_center(frame.area().width, frame.area().height, &mut entities);
 	
 	//bottom block widgets
 

@@ -13,5 +13,4 @@ pub mod world;*/
 
 
 pub mod generators;
-pub mod terrain;
 pub mod entity;

@@ -16,12 +16,34 @@ impl Entity {
 		self.self_ = e.self_;
 	}
 
-	pub fn set_position(&mut self, new_x: usize, new_y: usize) {
+	pub fn move_up(&mut self){
+		let (x, mut y) = self.get_position();
+		y -= 1;
+		self.set_position(x, y);
+	}
+	pub fn move_down(&mut self){
+		let (x, mut y) = self.get_position();
+		y += 1;
+		self.set_position(x, y);
+	}
+	pub fn move_left(&mut self){
+		let (mut x, y) = self.get_position();
+		x -= 1;
+		self.set_position(x, y);
+	}
+	pub fn move_right(&mut self){
+		let (mut x, y) = self.get_position();
+		x += 1;
+		self.set_position(x, y);
+
+	}
+
+	fn set_position(&mut self, new_x: usize, new_y: usize) {
 		self.x = new_x;
 		self.y = new_y;
 	}
 	
-	pub fn get_position(&self) -> (usize, usize) {
+	fn get_position(&self) -> (usize, usize) {
 		(self.x, self.y)
 	}
 }
