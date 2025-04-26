@@ -3,7 +3,7 @@ use ratatui::{
 };
 use crate::{game::entity::{self, Entity}, utils::logger::Logger};
 
-use super::render::{self, Render};
+use super::{charset::CHARSETS, render::{self, Render}};
 
 struct _UI {
 
@@ -14,7 +14,7 @@ fn draw_lamp<'a>(width: u16, height: u16, entity_array:&mut Vec<Entity>) -> Para
 	
 	let middle_block = Block::new().title_bottom("*Live*");
 	
-	let mut lamp: Render = Render::init(width.into(), height.into(), render::CHARSETS::Charset1);
+	let mut lamp: Render = Render::init(width.into(), height.into(), CHARSETS::Charset0);
 	
 	lamp.rasterize(entity_array.to_vec());
 	
