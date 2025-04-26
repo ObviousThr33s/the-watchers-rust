@@ -1,7 +1,7 @@
 use ratatui::{
 	layout::{Constraint, Direction, Layout}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Paragraph}, Frame
 };
-use crate::{game::entity::Entity, utils::logger::Logger};
+use crate::{game::{entity::Entity, group::Group}, utils::logger::Logger};
 
 use super::{charset::CHARSETS, mipmap::render::Render};
 
@@ -9,13 +9,13 @@ struct _UI {
 
 }
 
-fn draw_center<'a>(width: u16, height: u16, entity_array:&mut Vec<Entity>) -> Paragraph<'a> {
+fn draw_center<'a>(width: u16, height: u16, entity:&mut Group) -> Paragraph<'a> {
 
 	let middle_block = Block::new().title_bottom("*Live*");
 	
 	let mut lamp: Render = Render::init(width.into(), height.into(), CHARSETS::Charset0);
 	
-	lamp.rasterize(entity_array.to_vec());
+	lamp.rasterize(entity);
 	
 	let frame_ui: Paragraph = Paragraph::new(Text::from(lamp.to_string())).block(middle_block);
 
@@ -60,7 +60,7 @@ fn draw_log <'a> (style:Style, border:BorderType, line_count:usize, log_:Logger)
 	logger_ui
 }
 
-pub(crate) fn draw_(frame: &mut Frame, mut entities:&mut Vec<Entity>, log_:Logger) {
+pub(crate) fn draw_(frame: &mut Frame, mut entities:Group, log_:Logger) {
 	let mut frame_sizes: Vec<( u16, u16)> = Vec::new();
 
 	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);

@@ -1,11 +1,12 @@
 
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
 use rand::Rng;
 use ratatui::{DefaultTerminal, Terminal};
 use tokio::time::sleep;
-use crate::game::entity::Entity;
+use crate::game::entity::{self, Entity};
 use crate::game::group::{self, Group};
 use crate::gfx::render;
 use crate::input::{handle_events, PlayerMove};
@@ -23,6 +24,7 @@ use super::loops::{self};
 pub struct Looper{
 	pub start: Time,
 	pub logger:Logger,
+	pub entity:Group,
 
 	state:GameStates,
 	tick:usize,
@@ -46,7 +48,7 @@ impl Looper {
 			tick: 0, 
 			state: GameStates::Init,
 			start:start_time.clone(),
-			
+			entity:Group { entities: HashMap::new() },
 			//Set game version here
 
 			logger: Logger::new(start_time, "0.2.2".to_string()),
@@ -85,39 +87,27 @@ impl Looper {
 		self.state_loop().await.await;
 	}
 
+	
+
 	//running section of the main loop
 	//always a work in progress
 	pub async fn run(&mut self){
 
+		self.entity.entities.insert("Player".to_owned(), 
+		Entity {
+			x: 0,
+			y: 0,
+			self_: 'C', 
+			id: "Player".to_owned() 
+		});
+
 
 		
-		//create a list of entities to display and the player
-		
-		
-		
-		let player:Entity = Entity { x: 40, y: 5, self_: '@', id:"Player".to_owned() };
-		let foo:Entity    = Entity { 
-			x: 10,
-			y: 10, 
-			self_: 'E' ,
-			id:"Entity 1".to_owned()
-		};
-		
 
-		let mut current_world:Group = Group::new(vec![player,foo]);
-
-		let mut r = rand::rng();
-		let mut ml: MainLoop = loops::main_loop::MainLoop::new();
-
-		pub fn change_entity(){
-			 = Entity { x: r.random_range(0..100), y: r.random_range(0..100), self_: 'e' };
-		}
-
-		//main loop here
 		loop {
-			let _ = rand::rng().reseed();
-			//return the player movement, needs to return signals instead
-			let (new_state, player_move) = handle_events(&mut self.terminal, &mut self.logger, &mut entities_);
+
+			let (new_state, player_move) = 
+				handle_events(&mut self.terminal, &mut self.logger);
 			
 			if new_state == GameStates::Exit {
 				
@@ -125,7 +115,7 @@ impl Looper {
 					render(
 						&mut self.terminal, 
 						self.logger.clone(), 
-						&mut entities_
+						Group::new()
 					).await;	
 				std::thread::sleep(Duration::from_secs(3));
 				self.terminal.clear();
@@ -134,23 +124,8 @@ impl Looper {
 				self.state = new_state;
 			}
 
-
-			if player_move == PlayerMove::UP {
-				entities_[0].move_up();
-			}
-			if player_move == PlayerMove::DOWN {
-				entities_[0].move_down();
-			}
-			if player_move == PlayerMove::LEFT {
-				entities_[0].move_left();
-			}
-			if player_move == PlayerMove::RIGHT {
-				entities_[0].move_right();
-
-			}
-
-			
-		
+			let entity = loops::main_loop::MainLoop::main_loop(self.entity.clone(), player_move);
+			self.entity = entity.await.clone();
 
 			self.tick += 1;
 
@@ -167,15 +142,14 @@ impl Looper {
 			
 			//render objects and entities, for now, only the logger, soon the inv, and stats, 
 			//as well as a map and maybe a compas bar.
-			(entities_) = render(
-				&mut self.terminal, 
-				self.logger.clone(), 
-				&mut entities_
+			render(
+				&mut self.terminal,
+				
+				self.logger.clone(),
+				
+				self.entity.clone()
 			).await;
 
-			//(entities_, self.tick) = ml.main_loop(&mut self.logger, entities_,self.tick, r.clone()).await;
-			
-			self.logger.log(&entities_[0].to_string());
 			
 
 			self.tick += 1;
