@@ -2,7 +2,6 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use rand::rngs::ThreadRng;
 use ratatui::DefaultTerminal;
 use tokio::time::sleep;
 use crate::game::entity::Entity;
@@ -11,7 +10,7 @@ use crate::gfx::render;
 use crate::input::handle_events;
 use crate::utils::{logger::Logger, time::Time};
 
-use super::loops::main_loop::MainLoop;
+use super::player_loop::PlayerLoop;
 
 
 //declare the main loop as a struct
@@ -19,14 +18,12 @@ use super::loops::main_loop::MainLoop;
 //given a game state to track which fn to run
 //each function activates the state loop
 //terminal and debug output string
-pub struct Looper{
+pub struct MainLoop{
 	pub start: Time,
 	pub logger:Logger,
 	pub entities:Group,
 
 	state:GameStates,
-	tick:usize,
-	
 	terminal:DefaultTerminal,
 	_output:String
 }
@@ -35,21 +32,21 @@ pub struct Looper{
 pub enum GameStates{
 	Init = 0,
 	Run  = 1,
-	Exit = 2
+	Render = 2,
+	Exit = 3,
 }
 
-impl Looper {
-	pub fn new(start_time:Time, terminal:DefaultTerminal) -> Looper {
+impl MainLoop {
+	pub fn new(start_time:Time, terminal:DefaultTerminal) -> MainLoop {
 		
 
-		Looper { 
-			tick: 0, 
+		MainLoop { 
 			state: GameStates::Init,
 			start:start_time.clone(),
-			entities:Group { entities: HashMap::new() },
+			entities: Group { entities: HashMap::new() },
 			//Set game version here
 
-			logger: Logger::new(start_time, "0.2.2".to_string()),
+			logger: Logger::new(start_time, "0.2.5".to_string()),
 			_output:String::new(),
 			terminal:terminal,
 		}
@@ -62,10 +59,11 @@ impl Looper {
 	pub async fn state_loop(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + '_>> {
 		
 		Box::pin(async move {
-			//sleep(Duration::from_secs(1)).await;
+			sleep(Duration::from_millis(1)).await;
 			match self.state {
-				GameStates::Exit   => self.exit().await,
+				GameStates::Exit   => self.exit(),
 				GameStates::Run    => self.run().await,
+				GameStates::Render => self.render().await,
 				GameStates::Init   => self.init().await,
 			}
 		})
@@ -73,23 +71,9 @@ impl Looper {
 		
 	}
 
-	pub async fn init(&mut self) {
+	pub async  fn init(&mut self) {
 		
 		self.logger.log("Initializing...");
-		
-		self.tick += 1;
-
-		self.logger.log("Initializing done");
-		self.state = GameStates::Run;
-
-		self.state_loop().await.await;
-	}
-
-	
-
-	//running section of the main loop
-	//always a work in progress
-	pub async fn run(&mut self){
 
 		self.entities.entities.insert("Player".to_owned(), 
 		Entity {
@@ -109,64 +93,64 @@ impl Looper {
 
 		self.entities.entities.insert("Obol".to_owned(), 
 		Entity {
-			x: 15,
-			y: 15,
+			x: 0,
+			y: 0,
 			self_: 'O', 
 			id: "Obol".to_owned() 
 		});
 
 
-		
 
+		self.logger.log("Initializing done");
+		self.state = GameStates::Run;
+
+		self.state_loop().await.await;
+	}
+
+	
+
+	//running section of the main loop
+	//always a work in progress
+	pub async fn run(&mut self){
+
+		
 		loop {
 
 			let (new_state, player_input) = 
-				handle_events(&mut self.terminal, &mut self.logger);
+				handle_events(&mut self.terminal, &mut self.logger).await;
 			
-			if new_state == GameStates::Exit {
-				
-				self.logger.log("Exited");
-					render(
-						&mut self.terminal, 
-						self.logger.clone(), 
-						Group::new()
-					).await;	
-				std::thread::sleep(Duration::from_secs(3));
-				let _ = self.terminal.clear();
+			if new_state == GameStates::Exit {	
+				self.exit();
 				break;
-			}else{
-				self.state = new_state;
 			}
 
-			let entity = 
-				MainLoop::main_loop(self.entities.clone(), player_input);
-
-			self.entities = entity.await.clone();
-
-			self.logger.log(&self.entities.get_entity("Player".to_owned()).unwrap().to_string());
-
-			render(
-				&mut self.terminal,
-				
-				self.logger.clone(),
-				
-				self.entities.clone()
-			).await;
-
-			
+			PlayerLoop::player_move(
+				&mut self.entities,
+				player_input, 
+				&mut self.logger,
+			);
+			self.state = GameStates::Render;
+			self.state_loop().await.await;	
 		}
 
 
-		self.state = GameStates::Exit;
-		self.state_loop().await.await;
-	
+
 	}
 
-	pub async fn exit(&mut self) {
+	pub async fn render(&mut self){
+
+		render(&mut self.terminal, 
+			self.logger.clone(), 
+			self.entities.clone());
+
+		self.state = GameStates::Run;
+		self.state_loop().await.await;
+	}
+
+	pub fn exit(&mut self) {
 		
 		println!("Saving log...");
-		sleep(Duration::from_secs(1)).await;
-
+		
 		tokio::task::block_in_place(|| {
 			self.logger.save_log();
 		});

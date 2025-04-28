@@ -1,7 +1,7 @@
 use ratatui::{
 	layout::{Constraint, Direction, Layout}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Paragraph}, Frame
 };
-use crate::{game::{entity::Entity, group::Group}, utils::logger::Logger};
+use crate::{game::group::Group, utils::logger::Logger};
 
 use super::{charset::CHARSETS, mipmap::render::Render};
 
@@ -45,7 +45,7 @@ fn draw_invty<'a> (style:Style, border:BorderType) -> Paragraph <'a>{
 	invty
 }
 
-fn draw_log <'a> (style:Style, border:BorderType, line_count:usize, log_:Logger) -> Paragraph <'a>{
+fn draw_log <'a> (style:Style, border:BorderType, log_:Logger) -> Paragraph <'a>{
 	let top_block = Block::bordered()
 		.title(format!("The Watchers v{}", log_.clone().get_version()))
 		.title_style(style)
@@ -53,7 +53,7 @@ fn draw_log <'a> (style:Style, border:BorderType, line_count:usize, log_:Logger)
 		.borders(Borders::ALL);
 	
 	let logger_ui:Paragraph = Paragraph::new(
-		Text::from(log_.get_log(line_count)
+		Text::from(log_.get_log()
 						.concat()))
 		.block(top_block);
 
@@ -61,12 +61,11 @@ fn draw_log <'a> (style:Style, border:BorderType, line_count:usize, log_:Logger)
 }
 
 pub(crate) fn draw_(frame: &mut Frame, mut entities:Group, log_:Logger) {
-	let mut frame_sizes: Vec<( u16, u16)> = Vec::new();
+	let mut _frame_sizes: Vec<( u16, u16)> = Vec::new();
 
 	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);
 	let border:BorderType = BorderType::Double;
 
-	let line_count:usize = 3; 
 
 	let layout = Layout::default()
 		.direction(
@@ -96,7 +95,7 @@ pub(crate) fn draw_(frame: &mut Frame, mut entities:Group, log_:Logger) {
 
 	//frame render calls 
 	//top
-	let logger_ui:Paragraph = draw_log(style, border, line_count, log_);
+	let logger_ui:Paragraph = draw_log(style, border, log_);
 	frame.render_widget(logger_ui,layout[0]);
 	//mid
 	//frame.render_widget(frame0, layout[1]);

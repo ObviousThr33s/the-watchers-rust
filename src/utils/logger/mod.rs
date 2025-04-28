@@ -41,22 +41,20 @@ impl Logger {
 
 	pub fn log(&mut self, message: &str) {
 		let s0: String = self.start_time.to_string();
+		self.log_stream.push(format!("[{}]<{}> {}\n", s0, self.tick, message));
+		
 		self.tick += 1;
-
-		let s1: String = format!("[{}]<{}> {}\n", s0, self.tick, message);
-		self.log_stream.push(s1);
 	}
 
-	pub fn get_log(self, lines: usize) -> Vec<String> {
-		let mut stream: Vec<String> = self.log_stream.to_owned();
+	pub fn get_log(self) -> Vec<String> {
+		let mut log_:Vec<String> = Vec::new();
 		
-		if lines >= stream.len() {
-			return vec!["Not enough log lines input...".to_string()];
-		} 
-		
-		stream.reverse();
-		let s:Vec<String> = stream.to_owned();
-		s
+		for i in self.log_stream{
+			log_.push(i.clone());
+		}
+		log_.reverse();
+
+		log_
 	}
 
 	pub fn get_version(self) -> String {

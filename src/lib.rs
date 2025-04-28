@@ -1,7 +1,7 @@
 #![windows_subsystem = "windows"]
 
 pub mod utils;
-pub mod looper;
+pub mod loops;
 pub mod game;
 pub mod gfx;
 pub mod input;

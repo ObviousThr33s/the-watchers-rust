@@ -15,3 +15,4 @@ pub mod world;*/
 pub mod generators;
 pub mod entity;
 pub mod group;
+pub mod player;
