@@ -6,7 +6,7 @@ use ratatui::{
 
 use crossterm::event::{self, Event, KeyCode};
 
-use crate::{game::entity::Entity, looper::looper::GameStates, utils::logger::Logger};
+use crate::{loops::main_loop::GameStates, utils::logger::Logger};
 
 
 #[derive(PartialEq)]
@@ -19,7 +19,7 @@ pub enum PlayerMove {
 }
 
 #[allow(unused_mut)]
-pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logger:&mut Logger) -> (GameStates, PlayerMove) {
+pub async fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logger:&mut Logger) -> (GameStates, PlayerMove) {
 	let mut gs:GameStates = GameStates::Run;
 	let mut mv:PlayerMove = PlayerMove::NONE;
 

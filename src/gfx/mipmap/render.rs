@@ -1,4 +1,4 @@
-use crate::{game::{self, entity, group::Group}, gfx::{charset::CHARSETS, screen::Screen}};
+use crate::{game::group::Group, gfx::{charset::CHARSETS, screen::Screen}};
 
 pub struct Render{
 	render: Screen,

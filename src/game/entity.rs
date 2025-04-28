@@ -60,7 +60,7 @@ impl Clone for Entity {
 		Entity {
 			x: self.x,
 			y: self.y,
-			self_: self.self_,
+			self_: self.self_.clone(),
 			id:self.id.clone()
 		}
 	}
@@ -70,7 +70,9 @@ impl ToString for Entity {
 	fn to_string(&self) -> String {
 		let e_y = self.x.clone();
 		let e_x = self.y.clone();
-		let s:String = format!("{} ({},{})",self.id, e_x, e_y);
-		s.clone()
+		let e_id = self.id.clone();
+		let s:String = format!("{} ({},{})",e_id, e_x, e_y).clone();
+		let s_ = s.clone();
+		s_
 	}
 }

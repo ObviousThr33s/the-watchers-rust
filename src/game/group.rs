@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::entity::{self, Entity};
+use super::entity::Entity;
 
 pub struct Group {
 	pub entities:HashMap<String,Entity>
