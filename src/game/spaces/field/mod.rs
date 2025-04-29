@@ -1,6 +1,5 @@
 
 use crate::game::{entity::{Entity, Priority}, group::Group};
-use crate::game::entity::floor::Floor;
 
 pub struct Field{
 	pub entities:Group
