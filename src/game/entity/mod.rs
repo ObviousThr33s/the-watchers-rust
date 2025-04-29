@@ -1,14 +1,27 @@
+pub mod player;
+pub mod floor;
+
 pub struct Entity {
 	pub x: usize,
 	pub y: usize,
+
+	pub priority:Priority,
+
 	pub self_: char,
 	pub id:String
 }
 
+#[derive(PartialEq, PartialOrd, Clone)]
+pub enum Priority {
+	LOW = 0,
+	MED = 1,
+	HIG = 2,
+}
+
 impl Entity {
 	
-	pub fn new(x: usize, y: usize, self_: char, id:String) -> Self {
-		Entity { x, y, self_, id }
+	pub fn new(x: usize, y: usize, self_: char, id:String, priority:Priority) -> Self {
+		Entity { x, y, self_, id, priority}
 	}
 
 	pub fn update(&mut self, e: Entity) {
@@ -50,7 +63,7 @@ impl Entity {
 		self.y = new_y;
 	}
 	
-	fn get_position(&self) -> (usize, usize) {
+	pub fn get_position(&self) -> (usize, usize) {
 		(self.x, self.y)
 	}
 }
@@ -58,9 +71,10 @@ impl Entity {
 impl Clone for Entity {
 	fn clone(&self) -> Self {
 		Entity {
-			x: self.x,
-			y: self.y,
+			x: self.x.clone(),
+			y: self.y.clone(),
 			self_: self.self_.clone(),
+			priority: self.priority.clone(),
 			id:self.id.clone()
 		}
 	}

@@ -11,8 +11,7 @@ pub mod levels;
 pub mod entities;
 pub mod world;*/
 
-
-pub mod generators;
 pub mod entity;
+pub mod spaces;
+
 pub mod group;
-pub mod player;

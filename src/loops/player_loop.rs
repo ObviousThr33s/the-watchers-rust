@@ -6,6 +6,10 @@ pub struct PlayerLoop{
 
 impl PlayerLoop {
 
+	pub fn is_colliding(entity:&mut Group){
+		
+	}
+
 	pub fn player_move(entity:&mut Group, player_move:PlayerMove, logger:&mut Logger) -> Option<Group>{
 		if let Some(entity) = entity.entities.get_mut("Player"){
 			if player_move == PlayerMove::UP {

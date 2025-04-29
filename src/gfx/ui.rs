@@ -9,7 +9,7 @@ struct _UI {
 
 }
 
-fn draw_center<'a>(width: u16, height: u16, entity:&mut Group) -> Paragraph<'a> {
+fn draw_center<'a>(width: u16, height: u16, entity: Group) -> Paragraph<'a> {
 
 	let middle_block = Block::new().title_bottom("*Live*");
 	
@@ -80,7 +80,7 @@ pub(crate) fn draw_(frame: &mut Frame, mut entities:Group, log_:Logger) {
 	
 
 	//middle block widgets
-	let frame0 = draw_center(frame.area().width, frame.area().height, &mut entities);
+	let frame0 = draw_center(frame.area().width, frame.area().height, entities);
 	
 	//bottom block widgets
 
