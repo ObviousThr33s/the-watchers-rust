@@ -1,6 +1,6 @@
 use crate::input::PlayerMove;
 
-use super::entity::Entity;
+use super::Entity;
 
 pub struct Player {
 	pub player:Entity

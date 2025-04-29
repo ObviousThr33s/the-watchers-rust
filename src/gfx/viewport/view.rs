@@ -4,16 +4,12 @@ struct View {
 
 
 impl View {
-	fn get_map_at(x:u32, y:u32) {
+	fn get_as_glyphs() -> Vec<char>{
+		let glyph_picture:Vec<char> = Vec::new();
 
-		let map:Vec<String> = vec![
-			"XXXXXXXXXXXXXXX",
-			"X             X",
-			"X    X    X   X",
-			"X             X",
-			"XXXXXXXXXXXXXXX",
-		];
-
-
+		for i in self.view_vector {
+			
+		}
 	}
+
 }

@@ -1,11 +1,11 @@
 
-use std::collections::HashMap;
 use std::time::Duration;
 
 use ratatui::DefaultTerminal;
 use tokio::time::sleep;
-use crate::game::entity::Entity;
-use crate::game::group::Group;
+use crate::game::entity::floor::Floor;
+use crate::game::spaces::field::Field;
+use crate::game::spaces::room::Room;
 use crate::gfx::render;
 use crate::input::handle_events;
 use crate::utils::{logger::Logger, time::Time};
@@ -21,7 +21,7 @@ use super::player_loop::PlayerLoop;
 pub struct MainLoop{
 	pub start: Time,
 	pub logger:Logger,
-	pub entities:Group,
+	pub field:Field,
 
 	state:GameStates,
 	terminal:DefaultTerminal,
@@ -43,7 +43,7 @@ impl MainLoop {
 		MainLoop { 
 			state: GameStates::Init,
 			start:start_time.clone(),
-			entities: Group { entities: HashMap::new() },
+			field: Field::new(),
 			//Set game version here
 
 			logger: Logger::new(start_time, "0.2.5".to_string()),
@@ -75,39 +75,23 @@ impl MainLoop {
 		
 		self.logger.log("Initializing...");
 
-		self.entities.entities.insert("Player".to_owned(), 
-		Entity {
-			x: 0,
-			y: 0,
-			self_: '@', 
-			id: "Player".to_owned() 
-		});
+		let field_ = Field::gen_entities(self.field.clone().entities);
 
-		self.entities.entities.insert("Entity".to_owned(), 
-		Entity {
-			x: 10,
-			y: 10,
-			self_: 'E', 
-			id: "Entity".to_owned() 
-		});
+		self.field.entities = field_.clone();
+		
+		let floor = Room::gen_floor(5, 5, 20, 20, "FLOOR".to_owned());
+		for i in floor{
+			self.field.entities.entities.insert(i.id.clone(), i);
+		}
 
-		self.entities.entities.insert("Obol".to_owned(), 
-		Entity {
-			x: 0,
-			y: 0,
-			self_: 'O', 
-			id: "Obol".to_owned() 
-		});
-
-
-
+		self.logger.log("Entities Generated:");
+		self.logger.log(&self.field.to_string());
 		self.logger.log("Initializing done");
 		self.state = GameStates::Run;
 
 		self.state_loop().await.await;
 	}
 
-	
 
 	//running section of the main loop
 	//always a work in progress
@@ -125,7 +109,7 @@ impl MainLoop {
 			}
 
 			PlayerLoop::player_move(
-				&mut self.entities,
+				&mut self.field.entities,
 				player_input, 
 				&mut self.logger,
 			);
@@ -141,7 +125,7 @@ impl MainLoop {
 
 		render(&mut self.terminal, 
 			self.logger.clone(), 
-			self.entities.clone());
+			self.field.entities.clone());
 
 		self.state = GameStates::Run;
 		self.state_loop().await.await;

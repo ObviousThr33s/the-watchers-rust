@@ -1,4 +1,4 @@
-use crate::{game::group::Group, gfx::{charset::CHARSETS, screen::Screen}};
+use crate::{game::{entity::{Entity, Priority}, group::Group}, gfx::{charset::CHARSETS, screen::Screen}};
 
 pub struct Render{
 	render: Screen,
@@ -34,21 +34,72 @@ impl Render {
 		lamp_
 	}
 	
-	pub fn rasterize(&mut self, entity:&mut Group){ //add a screen buffer here{
+	pub fn rasterize(&mut self, entity:Group){ //add a screen buffer here{
 
 		self.render.screen.clear();
 
+		let entities1 = entity.entities.clone();
+		let entities2 = entity.entities.clone();
+		let mut raster:Vec<Entity> = Vec::new();
+
+		let mut x:Vec<usize> = Vec::new();
+		let mut y:Vec<usize> = Vec::new();
+		let mut p:Vec<Priority> = Vec::new();
+		let mut id:Vec<String> = Vec::new();
+
+		for e in entities1.iter(){
+			let (x_, y_, p_) = (e.1.x.clone(), e.1.y.clone(), e.1.priority.clone());
+			x.push(x_);
+			y.push(y_);
+			p.push(p_);
+			id.push(e.0.clone());
+		}
+
+		//if any element in has the same x,y as another, only put the element with
+		//the highest priority on the board
+		for (_i, e) in entities2.iter() {
+			let (x_, y_, p_) = (e.x, e.y, e.priority.clone());
+			let mut should_add = true;
+
+			for existing in raster.iter_mut() {
+				if existing.x == x_ && existing.y == y_ {
+					if p_ > existing.priority {
+						if let Some(existing) = raster.iter_mut()
+																		.find(
+																			|existing| 
+																			existing.x == x_ && existing.y == y_) 
+						{
+							*existing = e.clone();
+						}
+					}
+					should_add = false;
+					break;
+				}
+			}
+
+			if should_add {
+				raster.push(e.clone());
+			}
+		}
+
+		let mut flag = false;
+
 		for i in 0..self.render.y {
 			for j in 0..self.render.x {
-				for e in entity.entities.iter() {
-					if e.1.x == j && e.1.y == i {
-						self.render.screen.push(e.1.self_);
-					}else {
-						self.render.screen.push(' ');
+				for e in &raster{
+					if j == e.x && i == e.y {
+						self.render.screen.push(e.self_);
+						flag = true;
+						break;
 					}
+				}
+				if flag == true{
+					flag = false;
+				}else{
+					self.render.screen.push(' ');
 				}
 			}
 			self.render.screen.push('\n');
 		}
-	}	
+}
 }
