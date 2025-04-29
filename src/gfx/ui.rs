@@ -1,12 +1,17 @@
 use ratatui::{
-	layout::{Constraint, Direction, Layout}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Paragraph}, Frame
+	layout::{Constraint, Direction, Layout}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Paragraph}, Frame,
 };
 use crate::{game::group::Group, utils::logger::Logger};
 
-use super::{charset::CHARSETS, mipmap::render::Render};
+use super::{charset::CHARSETS, mipmap::render::Render, portal::Portal};
 
 struct _UI {
 
+}
+
+fn draw_portal<'a>(port:Portal) -> Paragraph <'a>{
+	let p:Paragraph = Paragraph::new(Text::from(port.screen.to_string_break()));
+	p
 }
 
 fn draw_center<'a>(width: u16, height: u16, entity: Group) -> Paragraph<'a> {
@@ -60,7 +65,7 @@ fn draw_log <'a> (style:Style, border:BorderType, log_:Logger) -> Paragraph <'a>
 	logger_ui
 }
 
-pub(crate) fn draw_(frame: &mut Frame, mut entities:Group, log_:Logger) {
+pub(crate) fn draw_(frame: &mut Frame, port:Portal, entities:Group, log_:Logger) {
 	let mut _frame_sizes: Vec<( u16, u16)> = Vec::new();
 
 	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);
@@ -82,6 +87,8 @@ pub(crate) fn draw_(frame: &mut Frame, mut entities:Group, log_:Logger) {
 	//middle block widgets
 	let frame0 = draw_center(frame.area().width, frame.area().height, entities);
 	
+
+	let frame1:Paragraph = draw_portal(port);
 	//bottom block widgets
 
 	let bottom_layout = Layout::default()
@@ -98,7 +105,7 @@ pub(crate) fn draw_(frame: &mut Frame, mut entities:Group, log_:Logger) {
 	let logger_ui:Paragraph = draw_log(style, border, log_);
 	frame.render_widget(logger_ui,layout[0]);
 	//mid
-	//frame.render_widget(frame0, layout[1]);
+	frame.render_widget(frame1, layout[1]);
 
 	//Bottom UI
 	let outter_bottom:Block = Block::bordered().border_type(border).borders(Borders::TOP);

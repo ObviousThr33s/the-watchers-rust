@@ -1,8 +1,8 @@
-use crate::game::{entity::{floor::Floor, Entity}, group::Group};
+use crate::game::entity::{floor::Floor, Entity};
 pub struct Room {
 	width: usize,
 	height: usize,
-	entities: Vec<Entity>,
+	_entities: Vec<Entity>,
 }
 
 impl Room {

@@ -29,6 +29,7 @@ impl ToString for Screen{
 
 		s
 	}
+
 }
 
 impl Screen{
@@ -43,6 +44,20 @@ impl Screen{
 		screen
 	}
 	
+	pub fn to_string_break(&self) -> String {
+		let mut s:String = String::new();
+		let mut j = 0;
+
+		for c in self.screen.clone() {
+			s.push(c);
+			j += 1;
+			if j == self.x {
+				s.push('\n');
+				j = 0;
+			}
+		}
+		s
+	}
 	pub fn _get_size(&self) -> usize{
 		self.x*self.y
 	}

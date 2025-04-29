@@ -1,11 +1,10 @@
 
-use std::time::Duration;
 
 use ratatui::DefaultTerminal;
-use tokio::time::sleep;
-use crate::game::entity::floor::Floor;
+//use tokio::time::sleep;
 use crate::game::spaces::field::Field;
 use crate::game::spaces::room::Room;
+use crate::gfx::portal::Portal;
 use crate::gfx::render;
 use crate::input::handle_events;
 use crate::utils::{logger::Logger, time::Time};
@@ -22,6 +21,7 @@ pub struct MainLoop{
 	pub start: Time,
 	pub logger:Logger,
 	pub field:Field,
+	pub portal:Portal,
 
 	state:GameStates,
 	terminal:DefaultTerminal,
@@ -44,6 +44,7 @@ impl MainLoop {
 			state: GameStates::Init,
 			start:start_time.clone(),
 			field: Field::new(),
+			portal:Portal::new(),
 			//Set game version here
 
 			logger: Logger::new(start_time, "0.2.5".to_string()),
@@ -59,7 +60,7 @@ impl MainLoop {
 	pub async fn state_loop(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + '_>> {
 		
 		Box::pin(async move {
-			sleep(Duration::from_millis(1)).await;
+			//sleep(Duration::from_millis(1)).await;
 			match self.state {
 				GameStates::Exit   => self.exit(),
 				GameStates::Run    => self.run().await,
@@ -78,7 +79,7 @@ impl MainLoop {
 		let field_ = Field::gen_entities(self.field.clone().entities);
 
 		self.field.entities = field_.clone();
-		
+		self.portal.init();
 		let floor = Room::gen_floor(5, 5, 20, 20, "FLOOR".to_owned());
 		for i in floor{
 			self.field.entities.entities.insert(i.id.clone(), i);
@@ -123,9 +124,11 @@ impl MainLoop {
 
 	pub async fn render(&mut self){
 
+
 		render(&mut self.terminal, 
 			self.logger.clone(), 
-			self.field.entities.clone());
+			self.field.entities.clone(),
+			self.portal.clone());
 
 		self.state = GameStates::Run;
 		self.state_loop().await.await;
