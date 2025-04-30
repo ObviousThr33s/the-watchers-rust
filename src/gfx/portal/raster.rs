@@ -1,19 +1,24 @@
 use super::pixel::Pixel;
 
+#[warn(dead_code)]
 pub struct Raster {
-	pub raster:Vec<Pixel>
-}
-
-impl Clone for Raster {
-	fn clone(&self) -> Self {
-		Self { raster: self.raster.clone() }
-	}
+	pub chars:Vec<char>,
+	queue:Vec<Pixel>
 }
 
 impl Raster {
-	pub fn new() -> Self {
+	pub fn new() -> Self{
 		Self{
-			raster:Vec::new()
+			chars: Vec::new(),
+			queue: Vec::new()
 		}
+	}
+	
+	pub fn place(){
+
+	}
+
+	pub fn update(){
+
 	}
 }

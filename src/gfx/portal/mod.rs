@@ -1,45 +1,51 @@
 
+use std::{char, ops::Index};
+use noise::NoiseFn;
 
-use view::View;
+use chrono::offset;
+use raster::Raster;
 
-use super::{charset::CHARSETS, screen::Screen};
+use super::{charset, screen::{self, Screen}};
 
-pub mod pixel;
 pub mod raster;
-pub mod view;
+pub mod pixel;
 
-pub struct Portal{
-	char_set:CHARSETS,
-	pub screen:Screen
-}
-
-impl Clone for Portal {
-	fn clone(&self) -> Self {
-		Self { char_set: self.char_set.clone(), screen: self.screen.clone() }
-	}
+pub struct Portal {
+	pub screen:Screen,
+	pub raster:Raster
 }
 
 impl Portal {
 
 	pub fn new() -> Self {
-		Self { char_set: CHARSETS::Charset0, screen: Screen::new(640, 480) }
+		Self { screen: Screen::new(0, 0), raster: Raster::new() }
 	}
 
-	pub fn init(&mut self) {
-		let mut v:View = View::new();
-		v.init();
+	pub fn fill_raster(&mut self, width:u16, height:u16, tick:usize){
+		self.raster.chars.clear();
 
-		self.screen.screen.clear();
-		for i in v.get_as_glyphs(){
-			self.screen.screen.push(i);
+		let a:Vec<char> = charset::get_charset_vec(charset::CHARSETS::Charset0);
+		
+		self.raster.chars.clear();
+
+		for i in 0..height*width {
+			self.raster.chars.push(a[tick]);
 		}
 	}
 
-	pub fn get_char_from_angle(angle:u8) -> char {
-		let char_set:Vec<char> = vec!['.',',','-','=','░','▒','▓'];
-		
-		let c = char_set[angle as usize];
+	pub fn make_screen(&mut self, width:u16, height:u16){
+		self.screen.screen.clear();
+	
+		let mut k = 0;
 
-		c
+		for i in 0..height {
+			for j in 0..width {
+				self.screen.screen.push(self.raster.chars[k]);
+				k += 1;
+			}
+			if k%8 == 0 {
+				self.screen.screen.push('\n');
+			}
+		}
 	}
 }

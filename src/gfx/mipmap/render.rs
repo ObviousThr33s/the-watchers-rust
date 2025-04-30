@@ -34,21 +34,28 @@ impl Render {
 		lamp_
 	}
 	
-	pub fn rasterize(&mut self, entity:Group){ //add a screen buffer here{
+	pub fn rasterize(&mut self, entity:Group){
 
+		//first clear screen buffer
 		self.render.screen.clear();
 
+		//get two clones of the entities
 		let entities1 = entity.entities.clone();
 		let entities2 = entity.entities.clone();
+		
+		//create an empty raster
 		let mut raster:Vec<Entity> = Vec::new();
 
+		//super tuple for all the data from the entities
 		let mut x:Vec<usize> = Vec::new();
 		let mut y:Vec<usize> = Vec::new();
 		let mut p:Vec<Priority> = Vec::new();
 		let mut id:Vec<String> = Vec::new();
 
+		//fill the super tuple
 		for e in entities1.iter(){
-			let (x_, y_, p_) = (e.1.x.clone(), e.1.y.clone(), e.1.priority.clone());
+			let (x_, y_, p_) = 
+							(e.1.x.clone(), e.1.y.clone(), e.1.priority.clone());
 			x.push(x_);
 			y.push(y_);
 			p.push(p_);
@@ -58,16 +65,16 @@ impl Render {
 		//if any element in has the same x,y as another, only put the element with
 		//the highest priority on the board
 		for (_i, e) in entities2.iter() {
-			let (x_, y_, p_) = (e.x, e.y, e.priority.clone());
+			let (x_, y_, p_) = 
+												(e.x, e.y, e.priority.clone());
 			let mut should_add = true;
 
 			for existing in raster.iter_mut() {
 				if existing.x == x_ && existing.y == y_ {
 					if p_ > existing.priority {
 						if let Some(existing) = raster.iter_mut()
-																		.find(
-																			|existing| 
-																			existing.x == x_ && existing.y == y_) 
+										.find(|existing| 
+											existing.x == x_ && existing.y == y_) 
 						{
 							*existing = e.clone();
 						}
@@ -84,6 +91,8 @@ impl Render {
 
 		let mut flag = false;
 
+
+		//push to render from pseudo raster
 		for i in 0..self.render.y {
 			for j in 0..self.render.x {
 				for e in &raster{

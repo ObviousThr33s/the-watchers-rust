@@ -5,6 +5,8 @@ pub enum CHARSETS {
 	Charset2 = 2,
 }
 
+//wrapper code for getting the charsets, should be from file 
+
 pub fn get_charset(i:CHARSETS) -> String{
 	let _charset_0:Vec<char> = vec!['.',',','-','=','+','*','#','▓'];
 
