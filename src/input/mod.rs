@@ -23,6 +23,7 @@ pub async fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut
 	let mut gs:GameStates = GameStates::Run;
 	let mut mv:PlayerMove = PlayerMove::NONE;
 
+	//sets and sends signals from keyboard to game system
 	match event::read() {
 		Ok(Event::Key(key)) if key.kind == KeyEventKind::Press => match key.code {
 			KeyCode::Char('q') => {

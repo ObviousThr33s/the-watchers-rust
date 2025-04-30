@@ -1,33 +1,32 @@
 
 
 use ratatui::DefaultTerminal;
-//use tokio::time::sleep;
-use crate::game::spaces::field::Field;
-use crate::game::spaces::room::Room;
+use crate::game::entity::player;
+use crate::game::group;
+use crate::game::spaces::field::{self, Field};
 use crate::gfx::portal::Portal;
 use crate::gfx::render;
 use crate::input::handle_events;
 use crate::utils::{logger::Logger, time::Time};
 
 use super::player_loop::PlayerLoop;
+use super::world_loop;
 
-
-//declare the main loop as a struct
-//given a start time for the logger and the logger itself
-//given a game state to track which fn to run
-//each function activates the state loop
-//terminal and debug output string
+//See new() to update version
 pub struct MainLoop{
 	pub start: Time,
 	pub logger:Logger,
 	pub field:Field,
 	pub portal:Portal,
 
+	render_tick:usize,
+
 	state:GameStates,
 	terminal:DefaultTerminal,
 	_output:String
 }
 
+//state loops definition
 #[derive(PartialEq)]
 pub enum GameStates{
 	Init = 0,
@@ -35,6 +34,7 @@ pub enum GameStates{
 	Render = 2,
 	Exit = 3,
 }
+
 
 impl MainLoop {
 	pub fn new(start_time:Time, terminal:DefaultTerminal) -> MainLoop {
@@ -45,8 +45,11 @@ impl MainLoop {
 			start:start_time.clone(),
 			field: Field::new(),
 			portal:Portal::new(),
-			//Set game version here
 
+
+			render_tick:0,
+
+			//Set game version here
 			logger: Logger::new(start_time, "0.2.5".to_string()),
 			_output:String::new(),
 			terminal:terminal,
@@ -76,18 +79,12 @@ impl MainLoop {
 		
 		self.logger.log("Initializing...");
 
-		let field_ = Field::gen_entities(self.field.clone().entities);
+		//init the world loop
+		//currently there is no loop update
+		world_loop::WolrdLoop::init(&mut self.field);
+		
 
-		self.field.entities = field_.clone();
-		self.portal.init();
-		let floor = Room::gen_floor(5, 5, 20, 20, "FLOOR".to_owned());
-		for i in floor{
-			self.field.entities.entities.insert(i.id.clone(), i);
-		}
-
-		self.logger.log("Entities Generated:");
-		self.logger.log(&self.field.to_string());
-		self.logger.log("Initializing done");
+		//each method requires a call back to the state
 		self.state = GameStates::Run;
 
 		self.state_loop().await.await;
@@ -97,13 +94,13 @@ impl MainLoop {
 	//running section of the main loop
 	//always a work in progress
 	pub async fn run(&mut self){
-
 		
-		loop {
 
+		loop {
+			//event key which sends signals for game state and player movement
 			let (new_state, player_input) = 
 				handle_events(&mut self.terminal, &mut self.logger).await;
-			
+
 			if new_state == GameStates::Exit {	
 				self.exit();
 				break;
@@ -111,38 +108,64 @@ impl MainLoop {
 
 			PlayerLoop::player_move(
 				&mut self.field.entities,
+				&mut self.field.player,
 				player_input, 
 				&mut self.logger,
 			);
+
+			self.logger.log(&format!("{}", self.field.player.direction.0));
+
 			self.state = GameStates::Render;
 			self.state_loop().await.await;	
 		}
 
-
-
 	}
 
 	pub async fn render(&mut self){
+		//get terminal size at terminal resize (hopefully)
+		let (w,h) = (self.terminal.size().unwrap().width, 
+								self.terminal.size().unwrap().height);
+
+		//let user know its new size
+		self.logger.log(&format!("Size:{}x{}", w, h));
+		
+		
+		if self.render_tick > 5 {
+			self.render_tick = 0;
+		}else{
+			self.render_tick += 1;
+		}
+
+		self.portal.fill_raster(w,h, self.render_tick);
 
 
-		render(&mut self.terminal, 
-			self.logger.clone(), 
-			self.field.entities.clone(),
-			self.portal.clone());
 
+		self.portal.make_screen(w, h);
+		
+		//render the frame in time with the event key
+		tokio::task::block_in_place(|| {
+			render(&mut self.terminal, 
+				self.logger.clone(), 
+				self.field.entities.clone(),
+				self.portal.screen.clone());
+			});
+		
 		self.state = GameStates::Run;
 		self.state_loop().await.await;
+			
+		
 	}
 
 	pub fn exit(&mut self) {
 		
 		println!("Saving log...");
-		
+		//force halt to save files
 		tokio::task::block_in_place(|| {
 			self.logger.save_log();
 		});
 
 		//let _ = self.terminal.clear();
+		//exit peaceably
 		std::process::exit(0x0);
 	}
 }

@@ -5,15 +5,15 @@ pub mod charset;
 
 mod screen;
 
-
-
-use portal::Portal;
+use screen::Screen;
 
 use crate::{game::group::Group, utils::logger::Logger};
 
-pub fn render(terminal: &mut ratatui::DefaultTerminal, log:Logger, entity:Group, portal:Portal) {
+//render hooks
+
+pub fn render(terminal: &mut ratatui::DefaultTerminal, log:Logger, entity:Group, screen:Screen) {
 	
-	let _ = terminal.draw(|frame| ui::draw_(frame, portal, entity, log) );
+	let _ = terminal.draw(|frame| ui::draw_(frame, screen, entity, log) );
 	
 }
 

@@ -3,14 +3,19 @@ use ratatui::{
 };
 use crate::{game::group::Group, utils::logger::Logger};
 
-use super::{charset::CHARSETS, mipmap::render::Render, portal::Portal};
+use super::{charset::CHARSETS, mipmap::render::Render, screen::{self, Screen}};
 
 struct _UI {
+	//Too complicated to explain one comment at a time but essentially
+	//each part of the frame is split into sections and then widgets are gener
+	//-ated and add to their respective part of th frame
+	//each draw method has a hook to that part of the game which is being rend
+	//0ered
 
 }
 
-fn draw_portal<'a>(port:Portal) -> Paragraph <'a>{
-	let p:Paragraph = Paragraph::new(Text::from(port.screen.to_string_break()));
+fn draw_portal<'a>(screen:Screen) -> Paragraph <'a>{
+	let p:Paragraph = Paragraph::new(Text::from(screen.to_string_break()));
 	p
 }
 
@@ -65,7 +70,7 @@ fn draw_log <'a> (style:Style, border:BorderType, log_:Logger) -> Paragraph <'a>
 	logger_ui
 }
 
-pub(crate) fn draw_(frame: &mut Frame, port:Portal, entities:Group, log_:Logger) {
+pub(crate) fn draw_(frame: &mut Frame, screen:Screen, entities:Group, log_:Logger) {
 	let mut _frame_sizes: Vec<( u16, u16)> = Vec::new();
 
 	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);
@@ -76,9 +81,9 @@ pub(crate) fn draw_(frame: &mut Frame, port:Portal, entities:Group, log_:Logger)
 		.direction(
 			Direction::Vertical)
 		.constraints(vec![
-				Constraint::Percentage(30),
-				Constraint::Percentage(30),
-				Constraint::Percentage(30)
+				Constraint::Percentage(20),
+				Constraint::Percentage(60),
+				Constraint::Percentage(20)
 			]).split(frame.area());
 	
 	//top block widgets
@@ -88,7 +93,7 @@ pub(crate) fn draw_(frame: &mut Frame, port:Portal, entities:Group, log_:Logger)
 	let frame0 = draw_center(frame.area().width, frame.area().height, entities);
 	
 
-	let frame1:Paragraph = draw_portal(port);
+	let frame1:Paragraph = draw_portal(screen);
 	//bottom block widgets
 
 	let bottom_layout = Layout::default()

@@ -8,9 +8,10 @@ use super::time::Time;
 
 
 pub struct Logger {
-	log_stream: Vec<String>,
-	start_time: Time,
 	pub tick:usize,
+	pub start_time: Time,
+
+	log_stream: Vec<String>,
 	vers:String
 }
 
@@ -26,10 +27,7 @@ impl Clone for Logger {
 }
 
 impl Logger {
-	/// Creates a new `Logger` instance.
-	///
-	/// # Parameters
-	/// - `start_time`: The starting time used to initialize the logger.
+
 	pub fn new(start_time:Time, version:String) -> Self {
 		Logger { 
 			log_stream: Vec::new(),
@@ -68,7 +66,7 @@ impl Logger {
 		let mut file_path = PathBuf::from(dir);
 		file_path.push(file_name);
 
-		// Ensure the directory exists
+		
 		if let Err(e) = std::fs::create_dir_all(dir) {
 			eprintln!("Failed to create directory: {}", e);
 			return;

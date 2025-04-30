@@ -5,6 +5,9 @@ pub struct Screen{
 	pub screen: Vec<char>,
 }
 
+//This structure holds the raw data for each rendered widget which is given by
+//each renderer (exept for the log data)
+
 impl Clone for Screen {
 	fn clone(&self) -> Screen{
 

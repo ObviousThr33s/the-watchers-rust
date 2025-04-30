@@ -1,13 +1,17 @@
 
-use crate::game::{entity::{Entity, Priority}, group::Group};
+use crate::game::{entity::{player::Player, Entity, Priority}, group::Group};
 
 pub struct Field{
-	pub entities:Group
+	pub entities:Group,
+	pub player:Player
 }
 
 impl Clone for Field {
 	fn clone(&self) -> Self {
-		Self { entities: self.entities.clone() }
+		Self { 
+			entities: self.entities.clone(), 
+			player:Player::new(0.0f64)
+		}
 	}
 }
 
@@ -28,22 +32,16 @@ impl ToString for Field {
 impl Field{
 
 	pub fn new() -> Self{
-		Field { entities: Group::new() }
+		Field { entities: Group::new(), player:Player::new(0.0f64) }
 	}
 
 	pub fn get_entities(self) -> Group {
 		self.entities.clone()
 	}
 
-	pub fn gen_entities(mut entities:Group) -> Group{
+	pub fn gen_entities(&self, mut entities:Group) -> Group{
 		entities.entities.insert("Player".to_owned(), 
-		Entity {
-			x: 0,
-			y: 0,
-			priority:Priority::MED,
-			self_: '@', 
-			id: "Player".to_owned() 
-		});
+		self.player.player.clone());
 	
 		entities.entities.insert("Entity".to_owned(), 
 		Entity {
