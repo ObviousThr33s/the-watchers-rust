@@ -11,7 +11,7 @@ use crate::{game::group::Group, utils::logger::Logger};
 
 //render hooks
 
-pub fn render(terminal: &mut ratatui::DefaultTerminal, log:Logger, entity:Group, screen:Screen) {
+pub fn render(terminal: &mut ratatui::DefaultTerminal, log:Logger, entity:Group, screen:String) {
 	
 	let _ = terminal.draw(|frame| ui::draw_(frame, screen, entity, log) );
 	

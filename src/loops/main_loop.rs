@@ -1,9 +1,7 @@
 
 
 use ratatui::DefaultTerminal;
-use crate::game::entity::player;
-use crate::game::group;
-use crate::game::spaces::field::{self, Field};
+use crate::game::spaces::field::Field;
 use crate::gfx::portal::Portal;
 use crate::gfx::render;
 use crate::input::handle_events;
@@ -19,7 +17,7 @@ pub struct MainLoop{
 	pub field:Field,
 	pub portal:Portal,
 
-	render_tick:usize,
+	_render_tick:usize,
 
 	state:GameStates,
 	terminal:DefaultTerminal,
@@ -47,7 +45,7 @@ impl MainLoop {
 			portal:Portal::new(),
 
 
-			render_tick:0,
+			_render_tick:0,
 
 			//Set game version here
 			logger: Logger::new(start_time, "0.2.5".to_string()),
@@ -113,8 +111,6 @@ impl MainLoop {
 				&mut self.logger,
 			);
 
-			self.logger.log(&format!("{}", self.field.player.direction.0));
-
 			self.state = GameStates::Render;
 			self.state_loop().await.await;	
 		}
@@ -126,33 +122,23 @@ impl MainLoop {
 		let (w,h) = (self.terminal.size().unwrap().width, 
 								self.terminal.size().unwrap().height);
 
-		//let user know its new size
-		self.logger.log(&format!("Size:{}x{}", w, h));
+		self.logger.log(&format!("Size:{}x{}", w, h));		
+	
+		self.portal.fill_raster(w,h);
 		
-		
-		if self.render_tick > 5 {
-			self.render_tick = 0;
-		}else{
-			self.render_tick += 1;
-		}
-
-		self.portal.fill_raster(w,h, self.render_tick);
 
 
-
-		self.portal.make_screen(w, h);
-		
 		//render the frame in time with the event key
 		tokio::task::block_in_place(|| {
 			render(&mut self.terminal, 
 				self.logger.clone(), 
 				self.field.entities.clone(),
-				self.portal.screen.clone());
+				self.portal.raster.to_string(w, h).clone());
 			});
-		
+
 		self.state = GameStates::Run;
 		self.state_loop().await.await;
-			
+
 		
 	}
 

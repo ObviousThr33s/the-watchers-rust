@@ -59,6 +59,33 @@ impl Logger {
 		self.vers
 	}
 
+	pub fn save_log_sp(dir:&str, file_name:&str, message:String){
+		let dir = format!("./{}/", dir);
+		let file_name = format!("{}.txt", file_name);
+
+		let mut file_path = PathBuf::from(dir.clone());
+		file_path.push(file_name);
+
+		
+		if let Err(e) = std::fs::create_dir_all(dir) {
+			eprintln!("Failed to create directory: {}", e);
+			return;
+		}
+
+		let mut f: File = match File::create(file_path) {
+			Ok(file) => file,
+			Err(e) => {
+				eprintln!("Failed to create file: {}", e);
+				return;
+			}
+		};
+
+		let log_data = message;
+		if let Err(e) = f.write_all(&log_data.as_bytes()) {
+			eprintln!("Failed to write to file: {}", e);
+		}
+	}
+
 	pub fn save_log(&mut self) {
 		let dir = "./res/";
 		let file_name = "log.txt";
