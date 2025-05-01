@@ -11,7 +11,6 @@ pub async fn main(){
 	
 	let mut game:main_loop::MainLoop = MainLoop::new(start, terminal);
 	
-
 	game.init().await;
 
 }

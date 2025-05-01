@@ -28,8 +28,8 @@ impl Player {
 	pub fn new(direction: f64) -> Self {
 		Self {
 			player:Entity {
-				x: 10,
-				y: 10,
+				x: 2,
+				y: 2,
 				priority: Priority::MED,
 				self_: '@', 
 				id: "Player".to_owned() 
@@ -48,14 +48,37 @@ impl Player {
 		self.direction = Degrees(old_dir) + Degrees(amnt);
 	}
 
+	pub fn poll_move_forewards(&mut self, entity:&mut Entity){
+		match entity.self_ {
+			'<' => entity.move_left(),
+			'>' => entity.move_right(),
+			'^' => entity.move_up(),
+			'v' => entity.move_down(),
+			 _  => ()
+		}
+	}
+
+	pub fn poll_move_backwards(&mut self, entity:&mut Entity){
+		match entity.self_ {
+			'>' => entity.move_left(),
+			'<' => entity.move_right(),
+			'v' => entity.move_up(),
+			'^' => entity.move_down(),
+			 _  => ()
+		}
+	}
+
+
 	pub fn move_left(&mut self, entity:&mut Entity){
 		self.add_direction(45.0);
 		self.poll_heading(self.direction, entity);
+		
 	}
 
 	pub fn move_right(&mut self, entity:&mut Entity){
 		self.sub_direction(45.0);
 		self.poll_heading(self.direction, entity);
+
 	}
 
 	fn poll_heading(&mut self, deg:Degrees, entity:&mut Entity) {

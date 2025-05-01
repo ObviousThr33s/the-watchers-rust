@@ -3,7 +3,7 @@ use ratatui::{
 };
 use crate::{game::group::Group, utils::logger::Logger};
 
-use super::{charset::CHARSETS, mipmap::render::Render, screen::{self, Screen}};
+use super::{charset::CHARSETS, mipmap::render::Render, screen::Screen};
 
 struct _UI {
 	//Too complicated to explain one comment at a time but essentially
@@ -14,8 +14,8 @@ struct _UI {
 
 }
 
-fn draw_portal<'a>(screen:Screen) -> Paragraph <'a>{
-	let p:Paragraph = Paragraph::new(Text::from(screen.to_string_break()));
+fn draw_portal<'a>(screen:String) -> Paragraph <'a>{
+	let p:Paragraph = Paragraph::new(Text::from(screen));
 	p
 }
 
@@ -70,7 +70,7 @@ fn draw_log <'a> (style:Style, border:BorderType, log_:Logger) -> Paragraph <'a>
 	logger_ui
 }
 
-pub(crate) fn draw_(frame: &mut Frame, screen:Screen, entities:Group, log_:Logger) {
+pub(crate) fn draw_(frame: &mut Frame, screen:String, entities:Group, log_:Logger) {
 	let mut _frame_sizes: Vec<( u16, u16)> = Vec::new();
 
 	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);
