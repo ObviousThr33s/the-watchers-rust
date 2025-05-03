@@ -17,7 +17,7 @@ pub struct Portal {
 impl Portal {
 
 	pub fn new() -> Self {
-		Self { screen: Screen::new(0, 0), raster: Raster::new(Vec::new()), rays:Vec::new() }
+		Self { screen: Screen::new(0, 0), raster: Raster::new(), rays:Vec::new() }
 	}
 
 	pub fn create_raster(&mut self, _player:Player, w:usize, h:usize) {
