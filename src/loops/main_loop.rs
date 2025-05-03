@@ -1,14 +1,14 @@
 
 
 use ratatui::DefaultTerminal;
-use crate::game::spaces::field::Field;
+use crate::game::entity::player::{self, Player};
+use crate::game::spaces::field::{self, Field};
 use crate::gfx::portal::Portal;
 use crate::gfx::render;
 use crate::input::handle_events;
 use crate::utils::{logger::Logger, time::Time};
 
 use super::player_loop::PlayerLoop;
-use super::world_loop;
 
 //See new() to update version
 pub struct MainLoop{
@@ -18,6 +18,8 @@ pub struct MainLoop{
 	pub portal:Portal,
 
 	_render_tick:usize,
+
+	pub player:Player, //at some point this could be a hash table for many players/angle entities
 
 	state:GameStates,
 	terminal:DefaultTerminal,
@@ -46,6 +48,7 @@ impl MainLoop {
 
 
 			_render_tick:0,
+			player:Player::new(),
 
 			//Set game version here
 			logger: Logger::new(start_time, "0.2.5".to_string()),
@@ -77,13 +80,10 @@ impl MainLoop {
 		
 		self.logger.log("Initializing...");
 
-		//init the world loop
-		//currently there is no loop update
-		world_loop::WolrdLoop::init(&mut self.field);
-		
+		self.field.add_entity(self.player.player.clone());
 
 		//each method requires a call back to the state
-		self.state = GameStates::Run;
+		self.state = GameStates::Render;
 
 		self.state_loop().await.await;
 	}
@@ -96,8 +96,9 @@ impl MainLoop {
 
 		loop {
 			//event key which sends signals for game state and player movement
+			
 			let (new_state, player_input) = 
-				handle_events(&mut self.terminal, &mut self.logger).await;
+				handle_events(&mut self.terminal, &mut self.logger);
 
 			if new_state == GameStates::Exit {	
 				self.exit();
@@ -105,11 +106,13 @@ impl MainLoop {
 			}
 
 			PlayerLoop::player_move(
-				&mut self.field.entities,
-				&mut self.field.player,
+				&mut self.player,
 				player_input, 
-				&mut self.logger,
-			);
+				&mut self.logger,);
+			
+			self.field.set_entity(self.player.player.clone());
+			
+			self.logger.log(&format!("{}", self.field.to_string()));
 
 			self.state = GameStates::Render;
 			self.state_loop().await.await;	
@@ -123,18 +126,16 @@ impl MainLoop {
 								self.terminal.size().unwrap().height);
 
 		self.logger.log(&format!("Size:{}x{}", w, h));		
-	
-		self.portal.fill_raster(w,h);
-		
-
+		//self.portal.create_raster(self.player.clone(), self.field.entities.clone(), w as usize, h as usize);
+		// /self.portal.fill_raster(w, h);
 
 		//render the frame in time with the event key
-		tokio::task::block_in_place(|| {
-			render(&mut self.terminal, 
-				self.logger.clone(), 
-				self.field.entities.clone(),
-				self.portal.raster.to_string(w, h).clone());
-			});
+		render(&mut self.terminal, 
+			&self.logger,
+			&self.field,
+			&self.portal.screen.to_string()).await;
+
+		
 
 		self.state = GameStates::Run;
 		self.state_loop().await.await;

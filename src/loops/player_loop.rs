@@ -1,4 +1,5 @@
-use crate::{game::{entity::player::Player, group::Group}, input::PlayerMove, utils::logger::Logger};
+use crate::{game::entity::player::Player, input::PlayerMove, utils::logger::Logger};
+
 
 pub struct PlayerLoop{
 
@@ -6,40 +7,27 @@ pub struct PlayerLoop{
 
 impl PlayerLoop {
 
-	//unused at the moment but indicates type usage paradigm for now
-	pub fn is_colliding(_entity:&mut Group){
-	}
-
-
-	
-
 	//moves player one single step in a direction, chooses player from entities 
 	//list so that player can be moved in place rather than borrow replaced
-	pub fn player_move(entity:&mut Group, mut player: &mut Player, player_move:PlayerMove, logger:&mut Logger) -> Option<Group>{
-		if let Some(entity) = entity.entities.get_mut("Player"){
-			logger.log(&format!("Player: {}", entity.self_));
-
-			if player_move == PlayerMove::UP {
-				player.poll_move_forewards(entity);
-				logger.log(entity.to_string().as_str());
-			}
-			if player_move == PlayerMove::DOWN {
-				player.poll_move_backwards(entity);
-				logger.log(entity.to_string().as_str());
-			}
-			if player_move == PlayerMove::LEFT {
-					player.move_left(entity);
-					logger.log(entity.to_string().as_str());
-			}
-			if player_move == PlayerMove::RIGHT {
-					player.move_right(entity);
-					logger.log(entity.to_string().as_str());
-			}
-		}
-
-		logger.log(&format!("{}_deg", player.direction.0));
+	pub fn player_move(player:&mut Player, player_move:PlayerMove, logger:&mut Logger) {
 		
-		Some(entity.to_owned())
+		if player_move == PlayerMove::UP {
+			player.poll_move_forewards();
+		}
+		if player_move == PlayerMove::DOWN {
+			player.poll_move_backwards();
+		}
+		if player_move == PlayerMove::LEFT {
+			player.move_left();
+		}
+		if player_move == PlayerMove::RIGHT {
+			player.move_right();
+		}
+		
+		logger.log(player.player.to_string().as_str());
+
+		logger.log(&format!("{}_deg", player.heading.0));
+		
 	}
 }
 

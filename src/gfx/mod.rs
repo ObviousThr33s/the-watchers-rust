@@ -5,15 +5,13 @@ pub mod charset;
 
 mod screen;
 
-use screen::Screen;
-
-use crate::{game::group::Group, utils::logger::Logger};
+use crate::{game::spaces::field::Field, utils::logger::Logger};
 
 //render hooks
 
-pub fn render(terminal: &mut ratatui::DefaultTerminal, log:Logger, entity:Group, screen:String) {
+pub async fn render(terminal: &mut ratatui::DefaultTerminal, log:&Logger, field:&Field, screen:&String) {
 	
-	let _ = terminal.draw(|frame| ui::draw_(frame, screen, entity, log) );
+	let _ = terminal.draw(|frame| ui::draw_(frame, screen, field, log) );
 	
 }
 

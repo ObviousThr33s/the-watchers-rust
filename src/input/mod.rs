@@ -19,7 +19,7 @@ pub enum PlayerMove {
 }
 
 #[allow(unused_mut)]
-pub async fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logger:&mut Logger) -> (GameStates, PlayerMove) {
+pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logger:&mut Logger) -> (GameStates, PlayerMove) {
 	let mut gs:GameStates = GameStates::Run;
 	let mut mv:PlayerMove = PlayerMove::NONE;
 
