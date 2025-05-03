@@ -1,5 +1,6 @@
 use ratatui::DefaultTerminal;
 use crate::game::entity::player::{self, Player};
+use crate::game::entity::wall_type::WallType;
 use crate::game::spaces::field::{self, Field};
 use crate::gfx::portal::raster::{self, Raster};
 use crate::gfx::portal::Portal;
@@ -84,7 +85,7 @@ impl MainLoop {
 
 		self.field.add_entity(self.player.player.clone());
 		// Add an entity at position (0, 0)
-		let static_entity = Entity::new(0, 0, '#', "wall".to_owned(), Priority::LOW);
+		let static_entity = Entity::new(0, 0, '+', "wall".to_owned(), Priority::LOW);
 		self.field.add_entity(static_entity);
 		self.logger.log("Added static entity at position (0, 0)");
 		//each method requires a call back to the state
@@ -161,21 +162,42 @@ impl MainLoop {
 		// Clear existing walls
 		self.raster.clear();
 		
-		// Create a boundary (you might want to keep this or make it part of your entity system)
-		self.raster.create_boundary(1, 1, "#");
-		
-		// Add walls from field entities
+		// Create boundary walls of stone (keeping this for world boundaries)
+
+		// Add walls based on entities in the field
 		for (_, entity) in &self.field.entities {
-			// Check if this entity should be treated as a wall
-			// For example, entities with '#' character or specific type
-			if entity.self_ == '#' {
-				// Add the entity position to the raster as a wall
-				self.raster.add_point(
-					entity.x as u16, 
-					entity.y as u16, 
-					"#".to_string()
-				);
+			// Skip the player entity (don't want player to be a wall)
+			if entity.id == self.player.player.id {
+				continue;
 			}
+			
+			// Determine wall type based on entity properties
+			let wall_type = self.determine_wall_type(entity);
+			
+			// Add to raster
+			self.raster.add_wall_point(entity.x as u16, entity.y as u16, wall_type);
+		}
+	}
+
+	// Helper method to determine wall type from an entity
+	fn determine_wall_type(&self, entity: &Entity) -> WallType {
+		// Determine wall type based on entity character or ID
+		match entity.self_ {
+			'#' => WallType::Stone,
+			'+' => WallType::Wood,
+			'M' => WallType::Metal,
+			'G' => WallType::Glass,
+			'B' => WallType::Brick,
+			// For entities with other characters, use their ID to determine type
+			_ => match entity.id.as_str() {
+				id if id.contains("wall") => WallType::Stone,
+				id if id.contains("wood") => WallType::Wood,
+				id if id.contains("metal") => WallType::Metal,
+				id if id.contains("glass") => WallType::Glass, 
+				id if id.contains("brick") => WallType::Brick,
+				// Default to a custom wall with the entity's character
+				_ => WallType::Custom(entity.self_),
+			},
 		}
 	}
 

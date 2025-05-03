@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 use super::pixel::Pixel;
-use crate::game::spaces::field::Field;
+use crate::game::{entity::wall_type::{WallData, WallType}, spaces::field::Field};
 
 pub struct Raster {
-	grid: HashMap<(u16, u16), String>
+    grid: HashMap<(u16, u16), WallData>,
 }
+
+
 
 impl Clone for Raster {
 	fn clone(&self) -> Self {
@@ -26,24 +28,27 @@ impl Raster {
 		
 		// Convert pixels to grid entries
 		for pixel in pixels {
-			grid.insert((pixel.x as u16, pixel.y as u16), pixel.char.to_string());
+			grid.insert((pixel.x as u16, pixel.y as u16), WallData {
+				wall_type: WallType::Custom(pixel.char),
+				display_char: pixel.char.to_string(),
+			});
 		}
 		
 		Self { grid }
 	}
 
 	/// Adds a point to the raster
-	pub fn add_point(&mut self, x: u16, y: u16, value: String) {
+	pub fn add_point(&mut self, x: u16, y: u16, value: WallData) {
 		self.grid.insert((x, y), value);
 	}
-	
+
 	/// Checks if a point exists in the raster
 	pub fn has_point(&self, x: u16, y: u16) -> bool {
 		self.grid.contains_key(&(x, y))
 	}
 	
 	/// Gets a value at a specific point if it exists
-	pub fn get_point(&self, x: u16, y: u16) -> Option<&String> {
+	pub fn get_point(&self, x: u16, y: u16) -> Option<&WallData> {
 		self.grid.get(&(x, y))
 	}
 
@@ -91,21 +96,11 @@ impl Raster {
 	
 	/// Creates a simple rectangular boundary in the raster
 	pub fn create_boundary(&mut self, width: u16, height: u16, border_char: &str) {
-		// Create top and bottom walls
-		for x in 0..width {
-			self.add_point(x, 0, border_char.to_string());
-			self.add_point(x, height - 1, border_char.to_string());
-		}
-		
-		// Create left and right walls
-		for y in 0..height {
-			self.add_point(0, y, border_char.to_string());
-			self.add_point(width - 1, y, border_char.to_string());
-		}
+		self.create_boundary_with_type(width, height, WallType::Custom(border_char.chars().next().unwrap_or('#')));
 	}
 	
 	/// Returns a vector of all points in the raster
-	pub fn get_all_points(&self) -> Vec<((u16, u16), &String)> {
+	pub fn get_all_points(&self) -> Vec<((u16, u16), &WallData)> {
 		self.grid.iter().map(|(pos, val)| (*pos, val)).collect()
 	}
 
@@ -162,7 +157,7 @@ impl Raster {
 						result.push_str(&format!("*{}*", entity.self_));
 					} else if let Some(value) = self.grid.get(&(x, y)) {
 						// Show a raster point with highlighting
-						result.push_str(&format!("*{}*", value));
+						result.push_str(&format!("*{}*", value.display_char));
 					} else {
 						// Just show the ray path
 						result.push_str("·");
@@ -172,7 +167,7 @@ impl Raster {
 					result.push_str(&format!("{}", entity.self_));
 				} else if let Some(value) = self.grid.get(&(x, y)) {
 					// Show a raster point
-					result.push_str(value);
+					result.push_str(&value.display_char);
 				} else {
 					// Empty space
 					result.push(' ');
@@ -197,61 +192,140 @@ impl Raster {
 		
 		// Cast rays across the field of view
 		for column in 0..ray_count {
-			// Calculate ray angle (angle - half_fov + column * angle_step)
-			let ray_angle = angle - half_fov + (column as f32) * angle_step;
+			// Calculate ray angle
+			let ray_angle = self.calculate_ray_angle(angle, half_fov, column, angle_step);
 			
-			// Cast a ray and find the first obstacle
-			let ray_points = self.cast_ray(start_x, start_y, ray_angle, max_distance);
+			// Get distance to wall and wall type
+			let (distance, wall_type) = self.cast_single_ray(start_x, start_y, ray_angle, max_distance);
 			
-			// Calculate distance to first obstacle (if any)
-			let distance = if let Some((hit_x, hit_y)) = ray_points.iter().find(|&&(x, y)| self.grid.contains_key(&(x, y))) {
-				let dx = *hit_x as f32 - start_x;
-				let dy = *hit_y as f32 - start_y;
-				(dx * dx + dy * dy).sqrt() 
-			} else {
-				max_distance // No obstacle found within range
+			// Apply fisheye correction
+			let corrected_distance = self.correct_fisheye(distance, ray_angle, angle);
+			
+			// Calculate wall height and position
+			let (wall_top, wall_bottom) = self.calculate_wall_dimensions(corrected_distance, height);
+			
+			// Get wall character based on distance and type
+			let wall_char = match wall_type {
+				Some(wt) => wt.get_character(corrected_distance),
+				None => self.get_default_wall_character(corrected_distance),
 			};
 			
-			// Apply fisheye correction (multiply distance by cos of angle difference)
-			let angle_diff = ray_angle - angle;
-			let corrected_distance = distance * angle_diff.cos();
-			
-			// Calculate wall height (inverse to distance)
-			let wall_height = (height as f32 * 0.8) / corrected_distance.max(0.1);
-			let wall_height = wall_height.min(height as f32) as usize;
-			
-			// Calculate where to start and end drawing the wall
-			let wall_top = (height - wall_height) / 2;
-			let wall_bottom = wall_top + wall_height;
-			
-			// Choose character/shading based on distance
-			let wall_char = match corrected_distance {
-				d if d < 2.0 => '█',
-				d if d < 4.0 => '▓',
-				d if d < 6.0 => '▒',
-				d if d < 10.0 => '░',
-				_ => '·',
-			};
-			
-			// Draw the wall column
-			for y in 0..height {
-				output[y][column] = if y >= wall_top && y < wall_bottom {
-					wall_char
-				} else if y < wall_top {
-					' ' // Sky
-				} else {
-					'.' // Ground
-				};
-			}
+			// Draw the column
+			self.draw_column(&mut output, column, wall_top, wall_bottom, wall_char, height);
 		}
 		
 		// Convert to string
+		self.output_to_string(&output)
+	}
+	
+	/// Calculate the angle for a specific ray
+	fn calculate_ray_angle(&self, center_angle: f32, half_fov: f32, column: usize, angle_step: f32) -> f32 {
+		center_angle - half_fov + (column as f32) * angle_step
+	}
+	
+	/// Cast a single ray and return the distance to a hit
+	fn cast_single_ray(&self, start_x: f32, start_y: f32, angle: f32, max_distance: f32) -> (f32, Option<WallType>) {
+		let ray_points = self.cast_ray(start_x, start_y, angle, max_distance);
+		
+		// Find the first obstacle hit by the ray
+		if let Some((hit_x, hit_y)) = ray_points.iter().find(|&&(x, y)| self.grid.contains_key(&(x, y))) {
+			// Calculate Euclidean distance
+			let dx = *hit_x as f32 - start_x;
+			let dy = *hit_y as f32 - start_y;
+			let distance = (dx * dx + dy * dy).sqrt();
+			
+			// Get the wall type
+			let wall_type = self.grid.get(&(*hit_x, *hit_y)).map(|data| data.wall_type);
+			
+			(distance, wall_type)
+		} else {
+			// No obstacle found within range
+			(max_distance, None)
+		}
+	}
+	
+	/// Apply fisheye correction to distance
+	fn correct_fisheye(&self, distance: f32, ray_angle: f32, view_angle: f32) -> f32 {
+		let angle_diff = ray_angle - view_angle;
+		distance * angle_diff.cos()
+	}
+	
+	/// Calculate wall top and bottom positions
+	fn calculate_wall_dimensions(&self, distance: f32, height: usize) -> (usize, usize) {
+		// Calculate wall height (inverse to distance)
+		let wall_height = (height as f32 * 0.8) / distance.max(0.1);
+		let wall_height = wall_height.min(height as f32) as usize;
+		
+		// Calculate where to start and end drawing the wall
+		let wall_top = (height - wall_height) / 2;
+		let wall_bottom = wall_top + wall_height;
+		
+		(wall_top, wall_bottom)
+	}
+	
+	/// Choose character based on distance
+	fn get_wall_character(&self, distance: f32) -> char {
+		match distance {
+			d if d < 2.0 => '█',
+			d if d < 4.0 => '▓',
+			d if d < 6.0 => '▒',
+			d if d < 10.0 => '░',
+			_ => '·',
+		}
+	}
+	
+	/// Get default wall character based on distance
+	fn get_default_wall_character(&self, distance: f32) -> char {
+		match distance {
+			d if d < 2.0 => '█',
+			d if d < 4.0 => '▓',
+			d if d < 6.0 => '▒',
+			d if d < 10.0 => '░',
+			_ => '·',
+		}
+	}
+	
+	/// Draw a single column in the output grid
+	fn draw_column(&self, output: &mut Vec<Vec<char>>, column: usize, wall_top: usize, wall_bottom: usize, wall_char: char, height: usize) {
+		for y in 0..height {
+			output[y][column] = if y >= wall_top && y < wall_bottom {
+				wall_char
+			} else if y < wall_top {
+				' ' // Sky
+			} else {
+				'.' // Ground
+			};
+		}
+	}
+	
+	/// Convert output grid to string
+	fn output_to_string(&self, output: &Vec<Vec<char>>) -> String {
 		let mut result = String::new();
 		for row in output {
 			result.push_str(&row.iter().collect::<String>());
 			result.push('\n');
 		}
-		
 		result
+	}
+	
+	// Add a point with a specific wall type
+	pub fn add_wall_point(&mut self, x: u16, y: u16, wall_type: WallType) {
+		let display_char = wall_type.get_character(0.0).to_string();
+		self.grid.insert((x, y), WallData { wall_type, display_char });
+	}
+	
+	// Create boundaries with specific wall types
+	pub fn create_boundary_with_type(&mut self, width: u16, height: u16, wall_type: WallType) {
+		// Create top and bottom walls
+		for x in 0..width {
+			self.add_wall_point(x, 0, wall_type);
+			self.add_wall_point(x, height - 1, wall_type);
+		}
+		
+		// Create left and right walls
+		for y in 0..height {
+			self.add_wall_point(0, y, wall_type);
+			self.add_wall_point(width - 1, y, wall_type);
+		}
 	}
 }
