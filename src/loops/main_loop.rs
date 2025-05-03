@@ -53,7 +53,7 @@ impl MainLoop {
 			player:Player::new(),
 
 			//Set game version here
-			logger: Logger::new(start_time, "0.2.5".to_string()),
+			logger: Logger::new(start_time, "0.3.0".to_string()),
 			_output:String::new(),
 			terminal:terminal,
 		}

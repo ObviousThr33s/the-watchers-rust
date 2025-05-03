@@ -92,15 +92,14 @@ impl Player {
 		}
 		
 		// Define direction based on angle
-		let (character, direction) = match angle {
-			a if (0.0..=45.0).contains(&a) || (315.0..=360.0).contains(&a) => 
-				('^', Direction::NORTH),
-			a if (45.0..=135.0).contains(&a) => 
-				('>', Direction::EAST),
-			a if (135.0..=225.0).contains(&a) => 
-				('v', Direction::SOUTH),
-			_ => 
-				('<', Direction::WEST),
+		let (character, direction) = if angle >= -45.0 && angle <= 45.0 {
+			('^', Direction::NORTH)
+		} else if angle > 45.0 && angle <= 135.0 {
+			('>', Direction::EAST)
+		} else if (angle > 135.0 && angle <= 180.0) || (angle >= -180.0 && angle < -135.0) {
+			('v', Direction::SOUTH)
+		} else {
+			('<', Direction::WEST)
 		};
 		
 		self.player.self_ = character;
