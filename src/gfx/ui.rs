@@ -1,9 +1,9 @@
 use ratatui::{
 	layout::{Constraint, Direction, Layout}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Paragraph}, Frame,
 };
-use crate::{game::group::Group, utils::logger::Logger};
+use crate::{game::spaces::field::Field, utils::logger::Logger};
 
-use super::{charset::CHARSETS, mipmap::render::Render, screen::Screen};
+use super::{charset::CHARSETS, mipmap::render::Render};
 
 struct _UI {
 	//Too complicated to explain one comment at a time but essentially
@@ -14,12 +14,12 @@ struct _UI {
 
 }
 
-fn draw_portal<'a>(screen:String) -> Paragraph <'a>{
-	let p:Paragraph = Paragraph::new(Text::from(screen));
+fn draw_portal<'a>(screen: &'a String) -> Paragraph<'a> {
+	let p: Paragraph = Paragraph::new(Text::from(screen.as_str()));
 	p
 }
 
-fn draw_center<'a>(width: u16, height: u16, entity: Group) -> Paragraph<'a> {
+fn draw_center<'a>(width: u16, height: u16, entity:&Field) -> Paragraph<'a> {
 
 	let middle_block = Block::new().title_bottom("*Live*");
 	
@@ -55,7 +55,7 @@ fn draw_invty<'a> (style:Style, border:BorderType) -> Paragraph <'a>{
 	invty
 }
 
-fn draw_log <'a> (style:Style, border:BorderType, log_:Logger) -> Paragraph <'a>{
+fn draw_log <'a> (style:Style, border:BorderType, log_:&Logger) -> Paragraph <'a>{
 	let top_block = Block::bordered()
 		.title(format!("The Watchers v{}", log_.clone().get_version()))
 		.title_style(style)
@@ -63,14 +63,14 @@ fn draw_log <'a> (style:Style, border:BorderType, log_:Logger) -> Paragraph <'a>
 		.borders(Borders::ALL);
 	
 	let logger_ui:Paragraph = Paragraph::new(
-		Text::from(log_.get_log()
+		Text::from(log_.clone().get_log()
 						.concat()))
 		.block(top_block);
 
 	logger_ui
 }
 
-pub(crate) fn draw_(frame: &mut Frame, screen:String, entities:Group, log_:Logger) {
+pub(crate) fn draw_(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger) {
 	let mut _frame_sizes: Vec<( u16, u16)> = Vec::new();
 
 	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);

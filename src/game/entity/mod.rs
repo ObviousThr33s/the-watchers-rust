@@ -63,13 +63,14 @@ impl Entity {
 		self.y = new_y;
 	}
 	
+	pub fn get(&self) -> (usize, usize, String){
+		(self.x, self.y, self.id.clone())
+	}
+
 	pub fn get_position(&self) -> (usize, usize) {
 		(self.x, self.y)
 	}
 
-	pub fn get_pos_float(&self) -> (f64, f64) {
-		(self.x as f64, self.y as f64)
-	}
 }
 
 impl Clone for Entity {

@@ -1,4 +1,4 @@
-use crate::{game::{entity::{Entity, Priority}, group::Group}, gfx::{charset::CHARSETS, screen::Screen}};
+use crate::{game::{entity::{Entity, Priority}, spaces::field::Field}, gfx::{charset::CHARSETS, screen::Screen}};
 
 pub struct Render{
 	render: Screen,
@@ -34,14 +34,14 @@ impl Render {
 		lamp_
 	}
 	
-	pub fn rasterize(&mut self, entity:Group){
+	pub fn rasterize(&mut self, field:&Field){
 
 		//first clear screen buffer
 		self.render.screen.clear();
 
 		//get two clones of the entities
-		let entities1 = entity.entities.clone();
-		let entities2 = entity.entities.clone();
+		let entities1 = field.entities.clone();
+		let entities2 = field.entities.clone();
 		
 		//create an empty raster
 		let mut raster:Vec<Entity> = Vec::new();

@@ -1,16 +1,18 @@
 
-use crate::game::{entity::{player::Player, Entity, Priority}, group::Group};
+use std::collections::HashMap;
+
+use crate::game::entity::{self, Entity};
 
 pub struct Field{
-	pub entities:Group,
-	pub player:Player
+	pub entities:HashMap<String,Entity>,
+	pub field:HashMap<(usize, usize, String), Entity>
 }
 
 impl Clone for Field {
 	fn clone(&self) -> Self {
 		Self { 
-			entities: self.entities.clone(), 
-			player:Player::new(0.0f64)
+			entities: self.entities.clone(),
+			field:self.field.clone()
 		}
 	}
 }
@@ -20,7 +22,7 @@ impl ToString for Field {
 		let mut s_:Vec<String> = Vec::new();
 		s_.push(String::from("\n"));
 
-		for i in self.entities.entities.clone() {
+		for i in self.entities.clone() {
 			s_.push(format!("\t{}\n", i.0));
 		}
 
@@ -32,39 +34,14 @@ impl ToString for Field {
 impl Field{
 
 	pub fn new() -> Self{
-		Field { entities: Group::new(), player:Player::new(0.0f64) }
+		Field { entities: HashMap::new(), field: HashMap::new()}
 	}
 
-	pub fn get_entities(self) -> Group {
-		self.entities.clone()
+	pub fn add_entity(&mut self, entity:Entity){
+		self.field.insert(entity.get(), entity);
 	}
 
-	pub fn gen_entities(&self, mut entities:Group) -> Group{
-		entities.entities.insert("Player".to_owned(), 
-		self.player.player.clone());
-	
-		entities.entities.insert("Entity".to_owned(), 
-		Entity {
-			x: 10,
-			y: 10,
-			priority: Priority::LOW,
-			self_: 'E', 
-			id: "Entity".to_owned() 
-		});
-	
-		entities.entities.insert("Obol".to_owned(), 
-		Entity {
-			x: 0,
-			y: 0,
-			priority:Priority::HIG,
-			self_: 'O', 
-			id: "Obol".to_owned() 
-		});
-
-		
-	
-		entities
+	pub fn set_entity(&mut self, entity:Entity) {
+		self.field.get(&entity.get()).replace(&entity);
 	}
-	
 }
-
