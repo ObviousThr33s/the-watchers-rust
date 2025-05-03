@@ -1,23 +1,23 @@
-pub struct Pixel{
-	pub wall_height:f64,
-	pub distance:f64,
-	pub id:String
+pub struct Pixel {
+	pub x: u16,
+	pub y: u16,
+	pub color: u128,
+	pub char: char,
 }
-
 
 impl Clone for Pixel {
 	fn clone(&self) -> Self {
-		Self { wall_height: self.wall_height.clone(), distance: self.distance.clone(), id: self.id.clone() }
-	}
-}
-
-impl Pixel{
-	pub fn new(wall_height:f64, distnace:f64, id:String) -> Self {
-		Self{
-			wall_height:wall_height,
-			distance:distnace,
-			id:id
+		Self {
+			x: self.x,
+			y: self.y,
+			color: self.color,
+			char: self.char,
 		}
 	}
 }
 
+impl Pixel {
+	pub fn new(x: u16, y: u16, color: u128, char: char) -> Self {
+		Self { x, y, color, char }
+	}
+}

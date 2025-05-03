@@ -1,5 +1,3 @@
-
-
 pub(crate) use angle_sc::{self, Degrees};
 
 
@@ -90,22 +88,25 @@ impl Player {
 	}
 
 	fn poll_heading(&mut self) {
-		let deg = self.heading;
-
-		if deg.0 >= -45.0 && deg.0 <= 45.0 {
-			self.player.self_ = '^';
-			self.direction = Direction::NORTH;
-		}else if deg.0 >= 45.0 && deg.0 <= 135.0 {
-			self.player.self_ = '>';
-			self.direction = Direction::EAST;
-		}else if deg.0 >= 135.0 && deg.0 <= 180.0 {
-			self.player.self_ = 'v';
-			self.direction = Direction::SOUTH;
-		}else{
-			self.player.self_ = '<';
-			self.direction = Direction::WEST;
+		// Normalize angle to 0-360 range
+		let mut angle = self.heading.0 % 360.0;
+		if angle < 0.0 {
+			angle += 360.0;
 		}
-
 		
+		// Define direction based on angle
+		let (character, direction) = match angle {
+			a if (0.0..=45.0).contains(&a) || (315.0..=360.0).contains(&a) => 
+				('^', Direction::NORTH),
+			a if (45.0..=135.0).contains(&a) => 
+				('>', Direction::EAST),
+			a if (135.0..=225.0).contains(&a) => 
+				('v', Direction::SOUTH),
+			_ => 
+				('<', Direction::WEST),
+		};
+		
+		self.player.self_ = character;
+		self.direction = direction;
 	}
 }

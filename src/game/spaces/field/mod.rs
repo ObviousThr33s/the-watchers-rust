@@ -1,47 +1,80 @@
-
 use std::collections::HashMap;
 
-use crate::game::entity::{self, Entity};
+use crate::game::entity::Entity;
 
-pub struct Field{
-	pub entities:HashMap<String,Entity>,
-	pub field:HashMap<(usize, usize, String), Entity>
+/// Represents a 2D field where entities can be placed
+pub struct Field {
+	/// Map of entity IDs to their corresponding Entity objects
+	pub entities: HashMap<String, Entity>,
+	/// Map of entity positions and IDs to their corresponding Entity objects
+	pub field: HashMap<(usize, usize, String), Entity>,
 }
 
 impl Clone for Field {
 	fn clone(&self) -> Self {
 		Self { 
 			entities: self.entities.clone(),
-			field:self.field.clone()
+			field: self.field.clone(),
 		}
 	}
 }
 
 impl ToString for Field {
 	fn to_string(&self) -> String {
-		let mut s_:Vec<String> = Vec::new();
-		s_.push(String::from("\n"));
+		let mut output: Vec<String> = Vec::new();
+		output.push(String::from("\n"));
 
-		for i in self.entities.clone() {
-			s_.push(format!("\t{}\n", i.0));
+		for (id, _entity) in &self.entities {
+			output.push(format!("\t{}\n", id));
 		}
 
-		let s = s_.concat();
-		s
+		output.concat()
 	}
 }
 
-impl Field{
-
-	pub fn new() -> Self{
-		Field { entities: HashMap::new(), field: HashMap::new()}
+impl Field {
+	/// Creates a new empty Field
+	pub fn new() -> Self {
+		Field { 
+			entities: HashMap::new(), 
+			field: HashMap::new(),
+		}
 	}
 
-	pub fn add_entity(&mut self, entity:Entity){
+	/// Adds an entity to the field
+	pub fn add_entity(&mut self, entity: Entity) {
+		let key = entity.get();
+		self.entities.insert(entity.id.clone(), entity.clone());
+		self.field.insert(key, entity);
+	}
+
+	/// Updates an existing entity in the field with position changes
+	pub fn set_entity(&mut self, entity: Entity) {
+		// First, find and remove the old entity by ID
+		if let Some(old_entity) = self.entities.get(&entity.id) {
+			// Remove from the field map using old position
+			self.field.remove(&old_entity.get());
+		}
+
+		// Update in the entities map
+		self.entities.insert(entity.id.clone(), entity.clone());
+		
+		// Insert at the new position in the field map
 		self.field.insert(entity.get(), entity);
 	}
+	
+	/// Gets an entity at a specific position (x, y), if it exists
+	pub fn get_entity_by_position(&self, x: usize, y: usize) -> Option<&Entity> {
+		for ((entity_x, entity_y, _), entity) in &self.field {
+			if *entity_x == x && *entity_y == y {
+				return Some(entity);
+			}
+		}
+		None
+	}
 
-	pub fn set_entity(&mut self, entity:Entity) {
-		self.field.get(&entity.get()).replace(&entity);
+	/// Gets an entity by its ID, if it exists
+	pub fn get_entity_by_id(&self, id: &str) -> Option<&Entity> {
+		self.entities.get(id)
 	}
 }

@@ -1,16 +1,20 @@
-use crate::{game::{entity::{Entity, Priority}, spaces::field::Field}, gfx::{charset::CHARSETS, screen::Screen}};
+use crate::{
+	game::{entity::{Entity, Priority}, spaces::field::Field}, 
+	gfx::{charset::CHARSETS, screen::Screen}
+};
 
-pub struct Render{
+/// Handles rendering entities from a Field to a screen buffer
+pub struct Render {
 	render: Screen,
 	charset: CHARSETS,
 }
 
-
-
 impl Clone for Render {
 	fn clone(&self) -> Self { 
-		let render:Render = Render { render: self.render.clone(), charset: self.charset };
-		render
+		Self {
+			render: self.render.clone(),
+			charset: self.charset,
+		}
 	} 
 }
 
@@ -21,94 +25,49 @@ impl ToString for Render {
 }
 
 impl Render {
-
-	pub fn init(width:usize, height:usize, charset:CHARSETS) -> Self{
-		let scr:Screen = Screen::new(width, height);
-		let lamp_ = Render {			
-			render: scr,
-			charset: charset,
-		};
-		
-		
-		
-		lamp_
+	/// Creates a new render with specified dimensions and character set
+	pub fn init(width: usize, height: usize, charset: CHARSETS) -> Self {
+		Self {
+			render: Screen::new(width, height),
+			charset,
+		}
 	}
 	
-	pub fn rasterize(&mut self, field:&Field){
-
-		//first clear screen buffer
+	/// Renders all entities from the field to the screen buffer
+	pub fn rasterize(&mut self, field: &Field) {
+		// Clear screen buffer
 		self.render.screen.clear();
-
-		//get two clones of the entities
-		let entities1 = field.entities.clone();
-		let entities2 = field.entities.clone();
 		
-		//create an empty raster
-		let mut raster:Vec<Entity> = Vec::new();
-
-		//super tuple for all the data from the entities
-		let mut x:Vec<usize> = Vec::new();
-		let mut y:Vec<usize> = Vec::new();
-		let mut p:Vec<Priority> = Vec::new();
-		let mut id:Vec<String> = Vec::new();
-
-		//fill the super tuple
-		for e in entities1.iter(){
-			let (x_, y_, p_) = 
-							(e.1.x.clone(), e.1.y.clone(), e.1.priority.clone());
-			x.push(x_);
-			y.push(y_);
-			p.push(p_);
-			id.push(e.0.clone());
-		}
-
-		//if any element in has the same x,y as another, only put the element with
-		//the highest priority on the board
-		for (_i, e) in entities2.iter() {
-			let (x_, y_, p_) = 
-												(e.x, e.y, e.priority.clone());
-			let mut should_add = true;
-
-			for existing in raster.iter_mut() {
-				if existing.x == x_ && existing.y == y_ {
-					if p_ > existing.priority {
-						if let Some(existing) = raster.iter_mut()
-										.find(|existing| 
-											existing.x == x_ && existing.y == y_) 
-						{
-							*existing = e.clone();
-						}
+		// Create a raster with only the highest priority entity at each position
+		let mut position_map: std::collections::HashMap<(usize, usize), &Entity> = std::collections::HashMap::new();
+		
+		// First pass: collect highest priority entity at each position
+		for (_, entity) in field.entities.iter() {
+			let pos = (entity.x, entity.y);
+			
+			match position_map.get(&pos) {
+				Some(existing) => {
+					if entity.priority > existing.priority {
+						position_map.insert(pos, entity);
 					}
-					should_add = false;
-					break;
+				},
+				None => {
+					position_map.insert(pos, entity);
 				}
 			}
-
-			if should_add {
-				raster.push(e.clone());
-			}
 		}
-
-		let mut flag = false;
-
-
-		//push to render from pseudo raster
-		for i in 0..self.render.y {
-			for j in 0..self.render.x {
-				for e in &raster{
-					if j == e.x && i == e.y {
-						self.render.screen.push(e.self_);
-						flag = true;
-						break;
-					}
-				}
-				if flag == true{
-					flag = false;
-				}else{
+		
+		// Render the screen
+		for y in 0..self.render.y {
+			for x in 0..self.render.x {
+				// Check if an entity exists at this position
+				if let Some(entity) = position_map.get(&(x, y)) {
+					self.render.screen.push(entity.self_);
+				} else {
 					self.render.screen.push(' ');
 				}
 			}
 			self.render.screen.push('\n');
 		}
-}
+	}
 }

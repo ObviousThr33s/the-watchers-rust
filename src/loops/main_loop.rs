@@ -1,14 +1,14 @@
-
-
 use ratatui::DefaultTerminal;
 use crate::game::entity::player::{self, Player};
 use crate::game::spaces::field::{self, Field};
+use crate::gfx::portal::raster::{self, Raster};
 use crate::gfx::portal::Portal;
 use crate::gfx::render;
 use crate::input::handle_events;
 use crate::utils::{logger::Logger, time::Time};
 
 use super::player_loop::PlayerLoop;
+use crate::game::entity::{Entity, Priority};
 
 //See new() to update version
 pub struct MainLoop{
@@ -16,6 +16,7 @@ pub struct MainLoop{
 	pub logger:Logger,
 	pub field:Field,
 	pub portal:Portal,
+	pub raster:Raster,
 
 	_render_tick:usize,
 
@@ -45,6 +46,7 @@ impl MainLoop {
 			start:start_time.clone(),
 			field: Field::new(),
 			portal:Portal::new(),
+			raster:Raster::new(),
 
 
 			_render_tick:0,
@@ -81,7 +83,10 @@ impl MainLoop {
 		self.logger.log("Initializing...");
 
 		self.field.add_entity(self.player.player.clone());
-
+		// Add an entity at position (0, 0)
+		let static_entity = Entity::new(0, 0, '#', "Entity".to_owned(), Priority::LOW);
+		self.field.add_entity(static_entity);
+		self.logger.log("Added static entity at position (0, 0)");
 		//each method requires a call back to the state
 		self.state = GameStates::Render;
 
@@ -126,14 +131,19 @@ impl MainLoop {
 								self.terminal.size().unwrap().height);
 
 		self.logger.log(&format!("Size:{}x{}", w, h));		
-		//self.portal.create_raster(self.player.clone(), self.field.entities.clone(), w as usize, h as usize);
-		// /self.portal.fill_raster(w, h);
+		// Update the portal (minimap) with current field state
+
 
 		//render the frame in time with the event key
 		render(&mut self.terminal, 
 			&self.logger,
 			&self.field,
-			&self.portal.screen.to_string()).await;
+			&self.raster.to_string_with_ray(
+				&self.field, 
+				self.player.player.x as f32, 
+				self.player.player.y as f32, 
+				(self.player.heading.0 as f32), // Convert degrees to radians
+				 h as f32)).await;
 
 		
 
