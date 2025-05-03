@@ -1,5 +1,6 @@
 pub mod player;
 pub mod floor;
+pub mod wall_type;
 
 pub struct Entity {
 	pub x: usize,
