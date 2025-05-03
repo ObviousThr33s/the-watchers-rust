@@ -183,4 +183,75 @@ impl Raster {
 		
 		result
 	}
+
+	/// Creates a 2.5D representation of the world from the player's perspective
+	pub fn to_2d5_view(&self, field: &Field, start_x: f32, start_y: f32, angle: f32, fov: f32, width: usize, height: usize) -> String {
+		// Define constants
+		let ray_count = width; // One ray per column
+		let half_fov = fov / 2.0;
+		let angle_step = fov / (ray_count as f32);
+		let max_distance = 20.0; // Maximum viewing distance
+		
+		// Prepare the output grid
+		let mut output = vec![vec![' '; width]; height];
+		
+		// Cast rays across the field of view
+		for column in 0..ray_count {
+			// Calculate ray angle (angle - half_fov + column * angle_step)
+			let ray_angle = angle - half_fov + (column as f32) * angle_step;
+			
+			// Cast a ray and find the first obstacle
+			let ray_points = self.cast_ray(start_x, start_y, ray_angle, max_distance);
+			
+			// Calculate distance to first obstacle (if any)
+			let distance = if let Some((hit_x, hit_y)) = ray_points.iter().find(|&&(x, y)| self.grid.contains_key(&(x, y))) {
+				let dx = *hit_x as f32 - start_x;
+				let dy = *hit_y as f32 - start_y;
+				(dx * dx + dy * dy).sqrt() 
+			} else {
+				max_distance // No obstacle found within range
+			};
+			
+			// Apply fisheye correction (multiply distance by cos of angle difference)
+			let angle_diff = ray_angle - angle;
+			let corrected_distance = distance * angle_diff.cos();
+			
+			// Calculate wall height (inverse to distance)
+			let wall_height = (height as f32 * 0.8) / corrected_distance.max(0.1);
+			let wall_height = wall_height.min(height as f32) as usize;
+			
+			// Calculate where to start and end drawing the wall
+			let wall_top = (height - wall_height) / 2;
+			let wall_bottom = wall_top + wall_height;
+			
+			// Choose character/shading based on distance
+			let wall_char = match corrected_distance {
+				d if d < 2.0 => '█',
+				d if d < 4.0 => '▓',
+				d if d < 6.0 => '▒',
+				d if d < 10.0 => '░',
+				_ => '·',
+			};
+			
+			// Draw the wall column
+			for y in 0..height {
+				output[y][column] = if y >= wall_top && y < wall_bottom {
+					wall_char
+				} else if y < wall_top {
+					' ' // Sky
+				} else {
+					'.' // Ground
+				};
+			}
+		}
+		
+		// Convert to string
+		let mut result = String::new();
+		for row in output {
+			result.push_str(&row.iter().collect::<String>());
+			result.push('\n');
+		}
+		
+		result
+	}
 }

@@ -77,19 +77,16 @@ impl Player {
 	pub fn move_left(&mut self){
 		self.add_direction(90.0);
 		self.poll_heading();
-		self.player.move_left();
-		
 	}
 
 	pub fn move_right(&mut self){
 		self.sub_direction(90.0);
 		self.poll_heading();
-		self.player.move_right();
 	}
 
 	fn poll_heading(&mut self) {
 		// Normalize angle to 0-360 range
-		let mut angle = self.heading.0 % 360.0;
+		let mut angle = self.heading.0 % 180.0;
 		if angle < 0.0 {
 			angle += 360.0;
 		}
