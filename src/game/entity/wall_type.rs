@@ -1,3 +1,5 @@
+use super::Entity;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WallType {
 	Stone,
@@ -72,6 +74,27 @@ impl WallType {
 			"glass" => WallType::Glass,
 			"brick" => WallType::Brick,
 			_ => WallType::Custom('#'),
+		}
+	}
+
+	pub fn determine_wall_type(entity: &Entity) -> WallType {
+		// Determine wall type based on entity character or ID
+		match entity.self_ {
+			'#' => WallType::Stone,
+			'+' => WallType::Wood,
+			'M' => WallType::Metal,
+			'G' => WallType::Glass,
+			'B' => WallType::Brick,
+			// For entities with other characters, use their ID to determine type
+			_ => match entity.id.as_str() {
+				id if id.contains("wall") => WallType::Stone,
+				id if id.contains("wood") => WallType::Wood,
+				id if id.contains("metal") => WallType::Metal,
+				id if id.contains("glass") => WallType::Glass, 
+				id if id.contains("brick") => WallType::Brick,
+				// Default to a custom wall with the entity's character
+				_ => WallType::Custom(entity.self_),
+			},
 		}
 	}
 }

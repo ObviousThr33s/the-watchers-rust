@@ -1,4 +1,5 @@
-use crate::{game::entity::player::Player, input::PlayerMove, utils::logger::Logger};
+
+use crate::{game::entity::player::{self, Direction_, Player}, input::PlayerMove, utils::logger::Logger};
 
 
 pub struct PlayerLoop{
@@ -11,18 +12,38 @@ impl PlayerLoop {
 	//list so that player can be moved in place rather than borrow replaced
 	pub fn player_move(player:&mut Player, player_move:PlayerMove, logger:&mut Logger) {
 		
-		if player_move == PlayerMove::UP {
-			player.poll_move_forewards();
-		}
-		if player_move == PlayerMove::DOWN {
-			player.poll_move_backwards();
-		}
 		if player_move == PlayerMove::LEFT {
-			player.move_left();
+			player.add_direction(90.0);
+		}else if player_move == PlayerMove::RIGHT {
+			player.sub_direction(90.0);
+		}else if player_move == PlayerMove::NONE {
+			return;
 		}
-		if player_move == PlayerMove::RIGHT {
-			player.move_right();
+		
+		if player_move == PlayerMove::UP {
+			if player.direction == Direction_::NORTH {
+				player.player.y -= 1;
+			}if player.direction == Direction_::SOUTH {
+				player.player.y += 1;
+			}if player.direction == Direction_::EAST {
+				player.player.x -= 1;
+			}if player.direction == Direction_::WEST {
+				player.player.x += 1;
+			}
 		}
+
+		if player_move == PlayerMove::DOWN {
+			if player.direction == Direction_::NORTH {
+				player.player.y += 1;
+			}if player.direction == Direction_::SOUTH {
+				player.player.y -= 1;
+			}if player.direction == Direction_::EAST {
+				player.player.x += 1;
+			}if player.direction == Direction_::WEST {
+				player.player.x -= 1;
+			}
+		}
+		
 		
 		logger.log(player.player.to_string().as_str());
 
