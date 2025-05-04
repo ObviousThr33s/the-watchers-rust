@@ -1,7 +1,7 @@
 
 use raster::Raster;
 
-use crate::game::{entity::{player::{self, Player}, wall_type::WallType}, spaces::field::{self, Field}};
+use crate::game::{entity::{player::Player, wall_type::WallType}, spaces::field::Field};
 
 use super::screen::Screen;
 

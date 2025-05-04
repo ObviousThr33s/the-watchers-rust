@@ -1,5 +1,5 @@
 use crate::{
-	game::{entity::{Entity, Priority}, spaces::field::Field}, 
+	game::{entity::Entity, spaces::field::Field}, 
 	gfx::{charset::CHARSETS, screen::Screen}
 };
 
