@@ -182,7 +182,7 @@ impl Raster {
 	}
 
 	/// Creates a 2.5D representation of the world from the player's perspective
-	pub fn to_2d5_view(&self, field: &Field, start_x: f32, start_y: f32, angle: f32, fov: f32, width: usize, height: usize) -> String {
+	pub fn to_2d5_view(&self, start_x: f32, start_y: f32, angle: f32, fov: f32, width: usize, height: usize) -> String {
 		// Define constants
 		let ray_count = width; // One ray per column
 		let half_fov = fov / 2.0;

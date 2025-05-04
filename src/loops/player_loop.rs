@@ -1,5 +1,5 @@
 
-use crate::{game::entity::player::{self, Direction_, Player}, input::PlayerMove, utils::logger::Logger};
+use crate::{game::entity::player::{Direction_, Player}, input::PlayerMove, utils::logger::Logger};
 
 
 pub struct PlayerLoop{

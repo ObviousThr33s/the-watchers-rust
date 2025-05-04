@@ -59,6 +59,8 @@ impl Logger {
 		self.vers
 	}
 
+
+	//saves a special log to a specific directory
 	pub fn save_log_sp(dir:&str, file_name:&str, message:String){
 		let dir = format!("./{}/", dir);
 		let file_name = format!("{}.txt", file_name);
@@ -86,6 +88,7 @@ impl Logger {
 		}
 	}
 
+	//saves the main log
 	pub fn save_log(&mut self) {
 		let dir = "./res/";
 		let file_name = "log.txt";

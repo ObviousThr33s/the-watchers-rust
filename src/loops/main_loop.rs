@@ -53,7 +53,7 @@ impl MainLoop {
 			player:Player::new(),
 
 			//Set game version here
-			logger: Logger::new(start_time, "0.3.0".to_string()),
+			logger: Logger::new(start_time, "0.3.1".to_string()),
 			_output:String::new(),
 			terminal:terminal,
 		}
@@ -142,8 +142,7 @@ impl MainLoop {
 		render(&mut self.terminal, 
 			&self.logger,
 			&self.field,
-			&self.portal.raster.to_2d5_view(
-				&self.field, 
+			&self.portal.raster.to_2d5_view( 
 				self.player.player.x as f32, 
 				self.player.player.y as f32, 
 				self.player.heading.0 as f32 * std::f32::consts::PI / 180.0, // Convert degrees to radians
@@ -163,13 +162,16 @@ impl MainLoop {
 
 
 	pub fn exit(&mut self) {
-		
-		println!("Saving log...");
 		//force halt to save files
 		tokio::task::block_in_place(|| {
+			self.terminal.clear().unwrap();
+			self.terminal.flush().unwrap();
+			println!("Saving log...");
+	
 			self.logger.save_log();
 		});
-
+		println!("Saved log.");
+		println!("Exited.");
 		//let _ = self.terminal.clear();
 		//exit peaceably
 		std::process::exit(0x0);
