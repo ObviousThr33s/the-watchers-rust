@@ -9,7 +9,7 @@ use crossterm::event::{self, Event, KeyCode};
 use crate::{loops::main_loop::GameStates, utils::logger::Logger};
 
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum PlayerMove {
 	UP,
 	DOWN,

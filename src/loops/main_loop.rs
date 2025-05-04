@@ -1,8 +1,7 @@
 use ratatui::DefaultTerminal;
-use crate::game::entity::player::{self, Player};
-use crate::game::entity::wall_type::WallType;
-use crate::game::spaces::field::{self, Field};
-use crate::gfx::portal::raster::{self, Raster};
+use crate::game::entity::player::Player;
+use crate::game::spaces::field::Field;
+use crate::gfx::portal::raster::Raster;
 use crate::gfx::portal::Portal;
 use crate::gfx::render;
 use crate::input::handle_events;
@@ -118,7 +117,7 @@ impl MainLoop {
 			
 			self.field.set_entity(self.player.player.clone());
 			
-			self.logger.log(&format!("{}", self.field.to_string()));
+			//self.logger.log(&format!("{}", self.field.to_string()));
 
 			self.state = GameStates::Render;
 			self.state_loop().await.await;	
@@ -134,7 +133,7 @@ impl MainLoop {
 		self.logger.log(&format!("Size:{}x{}", w, h));
 		
 		// Update the raster with walls and obstacles if needed
-		self.update_raster_walls();
+		self.portal.update_raster_walls(self.field.clone(), &self.player);
 		
 		// Calculate field of view (in radians)
 		let fov = std::f32::consts::PI / 3.0; // 60 degrees
@@ -143,14 +142,14 @@ impl MainLoop {
 		render(&mut self.terminal, 
 			&self.logger,
 			&self.field,
-			&self.raster.to_2d5_view(
+			&self.portal.raster.to_2d5_view(
 				&self.field, 
 				self.player.player.x as f32, 
 				self.player.player.y as f32, 
 				self.player.heading.0 as f32 * std::f32::consts::PI / 180.0, // Convert degrees to radians
 				fov,
 				w as usize,
-				(h as usize) // Half the terminal height for the 3D view
+				h as usize // Half the terminal height for the 3D view
 			)).await;
 
 		self.state = GameStates::Run;
@@ -158,48 +157,10 @@ impl MainLoop {
 	}
 
 	// Helper method to use Field entities to update the raster walls
-	fn update_raster_walls(&mut self) {
-		// Clear existing walls
-		self.raster.clear();
-		
-		// Create boundary walls of stone (keeping this for world boundaries)
 
-		// Add walls based on entities in the field
-		for (_, entity) in &self.field.entities {
-			// Skip the player entity (don't want player to be a wall)
-			if entity.id == self.player.player.id {
-				continue;
-			}
-			
-			// Determine wall type based on entity properties
-			let wall_type = self.determine_wall_type(entity);
-			
-			// Add to raster
-			self.raster.add_wall_point(entity.x as u16, entity.y as u16, wall_type);
-		}
-	}
 
 	// Helper method to determine wall type from an entity
-	fn determine_wall_type(&self, entity: &Entity) -> WallType {
-		// Determine wall type based on entity character or ID
-		match entity.self_ {
-			'#' => WallType::Stone,
-			'+' => WallType::Wood,
-			'M' => WallType::Metal,
-			'G' => WallType::Glass,
-			'B' => WallType::Brick,
-			// For entities with other characters, use their ID to determine type
-			_ => match entity.id.as_str() {
-				id if id.contains("wall") => WallType::Stone,
-				id if id.contains("wood") => WallType::Wood,
-				id if id.contains("metal") => WallType::Metal,
-				id if id.contains("glass") => WallType::Glass, 
-				id if id.contains("brick") => WallType::Brick,
-				// Default to a custom wall with the entity's character
-				_ => WallType::Custom(entity.self_),
-			},
-		}
-	}
+
 
 	pub fn exit(&mut self) {
 		

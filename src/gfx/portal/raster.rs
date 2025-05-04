@@ -22,6 +22,8 @@ impl Raster {
 		}
 	}
 
+
+
 	/// Creates a Raster from a collection of Pixels
 	pub fn from_pixels(pixels: Vec<Pixel>) -> Self {
 		let mut grid = HashMap::new();
@@ -106,7 +108,7 @@ impl Raster {
 
 	/// Creates a string representation of a field with a ray cast through it
 	/// from the specified starting position and angle
-	pub fn to_string_with_ray(&self, field: &Field, start_x: f32, start_y: f32, angle: f32, max_distance: f32) -> String {
+	pub fn to_string_with_ray(&self, field:Field, start_x: f32, start_y: f32, angle: f32, max_distance: f32) -> String {
 		// Get the dimensions of the area we need to represent
 		let mut min_x = u16::MAX;
 		let mut min_y = u16::MAX;
@@ -261,17 +263,6 @@ impl Raster {
 		let wall_bottom = wall_top + wall_height;
 		
 		(wall_top, wall_bottom)
-	}
-	
-	/// Choose character based on distance
-	fn get_wall_character(&self, distance: f32) -> char {
-		match distance {
-			d if d < 2.0 => '█',
-			d if d < 4.0 => '▓',
-			d if d < 6.0 => '▒',
-			d if d < 10.0 => '░',
-			_ => '·',
-		}
 	}
 	
 	/// Get default wall character based on distance
