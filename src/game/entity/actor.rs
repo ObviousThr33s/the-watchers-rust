@@ -14,9 +14,10 @@ impl Actor {
 		Actor { name, health, attack_power, art: String::new() }
 	}
 
-	pub fn set_art_from_file(&mut self, file_path: &str) {
-		let art_file = Path::new(file_path);
-		let mut file = File::open(art_file).unwrap_or_else(|_| panic!("Error loading art file: {}", file_path));
+	pub fn set_art_from_file(&mut self, actor_type:&str) {
+		let path = &format!("./res/entities/{}/art.txt", actor_type);
+		let art_file = Path::new(path);
+		let mut file = File::open(art_file).unwrap_or_else(|_| panic!("Error loading art file for: {}", actor_type));
 		file.read_to_string(&mut self.art).expect("Error reading art file");
 	}
 

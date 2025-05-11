@@ -61,6 +61,12 @@ impl Screen{
 		}
 		s
 	}
+
+	pub fn from_string(&mut self, s:String){
+		self.screen.clear();
+		self.screen = s.chars().collect();
+	}
+
 	pub fn _get_size(&self) -> i64{
 		self.x*self.y
 	}

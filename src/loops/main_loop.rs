@@ -110,10 +110,14 @@ impl MainLoop {
 
 			if !near_entities.is_empty() && near_entities[0].get().2 == "Fae" {
 				self.logger.log("You have found a fae!");
-				fae.set_art_from_file("./res/art/characters/fairy0.txt");
+				fae.set_art_from_file("Fairy");
 			}
 
-			self.portal.screen.screen = fae.art.clone().chars().collect();
+
+			self.portal.screen.x = self.terminal.size().unwrap().width as i64;
+			self.portal.build_screen(fae.get_art().to_string(), "Hello".to_string());
+
+			//self.portal.screen.screen = fae.art.clone().chars().collect();
 
 			PlayerLoop::player_move(
 				&mut self.game.player,
@@ -138,10 +142,12 @@ impl MainLoop {
 
 		self.logger.log(&format!("Size:{}x{}", w, h));
 
+		
+
 		render(&mut self.terminal, 
 			&self.logger,
 			&self.game.field,
-			&self.portal.screen.screen.iter().collect::<String>(),
+			&self.portal.screen.to_string(),
 			).await;
 
 		self.state = GameStates::Run;
