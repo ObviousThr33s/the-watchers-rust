@@ -26,7 +26,7 @@ impl ToString for Render {
 
 impl Render {
 	/// Creates a new render with specified dimensions and character set
-	pub fn init(width: usize, height: usize, charset: CHARSETS) -> Self {
+	pub fn init(width: i64, height: i64, charset: CHARSETS) -> Self {
 		Self {
 			render: Screen::new(width, height),
 			charset,
@@ -39,8 +39,8 @@ impl Render {
 		self.render.screen.clear();
 		
 		// Create a raster with only the highest priority entity at each position
-		let mut position_map: std::collections::HashMap<(usize, usize), &Entity> = std::collections::HashMap::new();
-		
+		let mut position_map: std::collections::HashMap<(i64, i64), &Entity> = std::collections::HashMap::new();
+
 		// First pass: collect highest priority entity at each position
 		for (_, entity) in field.entities.iter() {
 			let pos = (entity.x, entity.y);

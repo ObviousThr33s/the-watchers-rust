@@ -1,23 +1,23 @@
 
-use raster::Raster;
+
 
 use crate::game::{entity::{player::Player, wall_type::WallType}, spaces::field::Field};
 
 use super::screen::Screen;
 
-pub mod raster;
 pub mod pixel;
 
 pub struct Portal {
 	pub screen:Screen,
-	pub raster:Raster,
 }
 
 impl Portal {
 
 	pub fn new() -> Self {
-		Self { screen: Screen::new(0, 0), raster: Raster::new()}
+		Self { screen: Screen::new(0, 0)}
 	}
+	
+	/*
 	pub fn update_raster_walls(&mut self, field:Field, player:&Player) {
 		// Clear existing walls
 		self.raster.clear();
@@ -37,6 +37,6 @@ impl Portal {
 			// Add to raster
 			self.raster.add_wall_point(entity.x as u16, entity.y as u16, wall_type);
 		}
-	}
+	}*/
 
 }

@@ -7,7 +7,7 @@ pub struct Field {
 	/// Map of entity IDs to their corresponding Entity objects
 	pub entities: HashMap<String, Entity>,
 	/// Map of entity positions and IDs to their corresponding Entity objects
-	pub field: HashMap<(usize, usize, String), Entity>,
+	pub field: HashMap<(i64, i64, String), Entity>,
 }
 
 impl Clone for Field {
@@ -64,7 +64,7 @@ impl Field {
 	}
 	
 	/// Gets an entity at a specific position (x, y), if it exists
-	pub fn get_entity_by_position(&self, x: usize, y: usize) -> Option<&Entity> {
+	pub fn get_entity_by_position(&self, x: i64, y: i64) -> Option<&Entity> {
 		for ((entity_x, entity_y, _), entity) in &self.field {
 			if *entity_x == x && *entity_y == y {
 				return Some(entity);

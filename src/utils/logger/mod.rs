@@ -90,7 +90,7 @@ impl Logger {
 
 	//saves the main log
 	pub fn save_log(&mut self) {
-		let dir = "./res/";
+		let dir = "./res/logs";
 		let file_name = "log.txt";
 
 		let mut file_path = PathBuf::from(dir);
