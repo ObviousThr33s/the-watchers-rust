@@ -1,7 +1,9 @@
 
 
 
-use crate::game::{entity::{player::Player, wall_type::WallType}, spaces::field::Field};
+use ratatui::crossterm::style::Stylize;
+
+use crate::{game::{entity::{player::Player, wall_type::WallType}, spaces::field::Field}, utils::logger};
 
 use super::screen::Screen;
 
@@ -9,34 +11,63 @@ pub mod pixel;
 
 pub struct Portal {
 	pub screen:Screen,
+	art:String,
+	prompt:String,
 }
 
 impl Portal {
 
 	pub fn new() -> Self {
-		Self { screen: Screen::new(0, 0)}
+		Self { screen: Screen::new(0, 0), art:"none".to_owned(), prompt:"none".to_owned()}
 	}
 	
-	/*
-	pub fn update_raster_walls(&mut self, field:Field, player:&Player) {
-		// Clear existing walls
-		self.raster.clear();
+	fn set_screen(&mut self, screen: String) {
+		self.screen.from_string(screen);
+	}
+
+	pub fn build_screen(&mut self, art:String, prompt:String) {
+	
+		self.art = art;
+		self.prompt = prompt;
 		
-		// Create boundary walls of stone (keeping this for world boundaries)
+		let art_lines = self.art.lines().count();
+		let prompt_lines = self.prompt.lines().count();
+		let max_lines = if art_lines > prompt_lines {art_lines} else {prompt_lines};
+		
 
-		// Add walls based on entities in the field
-		for (_, entity) in field.entities.iter() {
-			// Skip the player entity (don't want player to be a wall)
-			if entity.id == player.player.id {
-				continue;
+		let mut i = 0;
+
+		let mut scr = String::new();
+
+		loop {
+			if i >= 12 {
+				break;
 			}
+			let art_line = self.art.lines().rev().nth(i).unwrap_or("");
+			let prompt_line = self.prompt.lines().rev().nth(i).unwrap_or(".\n");
 			
-			// Determine wall type based on entity properties
-			let wall_type = WallType::determine_wall_type(&entity);
-			
-			// Add to raster
-			self.raster.add_wall_point(entity.x as u16, entity.y as u16, wall_type);
-		}
-	}*/
+			let white_space = self.screen.x - ((art_line.len() + prompt_line.len()) as i64);
+			let mut white_space_string:String = String::new();
+			for n in 0..white_space{
+				white_space_string.push(' ');
+			}
 
+			let art_line = if let Some(pos) = art_line.find('\n') {
+				&art_line[..pos]
+			} else {
+				art_line
+			};
+
+			let lin = format!("{}{}{}", art_line, white_space_string, prompt_line);
+			
+			logger::Logger::save_log_sp("./res/logs/", "screen", format!("{}", lin));
+			
+			scr.push_str(&lin.chars().rev().collect::<String>());
+			
+			i += 1;
+		}
+
+		self.screen.from_string(scr);
+
+	}
 }
