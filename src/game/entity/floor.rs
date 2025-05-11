@@ -4,7 +4,7 @@ pub struct Floor {
 }
 
 impl Floor {
-	pub fn get_self(x:usize, y:usize, id:String) -> Entity{
+	pub fn get_self(x:i64, y:i64, id:String) -> Entity{
 		Entity {
 			x,
 			y,

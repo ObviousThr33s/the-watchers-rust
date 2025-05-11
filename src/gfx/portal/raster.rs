@@ -60,7 +60,7 @@ impl Raster {
 	}
 
 	/// Casts a ray from a starting point in a given direction
-	pub fn cast_ray(&self, start_x: f32, start_y: f32, angle: f32, max_distance: f32) -> Vec<(u16, u16)> {
+	pub fn cast_ray(&self, start_x: f64, start_y: f64, angle: f64, max_distance: f64) -> Vec<(u16, u16)> {
 		let mut points = Vec::new();
 		
 		// Calculate direction vector from angle
@@ -108,7 +108,7 @@ impl Raster {
 
 	/// Creates a string representation of a field with a ray cast through it
 	/// from the specified starting position and angle
-	pub fn to_string_with_ray(&self, field:Field, start_x: f32, start_y: f32, angle: f32, max_distance: f32) -> String {
+	pub fn to_string_with_ray(&self, field:Field, start_x: f64, start_y: f64, angle: f64, max_distance: f64) -> String {
 		// Get the dimensions of the area we need to represent
 		let mut min_x = u16::MAX;
 		let mut min_y = u16::MAX;
@@ -154,7 +154,7 @@ impl Raster {
 				// Check if this coordinate is in the ray's path
 				if ray_set.contains(&(x, y)) {
 					// Check if we have an entity from the field at this position
-					if let Some(entity) = field.get_entity_by_position(x as usize, y as usize) {
+					if let Some(entity) = field.get_entity_by_position(x as i64, y as i64) {
 						// Show the entity with highlighting (using *)
 						result.push_str(&format!("*{}*", entity.self_));
 					} else if let Some(value) = self.grid.get(&(x, y)) {
@@ -164,7 +164,7 @@ impl Raster {
 						// Just show the ray path
 						result.push_str("·");
 					}
-				} else if let Some(entity) = field.get_entity_by_position(x as usize, y as usize) {
+				} else if let Some(entity) = field.get_entity_by_position(x as i64, y as i64) {
 					// Show the entity without highlighting
 					result.push_str(&format!("{}", entity.self_));
 				} else if let Some(value) = self.grid.get(&(x, y)) {
@@ -182,11 +182,11 @@ impl Raster {
 	}
 
 	/// Creates a 2.5D representation of the world from the player's perspective
-	pub fn to_2d5_view(&self, start_x: f32, start_y: f32, angle: f32, fov: f32, width: usize, height: usize) -> String {
+	pub fn to_2d5_view(&self, start_x: f64, start_y: f64, angle: f64, fov: f64, width: usize, height: usize) -> String {
 		// Define constants
 		let ray_count = width; // One ray per column
 		let half_fov = fov / 2.0;
-		let angle_step = fov / (ray_count as f32);
+		let angle_step = fov / (ray_count as f64);
 		let max_distance = 20.0; // Maximum viewing distance
 		
 		// Prepare the output grid
@@ -201,7 +201,7 @@ impl Raster {
 			let (distance, wall_type) = self.cast_single_ray(start_x, start_y, ray_angle, max_distance);
 			
 			// Apply fisheye correction
-			let corrected_distance = self.correct_fisheye(distance, ray_angle, angle);
+			let corrected_distance = self.correct_fisheye(distance as f32, ray_angle as f32, angle as f32);
 			
 			// Calculate wall height and position
 			let (wall_top, wall_bottom) = self.calculate_wall_dimensions(corrected_distance, height);
@@ -221,19 +221,19 @@ impl Raster {
 	}
 	
 	/// Calculate the angle for a specific ray
-	fn calculate_ray_angle(&self, center_angle: f32, half_fov: f32, column: usize, angle_step: f32) -> f32 {
-		center_angle - half_fov + (column as f32) * angle_step
+	fn calculate_ray_angle(&self, center_angle: f64, half_fov: f64, column: usize, angle_step: f64) -> f64 {
+		center_angle - half_fov + (column as f64) * angle_step
 	}
 	
 	/// Cast a single ray and return the distance to a hit
-	fn cast_single_ray(&self, start_x: f32, start_y: f32, angle: f32, max_distance: f32) -> (f32, Option<WallType>) {
+	fn cast_single_ray(&self, start_x: f64, start_y: f64, angle: f64, max_distance: f64) -> (f64, Option<WallType>) {
 		let ray_points = self.cast_ray(start_x, start_y, angle, max_distance);
 		
 		// Find the first obstacle hit by the ray
 		if let Some((hit_x, hit_y)) = ray_points.iter().find(|&&(x, y)| self.grid.contains_key(&(x, y))) {
 			// Calculate Euclidean distance
-			let dx = *hit_x as f32 - start_x;
-			let dy = *hit_y as f32 - start_y;
+			let dx = *hit_x as f64 - start_x ;
+			let dy = *hit_y as f64 - start_y;
 			let distance = (dx * dx + dy * dy).sqrt();
 			
 			// Get the wall type

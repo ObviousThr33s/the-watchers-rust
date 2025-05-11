@@ -1,10 +1,11 @@
 pub mod player;
 pub mod floor;
 pub mod wall_type;
+pub mod actor;
 
 pub struct Entity {
-	pub x: usize,
-	pub y: usize,
+	pub x: i64,
+	pub y: i64,
 
 	pub priority:Priority,
 
@@ -20,8 +21,8 @@ pub enum Priority {
 }
 
 impl Entity {
-	
-	pub fn new(x: usize, y: usize, self_: char, id:String, priority:Priority) -> Self {
+
+	pub fn new(x: i64, y: i64, self_: char, id:String, priority:Priority) -> Self {
 		Entity { x, y, self_, id, priority}
 	}
 
@@ -59,16 +60,16 @@ impl Entity {
 
 	}
 
-	fn set_position(&mut self, new_x: usize, new_y: usize) {
+	fn set_position(&mut self, new_x: i64, new_y: i64) {
 		self.x = new_x;
 		self.y = new_y;
 	}
 	
-	pub fn get(&self) -> (usize, usize, String){
+	pub fn get(&self) -> (i64, i64, String){
 		(self.x, self.y, self.id.clone())
 	}
 
-	pub fn get_position(&self) -> (usize, usize) {
+	pub fn get_position(&self) -> (i64, i64) {
 		(self.x, self.y)
 	}
 

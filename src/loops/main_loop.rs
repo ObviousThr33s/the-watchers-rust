@@ -1,8 +1,9 @@
 use ratatui::DefaultTerminal;
+use crate::game::entity::actor::Actor;
 use crate::game::entity::player::Player;
 use crate::game::spaces::field::Field;
-use crate::gfx::portal::raster::Raster;
-use crate::gfx::portal::Portal;
+use crate::game::Game;
+use crate::gfx::portal::{self, Portal};
 use crate::gfx::render;
 use crate::input::handle_events;
 use crate::utils::{logger::Logger, time::Time};
@@ -14,13 +15,10 @@ use crate::game::entity::{Entity, Priority};
 pub struct MainLoop{
 	pub start: Time,
 	pub logger:Logger,
-	pub field:Field,
 	pub portal:Portal,
-	pub raster:Raster,
+	pub game:Game,
 
 	_render_tick:usize,
-
-	pub player:Player, //at some point this could be a hash table for many players/angle entities
 
 	state:GameStates,
 	terminal:DefaultTerminal,
@@ -44,13 +42,10 @@ impl MainLoop {
 		MainLoop { 
 			state: GameStates::Init,
 			start:start_time.clone(),
-			field: Field::new(),
 			portal:Portal::new(),
-			raster:Raster::new(),
-
+			game:Game::new(),
 
 			_render_tick:0,
-			player:Player::new(),
 
 			//Set game version here
 			logger: Logger::new(start_time, "0.3.1".to_string()),
@@ -82,14 +77,10 @@ impl MainLoop {
 		
 		self.logger.log("Initializing...");
 
-		self.field.add_entity(self.player.player.clone());
-		// Add an entity at position (0, 0)
-		let static_entity = Entity::new(0, 0, '+', "wall".to_owned(), Priority::LOW);
-		self.field.add_entity(static_entity);
-		self.logger.log("Added static entity at position (0, 0)");
-		//each method requires a call back to the state
 		self.state = GameStates::Render;
+		self.game.init(&mut self.logger);
 
+		//each method requires a call back to the state loop
 		self.state_loop().await.await;
 	}
 
@@ -110,17 +101,32 @@ impl MainLoop {
 				break;
 			}
 
+			let near_entities = self.game.check_collision(&self.game.player.player);
+
+
+			let mut fae = Actor::new( 
+					"Fae".to_owned(), 
+					1, 1);
+
+			if !near_entities.is_empty() && near_entities[0].get().2 == "Fae" {
+				self.logger.log("You have found a fae!");
+				fae.set_art_from_file("./res/art/characters/fairy0.txt");
+			}
+
+			self.portal.screen.screen = fae.art.clone().chars().collect();
+
 			PlayerLoop::player_move(
-				&mut self.player,
+				&mut self.game.player,
 				player_input, 
 				&mut self.logger,);
 			
-			self.field.set_entity(self.player.player.clone());
+			self.game.field.set_entity(self.game.player.player.clone());
 			
-			//self.logger.log(&format!("{}", self.field.to_string()));
+			//check for collisions
+			
 
 			self.state = GameStates::Render;
-			self.state_loop().await.await;	
+			self.state_loop().await.await;
 		}
 
 	}
@@ -131,25 +137,12 @@ impl MainLoop {
 					  self.terminal.size().unwrap().height);
 
 		self.logger.log(&format!("Size:{}x{}", w, h));
-		
-		// Update the raster with walls and obstacles if needed
-		self.portal.update_raster_walls(self.field.clone(), &self.player);
-		
-		// Calculate field of view (in radians)
-		let fov = std::f32::consts::PI / 3.0; // 60 degrees
-		
-		// Render the 2.5D view
+
 		render(&mut self.terminal, 
 			&self.logger,
-			&self.field,
-			&self.portal.raster.to_2d5_view( 
-				self.player.player.x as f32, 
-				self.player.player.y as f32, 
-				self.player.heading.0 as f32 * std::f32::consts::PI / 180.0, // Convert degrees to radians
-				fov,
-				w as usize,
-				h as usize // Half the terminal height for the 3D view
-			)).await;
+			&self.game.field,
+			&self.portal.screen.screen.iter().collect::<String>(),
+			).await;
 
 		self.state = GameStates::Run;
 		self.state_loop().await.await;

@@ -6,7 +6,7 @@ pub struct Room {
 }
 
 impl Room {
-	pub fn gen_floor(height:usize, width:usize, x:usize, y:usize, id:String) -> Vec<Entity> {
+	pub fn gen_floor(height:i64, width:i64, x:i64, y:i64, id:String) -> Vec<Entity> {
 		let mut f:Vec<Entity> = Vec::new();
 
 		for i in y..height+y {
