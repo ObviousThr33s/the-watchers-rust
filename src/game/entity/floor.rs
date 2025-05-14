@@ -1,4 +1,4 @@
-use super::Entity;
+use super::{actor::Actor, Entity};
 
 pub struct Floor {
 }
@@ -11,6 +11,7 @@ impl Floor {
 			priority: super::Priority::LOW,
 			self_: '.',
 			id: id,
+			actor:Actor::new("Floor".to_owned(), 0, 0)
 		}
 	}
 }

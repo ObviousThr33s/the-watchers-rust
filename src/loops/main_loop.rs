@@ -1,15 +1,13 @@
+
 use ratatui::DefaultTerminal;
-use crate::game::entity::actor::Actor;
-use crate::game::entity::player::Player;
-use crate::game::spaces::field::Field;
+use crate::game::entity::player::Direction_;
 use crate::game::Game;
-use crate::gfx::portal::{self, Portal};
+use crate::gfx::portal::Portal;
 use crate::gfx::render;
 use crate::input::handle_events;
 use crate::utils::{logger::Logger, time::Time};
 
 use super::player_loop::PlayerLoop;
-use crate::game::entity::{Entity, Priority};
 
 //See new() to update version
 pub struct MainLoop{
@@ -89,7 +87,7 @@ impl MainLoop {
 	//always a work in progress
 	pub async fn run(&mut self){
 		
-
+		
 		loop {
 			//event key which sends signals for game state and player movement
 			
@@ -100,22 +98,6 @@ impl MainLoop {
 				self.exit();
 				break;
 			}
-
-			let near_entities = self.game.check_collision(&self.game.player.player);
-
-
-			let mut fae = Actor::new( 
-					"Fae".to_owned(), 
-					1, 1);
-
-			if !near_entities.is_empty() && near_entities[0].get().2 == "Fae" {
-				self.logger.log("You have found a fae!");
-				fae.set_art_from_file("Fairy");
-			}
-
-
-			self.portal.screen.x = self.terminal.size().unwrap().width as i64;
-			self.portal.build_screen(fae.get_art().to_string(), "Hello".to_string());
 
 			//self.portal.screen.screen = fae.art.clone().chars().collect();
 
@@ -128,7 +110,29 @@ impl MainLoop {
 			
 			//check for collisions
 			
+			let near_entities = self.game.check_collision(&self.game.player.player);
 
+
+			let direction_mask = vec![
+				Direction_::LEFT,
+				Direction_::RIGHT,
+				Direction_::UP,
+				Direction_::DOWN
+			];
+
+			
+			for i in 0..4 {
+				if !near_entities[i].id.contains(&self.game.player.player.id) && self.game.player.direction == direction_mask[i] {
+					self.portal.set_portal(near_entities[i].actor.art.clone(), near_entities[i].id.to_owned());
+					self.logger.log("You see something...");
+					break;
+				} else if i == 3 {
+					self.portal.set_portal(" ".to_string(), "You see nothing".to_string());
+				}
+			}
+
+			self.portal.build_screen(self.terminal.size().unwrap().width as i64);
+			
 			self.state = GameStates::Render;
 			self.state_loop().await.await;
 		}

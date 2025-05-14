@@ -9,16 +9,24 @@ pub struct Actor{
 	pub art:String
 }
 
+impl Clone for Actor {
+	fn clone(&self) -> Self {
+		Self { name: self.name.clone(), health: self.health.clone(), attack_power: self.attack_power.clone(), art: self.art.clone() }
+	}
+}
+
 impl Actor {
 	pub fn new(name: String, health: i32, attack_power: i32) -> Self {
 		Actor { name, health, attack_power, art: String::new() }
 	}
 
-	pub fn set_art_from_file(&mut self, actor_type:&str) {
-		let path = &format!("./res/entities/{}/art.txt", actor_type);
+	pub fn set_art_from_file(&mut self) {
+		let path = &format!("./res/entities/{}/art.txt", self.name);
 		let art_file = Path::new(path);
-		let mut file = File::open(art_file).unwrap_or_else(|_| panic!("Error loading art file for: {}", actor_type));
-		file.read_to_string(&mut self.art).expect("Error reading art file");
+		let mut file = File::open(art_file).unwrap_or_else(|_| panic!("Error loading art file for: {}", self.name));
+		let mut buf:String = String::new();
+		file.read_to_string(&mut buf).expect("Error reading art file");
+		self.art = buf.clone();
 	}
 
 	pub fn set_stats_from_file(&mut self, file_path: &str) {

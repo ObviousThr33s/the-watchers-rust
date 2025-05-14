@@ -1,3 +1,5 @@
+use actor::Actor;
+
 pub mod player;
 pub mod floor;
 pub mod wall_type;
@@ -10,7 +12,9 @@ pub struct Entity {
 	pub priority:Priority,
 
 	pub self_: char,
-	pub id:String
+	pub id:String,
+
+	pub actor:Actor
 }
 
 #[derive(PartialEq, PartialOrd, Clone)]
@@ -22,8 +26,8 @@ pub enum Priority {
 
 impl Entity {
 
-	pub fn new(x: i64, y: i64, self_: char, id:String, priority:Priority) -> Self {
-		Entity { x, y, self_, id, priority}
+	pub fn new(x: i64, y: i64, self_: char, id:String, priority:Priority, actor:Actor) -> Self {
+		Entity { x, y, self_, id, priority, actor}
 	}
 
 	pub fn update(&mut self, e: Entity) {
@@ -82,7 +86,8 @@ impl Clone for Entity {
 			y: self.y.clone(),
 			self_: self.self_.clone(),
 			priority: self.priority.clone(),
-			id:self.id.clone()
+			id:self.id.clone(),
+			actor:self.actor.clone()
 		}
 	}
 }

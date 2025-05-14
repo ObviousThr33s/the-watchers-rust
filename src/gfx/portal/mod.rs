@@ -1,9 +1,8 @@
 
 
 
-use ratatui::crossterm::style::Stylize;
 
-use crate::{game::{entity::{player::Player, wall_type::WallType}, spaces::field::Field}, utils::logger};
+use crate::utils::logger;
 
 use super::screen::Screen;
 
@@ -11,8 +10,8 @@ pub mod pixel;
 
 pub struct Portal {
 	pub screen:Screen,
-	art:String,
-	prompt:String,
+	pub art:String,
+	pub prompt:String,
 }
 
 impl Portal {
@@ -21,14 +20,13 @@ impl Portal {
 		Self { screen: Screen::new(0, 0), art:"none".to_owned(), prompt:"none".to_owned()}
 	}
 	
-	fn set_screen(&mut self, screen: String) {
-		self.screen.from_string(screen);
-	}
-
-	pub fn build_screen(&mut self, art:String, prompt:String) {
-	
+	pub fn set_portal(&mut self, art:String, prompt:String) {
 		self.art = art;
 		self.prompt = prompt;
+	}
+
+	pub fn build_screen(&mut self, width:i64) {
+		self.screen.x = width;
 		
 		let art_lines = self.art.lines().count();
 		let prompt_lines = self.prompt.lines().count();
@@ -40,15 +38,15 @@ impl Portal {
 		let mut scr = String::new();
 
 		loop {
-			if i >= 12 {
+			if i >= max_lines {
 				break;
 			}
 			let art_line = self.art.lines().rev().nth(i).unwrap_or("");
 			let prompt_line = self.prompt.lines().rev().nth(i).unwrap_or(".\n");
-			
+		
 			let white_space = self.screen.x - ((art_line.len() + prompt_line.len()) as i64);
 			let mut white_space_string:String = String::new();
-			for n in 0..white_space{
+			for _n in 0..white_space{
 				white_space_string.push(' ');
 			}
 

@@ -21,26 +21,26 @@ impl PlayerLoop {
 		}
 		
 		if player_move == PlayerMove::UP {
-			if player.direction == Direction_::NORTH {
+			if player.direction == Direction_::UP {
 				player.player.y -= 1;
-			}if player.direction == Direction_::SOUTH {
+			}if player.direction == Direction_::DOWN {
 				player.player.y += 1;
-			}if player.direction == Direction_::EAST {
+			}if player.direction == Direction_::LEFT {
 				player.player.x -= 1;
-			}if player.direction == Direction_::WEST {
+			}if player.direction == Direction_::RIGHT {
 				player.player.x += 1;
 			}
 		}
 
 		if player_move == PlayerMove::DOWN {
-			if player.direction == Direction_::NORTH {
-				player.player.y += 1;
-			}if player.direction == Direction_::SOUTH {
+			if player.direction == Direction_::DOWN {
 				player.player.y -= 1;
-			}if player.direction == Direction_::EAST {
-				player.player.x += 1;
-			}if player.direction == Direction_::WEST {
+			}if player.direction == Direction_::UP {
+				player.player.y += 1;
+			}if player.direction == Direction_::RIGHT {
 				player.player.x -= 1;
+			}if player.direction == Direction_::LEFT {
+				player.player.x += 1;
 			}
 		}
 		
