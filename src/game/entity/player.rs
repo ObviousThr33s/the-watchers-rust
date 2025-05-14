@@ -1,6 +1,6 @@
 use angle_sc::Degrees;
 
-use super::{Entity, Priority};
+use super::{actor::Actor, Entity, Priority};
 
 pub struct Player {
 	pub player:Entity,
@@ -10,10 +10,10 @@ pub struct Player {
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum Direction_ {
-	NORTH,
-	SOUTH,
-	EAST,
-	WEST
+	UP,
+	DOWN,
+	RIGHT,
+	LEFT,
 }
 
 impl Clone for Player {
@@ -35,10 +35,11 @@ impl Player {
 				y: 2,
 				priority: Priority::MED,
 				self_: '^', 
-				id: "Player".to_owned() 
+				id: "Player".to_owned(),
+    			actor: Actor::new("Player".to_owned(), 100, 100), 
 			},
 			heading: angle_sc::Degrees(0.0),
-			direction:Direction_::NORTH
+			direction:Direction_::UP
 		}
 	}
 
@@ -58,19 +59,19 @@ impl Player {
 	pub fn poll_heading(&mut self) {
 
 		if self.heading.0 == -90.0 {
-			self.direction = Direction_::EAST;
+			self.direction = Direction_::LEFT;
 			self.player.self_ = '<';
 		}
 		if self.heading.0 == 90.0 {
-			self.direction = Direction_::WEST;
+			self.direction = Direction_::RIGHT;
 			self.player.self_ = '>';
 		}
 		if self.heading.0 == 180.0 {
-			self.direction = Direction_::SOUTH;
+			self.direction = Direction_::DOWN;
 			self.player.self_ = 'v';
 		}
 		if self.heading.0 == 0.0 {
-			self.direction = Direction_::NORTH;
+			self.direction = Direction_::UP;
 			self.player.self_ = '^';
 		}
 

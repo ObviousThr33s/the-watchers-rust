@@ -11,7 +11,7 @@ pub mod levels;
 pub mod entities;
 pub mod world;*/
 
-use entity::{player::Player, Entity, Priority};
+use entity::{actor::Actor, player::Player, Entity, Priority};
 use spaces::field::Field;
 
 use crate::utils::logger;
@@ -39,8 +39,25 @@ impl Game {
 	pub fn init(&mut self, logger: &mut logger::Logger) {
 		self.field.add_entity(self.player.player.clone());
 		
-		let static_entity = Entity::new(1, 1, 'F', "Fae".to_owned(), Priority::LOW);
-		self.field.add_entity(static_entity);
+		let mut actor2 = Actor::new( 
+					"Death".to_owned(), 
+					1, 1);
+			actor2.set_art_from_file();
+
+		let mut actor1 = Actor::new( 
+					"Fairy".to_owned(), 
+					1, 1);
+			actor1.set_art_from_file();
+
+		let fae = Entity::new(1, 1, 'F', "Fae".to_owned(), Priority::LOW, actor1.clone());
+		let faed = Entity::new(1, 1, 'G', "Faed".to_owned(), Priority::HIG, actor1);
+
+		let death = Entity::new(2,0,'D', "Death".to_owned(), Priority::LOW, actor2);
+
+		self.field.add_entity(faed);
+		self.field.add_entity(fae);
+		self.field.add_entity(death);
+
 		self.check_collision(&self.player.player);
 
 		logger.log("Game initialized");
@@ -61,11 +78,15 @@ impl Game {
 			(x, y + 1), // down
 		];
 
+
+		let i = 0;
 		for (nx, ny) in near_mask {
 			if let Some(e) = self.field.get_entity_by_position(nx, ny) {
 				if e.get() != entity.get() {
 					near_entities.push(e.clone());
 				}
+			}else{
+				near_entities.push(entity.clone());
 			}
 		}
 
