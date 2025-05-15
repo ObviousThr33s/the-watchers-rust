@@ -1,7 +1,3 @@
-
-
-
-
 use crate::utils::logger;
 
 use super::screen::Screen;

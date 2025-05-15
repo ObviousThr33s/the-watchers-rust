@@ -11,8 +11,10 @@ pub mod levels;
 pub mod entities;
 pub mod world;*/
 
-use entity::{actor::Actor, player::Player, Entity, Priority};
-use spaces::field::Field;
+use std::collections::HashMap;
+
+use entity::{actor::{Actor, ActorData}, entities::fairy::{self, Fairy}, player::Player, Actions, Entity, Priority};
+use spaces::field::{self, Field};
 
 use crate::utils::logger;
 
@@ -23,7 +25,12 @@ pub mod spaces;
 
 pub struct Game {
 	pub field:Field,
-	pub player:Player, //at some point this could be a hash table for many players/angle entities
+	pub player:Player,
+	pub gamePieces: HashMap<String,GamePieces>, //at some point this could be a hash table for many players/angle entities
+}
+
+pub enum GamePieces {
+	Fairy(Fairy)
 }
 
 impl Game {
@@ -33,34 +40,32 @@ impl Game {
 		Game {
 			field: Field::new(),
 			player: Player::new(),
+			gamePieces: HashMap::new()
 		}
 	}
 
 	pub fn init(&mut self, logger: &mut logger::Logger) {
 		self.field.add_entity(self.player.player.clone());
 		
-		let mut actor2 = Actor::new( 
-					"Death".to_owned(), 
-					1, 1);
-			actor2.set_art_from_file();
+		
+		let mut fairy1:GamePieces = GamePieces::Fairy(Fairy::new(0,0, "Oolooroo".to_owned(), "0".to_owned()));
 
-		let mut actor1 = Actor::new( 
-					"Fairy".to_owned(), 
-					1, 1);
-			actor1.set_art_from_file();
+		let GamePieces::Fairy(ref mut fairy) = &mut fairy1;
 
-		let fae = Entity::new(1, 1, 'F', "Fae".to_owned(), Priority::LOW, actor1.clone());
-		let faed = Entity::new(1, 1, 'G', "Faed".to_owned(), Priority::HIG, actor1);
-
-		let death = Entity::new(2,0,'D', "Death".to_owned(), Priority::LOW, actor2);
-
-		self.field.add_entity(faed);
-		self.field.add_entity(fae);
-		self.field.add_entity(death);
+		fairy.entity.actor.set_art_from_file("Fairy".to_owned());
+		self.field.add_entity(fairy.entity.clone());
+		self.gamePieces.insert(fairy.entity.id.clone(), fairy1);
 
 		self.check_collision(&self.player.player);
 
 		logger.log("Game initialized");
+	}
+
+	pub fn update(&mut self) {
+		if let Some(GamePieces::Fairy(ref mut fairy)) = self.gamePieces.get_mut("0") {
+			fairy.warp();
+			self.field.set_entity(fairy.entity.clone());
+		}
 	}
 
 	pub fn check_collision(&self, entity: &Entity) -> Vec<Entity> {
