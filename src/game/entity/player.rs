@@ -1,6 +1,6 @@
 use angle_sc::Degrees;
 
-use super::{actor::Actor, Entity, Priority};
+use super::{actor::{Actor, ActorData}, Entity, Priority};
 
 pub struct Player {
 	pub player:Entity,
@@ -26,18 +26,19 @@ impl Clone for Player {
 	}
 }
 
+
 impl Player {
 
 	pub fn new() -> Self {
 		Self {
-			player:Entity {
-				x: 2,
-				y: 2,
-				priority: Priority::MED,
-				self_: '^', 
-				id: "Player".to_owned(),
-    			actor: Actor::new("Player".to_owned(), 100, 100), 
-			},
+			player: Entity::new(
+				2,
+				2,
+				'^', 
+				"Player".to_owned(),
+				Priority::MED,
+				Actor::new("Player".to_owned(), 100, 100), 
+			),
 			heading: angle_sc::Degrees(0.0),
 			direction:Direction_::UP
 		}

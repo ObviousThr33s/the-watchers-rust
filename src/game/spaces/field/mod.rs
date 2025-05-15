@@ -77,4 +77,8 @@ impl Field {
 	pub fn get_entity_by_id(&self, id: &str) -> Option<&Entity> {
 		self.entities.get(id)
 	}
+
+	pub fn get_entity_by_id_mut(&mut self, id:&str) -> Option<&mut Entity>{
+		self.entities.get_mut(id)
+	}
 }

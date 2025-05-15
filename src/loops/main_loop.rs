@@ -108,6 +108,8 @@ impl MainLoop {
 			
 			self.game.field.set_entity(self.game.player.player.clone());
 			
+			self.game.update();
+
 			//check for collisions
 			
 			let near_entities = self.game.check_collision(&self.game.player.player);
@@ -123,7 +125,7 @@ impl MainLoop {
 			
 			for i in 0..4 {
 				if !near_entities[i].id.contains(&self.game.player.player.id) && self.game.player.direction == direction_mask[i] {
-					self.portal.set_portal(near_entities[i].actor.art.clone(), near_entities[i].id.to_owned());
+					self.portal.set_portal(near_entities[i].actor.art.clone(), near_entities[i].actor.name.clone());
 					self.logger.log("You see something...");
 					break;
 				} else if i == 3 {

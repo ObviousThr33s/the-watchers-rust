@@ -1,9 +1,16 @@
-use actor::Actor;
+use actor::{Actor, ActorData};
 
 pub mod player;
 pub mod floor;
-pub mod wall_type;
 pub mod actor;
+
+pub mod entities;
+
+pub enum GameObject {
+	Player(Entity),
+	Floor(Entity),
+	Fairy(Entity),
+}
 
 pub struct Entity {
 	pub x: i64,
@@ -13,8 +20,7 @@ pub struct Entity {
 
 	pub self_: char,
 	pub id:String,
-
-	pub actor:Actor
+	pub actor:Actor,
 }
 
 #[derive(PartialEq, PartialOrd, Clone)]
@@ -101,4 +107,8 @@ impl ToString for Entity {
 		let s_ = s.clone();
 		s_
 	}
+}
+
+pub(crate) trait Actions {
+	fn warp(&mut self);
 }
