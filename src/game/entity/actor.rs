@@ -1,16 +1,23 @@
-use std::{fs::File, io::{BufReader, Read}, path::Path};
+use std::{fs::File, io::Read, path::Path};
 
 
 pub struct Actor{
 	pub(crate) name: String,
 	pub(crate) health: i32,
 	pub(crate) attack_power: i32,
-	pub art:String
+	pub art:String,
+	pub prompt:String
 }
 
 impl Clone for Actor {
 	fn clone(&self) -> Self {
-		Self { name: self.name.clone(), health: self.health, attack_power: self.attack_power, art: self.art.clone() }
+		Self {	
+			name: self.name.clone(),
+			health: self.health, 
+			attack_power: self.attack_power, 
+			art: self.art.clone(), 
+			prompt: self.prompt.clone() 
+		}
 	}
 }
 
@@ -48,7 +55,7 @@ impl ActorData for Actor {
 	}
 
 	fn new(name: String, health: i32, attack_power: i32) -> Self {
-		Actor { name, health, attack_power, art:String::new() }
+		Actor { name, health, attack_power, art:String::new(), prompt:String::new() }
 	}
 
 	fn set_name(&mut self, name:String) {

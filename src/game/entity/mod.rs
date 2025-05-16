@@ -1,4 +1,4 @@
-use actor::{Actor, ActorData};
+use actor::Actor;
 
 pub mod player;
 pub mod floor;
@@ -20,7 +20,7 @@ pub struct Entity {
 
 	pub self_: char,
 	pub id:String,
-	pub actor:Actor,
+	
 }
 
 #[derive(PartialEq, PartialOrd, Clone)]
@@ -32,8 +32,8 @@ pub enum Priority {
 
 impl Entity {
 
-	pub fn new(x: i64, y: i64, self_: char, id:String, priority:Priority, actor:Actor) -> Self {
-		Entity { x, y, self_, id, priority, actor}
+	pub fn new(x: i64, y: i64, self_: char, id:String, priority:Priority) -> Self {
+		Entity { x, y, self_, id, priority}
 	}
 
 	pub fn update(&mut self, e: Entity) {
@@ -70,7 +70,7 @@ impl Entity {
 
 	}
 
-	fn set_position(&mut self, new_x: i64, new_y: i64) {
+	pub fn set_position(&mut self, new_x: i64, new_y: i64) {
 		self.x = new_x;
 		self.y = new_y;
 	}
@@ -93,7 +93,6 @@ impl Clone for Entity {
 			self_: self.self_.clone(),
 			priority: self.priority.clone(),
 			id:self.id.clone(),
-			actor:self.actor.clone()
 		}
 	}
 }
@@ -109,6 +108,15 @@ impl ToString for Entity {
 	}
 }
 
-pub(crate) trait Actions {
-	fn warp(&mut self);
+
+pub trait EntityData {
+	fn get_health(self) -> i32;
+	fn set_health(&mut self, health:i32);
+
+	fn get_power(self) -> i32;
+	fn set_power(&mut self, attack_power:i32);
+}
+
+pub trait Actions {
+	fn attack(self, actor: &mut Actor);
 }

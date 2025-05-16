@@ -1,4 +1,4 @@
-use super::{actor::Actor, Entity};
+use super::Entity;
 
 pub struct Floor;
 
@@ -10,7 +10,6 @@ impl Floor {
 			priority: super::Priority::LOW,
 			self_: '.',
 			id: id,
-			actor: Actor { name: "Floor".to_owned(), health: 1, attack_power:0, art:String::new() }
 		}
 	}
 }
