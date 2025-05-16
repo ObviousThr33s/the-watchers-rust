@@ -1,19 +1,20 @@
 use angle_sc::Degrees;
 
-use super::{actor::{Actor, ActorData}, Entity, Priority};
+use super::{Entity, Priority};
 
 pub struct Player {
 	pub player:Entity,
 	pub heading:Degrees,
 	pub direction:Direction_
+
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum Direction_ {
-	UP,
-	DOWN,
-	RIGHT,
-	LEFT,
+	UP = 0,
+	DOWN = 1,
+	RIGHT = 2,
+	LEFT = 3,
 }
 
 impl Clone for Player {
@@ -26,7 +27,6 @@ impl Clone for Player {
 	}
 }
 
-
 impl Player {
 
 	pub fn new() -> Self {
@@ -37,7 +37,6 @@ impl Player {
 				'^', 
 				"Player".to_owned(),
 				Priority::MED,
-				Actor::new("Player".to_owned(), 100, 100), 
 			),
 			heading: angle_sc::Degrees(0.0),
 			direction:Direction_::UP
@@ -76,5 +75,26 @@ impl Player {
 			self.player.self_ = '^';
 		}
 
+	}
+
+	pub fn is_facing(self, ents:Vec<Entity>) -> (bool, Option<Entity>) {
+		let (player_x, player_y) = self.player.get_position();
+
+		for e in ents {
+			let (e_x, e_y) = e.get_position();
+			if player_x-1 == e_x && self.direction == Direction_::LEFT {
+				return (true, Some(e));
+			}
+			if player_x+1 == e_x && self.direction == Direction_::RIGHT {
+				return (true, Some(e));
+			}
+			if player_y-1 == e_y && self.direction == Direction_::UP {
+				return (true, Some(e));
+			}
+			if player_y+1 == e_y && self.direction == Direction_::DOWN {
+				return (true, Some(e));
+			}
+		}
+		(false, None)
 	}
 }

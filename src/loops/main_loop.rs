@@ -1,6 +1,5 @@
 
 use ratatui::DefaultTerminal;
-use crate::game::entity::player::Direction_;
 use crate::game::Game;
 use crate::gfx::portal::Portal;
 use crate::gfx::render;
@@ -16,7 +15,7 @@ pub struct MainLoop{
 	pub portal:Portal,
 	pub game:Game,
 
-	_render_tick:usize,
+	tick:usize,
 
 	state:GameStates,
 	terminal:DefaultTerminal,
@@ -43,7 +42,7 @@ impl MainLoop {
 			portal:Portal::new(),
 			game:Game::new(),
 
-			_render_tick:0,
+			tick:0,
 
 			//Set game version here
 			logger: Logger::new(start_time, "0.3.1".to_string()),
@@ -98,43 +97,29 @@ impl MainLoop {
 				self.exit();
 				break;
 			}
-
-			//self.portal.screen.screen = fae.art.clone().chars().collect();
-
-			PlayerLoop::player_move(
-				&mut self.game.player,
-				player_input, 
-				&mut self.logger,);
+			let (mut art, mut prompt):(String,String) = (String::new(), String::new());
 			
-			self.game.field.set_entity(self.game.player.player.clone());
-			
-			self.game.update();
+			tokio::task::block_in_place(|| {
+				PlayerLoop::player_move(
+					&mut self.game.player,
+					player_input,
+					&mut self.logger,
+				);
 
-			//check for collisions
-			
-			let near_entities = self.game.check_collision(&self.game.player.player);
+				self.game.field.set_entity(self.game.player.player.clone());
+
+				self.game.update(&mut art, &mut prompt, self.tick);
+			});
 
 
-			let direction_mask = vec![
-				Direction_::LEFT,
-				Direction_::RIGHT,
-				Direction_::UP,
-				Direction_::DOWN
-			];
-
-			
-			for i in 0..4 {
-				if !near_entities[i].id.contains(&self.game.player.player.id) && self.game.player.direction == direction_mask[i] {
-					self.portal.set_portal(near_entities[i].actor.art.clone(), near_entities[i].actor.name.clone());
-					self.logger.log("You see something...");
-					break;
-				} else if i == 3 {
-					self.portal.set_portal(" ".to_string(), "You see nothing".to_string());
-				}
-			}
+			self.portal.set_portal(art, prompt);
 
 			self.portal.build_screen(self.terminal.size().unwrap().width as i64);
 			
+			self.tick += 1;
+
+			self.logger.log(&format!("Tick: {}", self.tick));
+
 			self.state = GameStates::Render;
 			self.state_loop().await.await;
 		}
@@ -169,8 +154,9 @@ impl MainLoop {
 	pub fn exit(&mut self) {
 		//force halt to save files
 		tokio::task::block_in_place(|| {
-			self.terminal.clear().unwrap();
 			self.terminal.flush().unwrap();
+			
+			self.terminal.clear().unwrap();
 			println!("Saving log...");
 	
 			self.logger.save_log();
