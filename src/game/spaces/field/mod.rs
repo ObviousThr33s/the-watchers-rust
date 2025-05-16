@@ -81,4 +81,10 @@ impl Field {
 	pub fn get_entity_by_id_mut(&mut self, id:&str) -> Option<&mut Entity>{
 		self.entities.get_mut(id)
 	}
+
+	pub fn remove_entity(&mut self, id: String) {
+		if let Some(entity) = self.entities.remove(&id) {
+			self.field.remove(&entity.get());
+		}
+	}
 }

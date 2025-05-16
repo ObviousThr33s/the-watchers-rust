@@ -45,7 +45,7 @@ impl MainLoop {
 			tick:0,
 
 			//Set game version here
-			logger: Logger::new(start_time, "0.3.1".to_string()),
+			logger: Logger::new(start_time, "0.4.0".to_string()),
 			_output:String::new(),
 			terminal:terminal,
 		}
@@ -108,7 +108,7 @@ impl MainLoop {
 
 				self.game.field.set_entity(self.game.player.player.clone());
 
-				self.game.update(&mut art, &mut prompt, self.tick);
+				self.game.update(&mut art, &mut prompt, self.tick, &mut self.logger);
 			});
 
 

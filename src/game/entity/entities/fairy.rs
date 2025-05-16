@@ -37,8 +37,9 @@ impl Fairy {
 
 impl Fairy {
 	pub fn warp(&mut self, tick:usize) {
-		if tick%7 == 0 {
+		if tick%3 == 0 {
 			self.entity.set_position(rand::random_range(0..10), rand::random_range(0..10));
+			self.actor.health -= 1;
 		}
 	}
 }
