@@ -3,7 +3,7 @@ use super::Entity;
 pub struct Floor;
 
 impl Floor {
-	pub fn get_self(x:i64, y:i64, id:String) -> Entity{
+	pub fn get_self(x:u16, y:u16, id:String) -> Entity{
 		Entity {
 			x,
 			y,

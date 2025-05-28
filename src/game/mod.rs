@@ -14,7 +14,7 @@ pub mod world;*/
 use std::collections::HashMap;
 
 use entity::{actor::ActorData, entities::fairy::{Fairy}, player::Player, Entity};
-use haps_system::haps::Haps;
+use haps_system::haps::{Hap, Haps};
 use spaces::field::Field;
 
 use crate::utils::logger;
@@ -58,57 +58,82 @@ impl Game {
 		let mut haps:Haps = Haps::new();
 
 		haps.add_event(
-		if tick == 3 {
-				self.create_entity(
-					GamePieces::Fairy(
-						Fairy::new(
-							0,0,
-							"Oolooroo".to_owned(),
-							"0".to_owned()
+			Hap {
+				id: "add_fairy".to_string(),
+				priority: entity::Priority::MED,
+				self_: {
+					if tick == 3 {
+						self.create_entity(
+							GamePieces::Fairy(
+								Fairy::new(
+									0,0,
+									"Oolooroo".to_owned(),
+									"0".to_owned()
+								)
+							)
 						)
-					)
-				)
-		}
+					}
+				},
+			}
 		);
 
-		haps.add_event(self.art_gen(art, prompt));
+		haps.add_event(Hap {
+			id: "art_gen".to_string(),
+			priority: entity::Priority::MED,
+			self_: {
+				self.art_gen(art, prompt)
+			},
+		});
 
-		haps.add_event(
-			for (_id, game_piece) in self.game_pieces.iter_mut() {
-				match game_piece {
-					GamePieces::Fairy(ref mut fairy) => {
-					fairy.warp(tick);
-					
-					self.field.set_entity(fairy.entity.clone());
-					logger.log(&format!("Fairy {} health: {}", fairy.entity.id, fairy.actor.health));
+		haps.add_event(Hap {
+			id: "update_fairies".to_string(),
+			priority: entity::Priority::MED,
+			self_: {
+				for (_id, game_piece) in self.game_pieces.iter_mut() {
+					match game_piece {
+						GamePieces::Fairy(ref mut fairy) => {
+						fairy.warp(tick);
+						
+						self.field.set_entity(fairy.entity.clone());
+						logger.log(&format!("Fairy {} health: {}", fairy.entity.id, fairy.actor.health));
 
+					}
 				}
 			}
+			},
 		});
 	
 		let mut to_remove: Vec<String> = Vec::new();
 		
-		haps.add_event(
-			for(_id, game_piece) in self.game_pieces.iter_mut() {
-				match game_piece {
-					GamePieces::Fairy(ref mut fairy) => {
-						if fairy.actor.health <= 0 {
-							// Mark the entity for removal
-							to_remove.push(fairy.entity.id.clone());
-							// Remove from field immediately
-							self.field.remove_entity(fairy.entity.id.clone());
+		haps.add_event(Hap {
+			id: "mark_dead_entities".to_string(),
+			priority: entity::Priority::MED,
+			self_: {
+				for(_id, game_piece) in self.game_pieces.iter_mut() {
+					match game_piece {
+						GamePieces::Fairy(ref mut fairy) => {
+							if fairy.actor.health <= 0 {
+								// Mark the entity for removal
+								to_remove.push(fairy.entity.id.clone());
+								// Remove from field immediately
+								self.field.remove_entity(fairy.entity.id.clone());
+							}
 						}
 					}
 				}
-			}
-		);
+			},
+		});
 		
 		// Now remove the marked entities from game_pieces
-		haps.add_event(
-			for id in &to_remove {
-				self.game_pieces.remove(id);
-			}
-		);
+		haps.add_event(Hap {
+			id: "remove_dead_entities".to_string(),
+			priority: entity::Priority::MED,
+			self_: {
+				for id in &to_remove {
+					self.game_pieces.remove(id);
+				}
+			},
+		});
 
 		
 
@@ -147,26 +172,24 @@ impl Game {
 	}
 
 
-
-	pub fn check_near(&self, entity: &Entity, entities:&mut Vec<Entity>) {
+	pub fn check_near(&self, entity: &Entity, entities: &mut Vec<Entity>) {
 		// Check for collision with other entities
 		// Return true if collision occurs, false otherwise
 		let (x, y) = entity.get_position();
 		
-		let near_mask = vec![
-			(x - 1, y), // left
-			(x + 1, y), // right
-			(x, y - 1), // up
-			(x, y + 1), // down
+		let near_mask = [
+			(x.saturating_sub(1), y), // left
+			(x + 1, y),               // right
+			(x, y.saturating_sub(1)), // up
+			(x, y + 1),               // down
 		];
-
 
 		for (nx, ny) in near_mask {
 			if let Some(e) = self.field.get_entity_by_position(nx, ny) {
-				if e.get() != entity.get() {
+				if e.id != entity.id {
 					entities.push(e.clone());
 				}
-			}else{
+			} else {
 				entities.push(entity.clone());
 			}
 		}

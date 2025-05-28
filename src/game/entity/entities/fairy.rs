@@ -15,7 +15,7 @@ impl Clone for Fairy {
 }
 
 impl Fairy {
-	pub fn new(x:i64, y:i64, name:String, id:String) -> Self{
+	pub fn new(x:u16, y:u16, name:String, id:String) -> Self{
 		Self {
 			entity: Entity::new(
 				x,

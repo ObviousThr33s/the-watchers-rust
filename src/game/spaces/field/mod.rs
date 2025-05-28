@@ -6,25 +6,25 @@ use crate::game::entity::Entity;
 pub struct Field {
 	/// Map of entity IDs to their corresponding Entity objects
 	pub entities: HashMap<String, Entity>,
-	/// Map of entity positions and IDs to their corresponding Entity objects
-	pub field: HashMap<(i64, i64, String), Entity>,
+	/// Spatial index for fast position-based lookups: (x, y) -> entity_id
+	pub spatial_index: HashMap<(u16, u16), String>,
 }
 
 impl Clone for Field {
 	fn clone(&self) -> Self {
 		Self { 
 			entities: self.entities.clone(),
-			field: self.field.clone(),
+			spatial_index: self.spatial_index.clone(),
 		}
 	}
 }
 
 impl ToString for Field {
 	fn to_string(&self) -> String {
-		let mut output: Vec<String> = Vec::new();
+		let mut output: Vec<String> = Vec::with_capacity(self.entities.len() + 1);
 		output.push(String::from("\n"));
 
-		for (id, _entity) in &self.entities {
+		for id in self.entities.keys() {
 			output.push(format!("\t{}\n", id));
 		}
 
@@ -37,54 +37,62 @@ impl Field {
 	pub fn new() -> Self {
 		Field { 
 			entities: HashMap::new(), 
-			field: HashMap::new(),
+			spatial_index: HashMap::new(),
 		}
 	}
 
 	/// Adds an entity to the field
 	pub fn add_entity(&mut self, entity: Entity) {
-		let key = entity.get();
-		self.entities.insert(entity.id.clone(), entity.clone());
-		self.field.insert(key, entity);
+		let pos = (entity.x, entity.y);
+		let id = entity.id.clone();
+		
+		// Remove any existing entity at this position
+		if let Some(old_id) = self.spatial_index.insert(pos, id.clone()) {
+			self.entities.remove(&old_id);
+		}
+		
+		self.entities.insert(id, entity);
 	}
 
 	/// Updates an existing entity in the field with position changes
 	pub fn set_entity(&mut self, entity: Entity) {
-		// First, find and remove the old entity by ID
-		if let Some(old_entity) = self.entities.get(&entity.id) {
-			// Remove from the field map using old position
-			self.field.remove(&old_entity.get());
+		let new_pos = (entity.x, entity.y);
+		let id = &entity.id;
+		
+		// Remove old spatial index entry if entity exists and position changed
+		if let Some(old_entity) = self.entities.get(id) {
+			let old_pos = (old_entity.x, old_entity.y);
+			if old_pos != new_pos {
+				self.spatial_index.remove(&old_pos);
+			}
 		}
 
-		// Update in the entities map
-		self.entities.insert(entity.id.clone(), entity.clone());
-		
-		// Insert at the new position in the field map
-		self.field.insert(entity.get(), entity);
+		// Update spatial index and entity
+		self.spatial_index.insert(new_pos, id.clone());
+		self.entities.insert(id.clone(), entity);
 	}
 	
 	/// Gets an entity at a specific position (x, y), if it exists
-	pub fn get_entity_by_position(&self, x: i64, y: i64) -> Option<&Entity> {
-		for ((entity_x, entity_y, _), entity) in &self.field {
-			if *entity_x == x && *entity_y == y {
-				return Some(entity);
-			}
-		}
-		None
+	#[inline]
+	pub fn get_entity_by_position(&self, x: u16, y: u16) -> Option<&Entity> {
+		self.spatial_index.get(&(x, y))
+			.and_then(|id| self.entities.get(id))
 	}
 
 	/// Gets an entity by its ID, if it exists
+	#[inline]
 	pub fn get_entity_by_id(&self, id: &str) -> Option<&Entity> {
 		self.entities.get(id)
 	}
 
-	pub fn get_entity_by_id_mut(&mut self, id:&str) -> Option<&mut Entity>{
+	#[inline]
+	pub fn get_entity_by_id_mut(&mut self, id: &str) -> Option<&mut Entity> {
 		self.entities.get_mut(id)
 	}
 
 	pub fn remove_entity(&mut self, id: String) {
 		if let Some(entity) = self.entities.remove(&id) {
-			self.field.remove(&entity.get());
+			self.spatial_index.remove(&(entity.x, entity.y));
 		}
 	}
 }

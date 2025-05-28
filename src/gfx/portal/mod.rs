@@ -1,3 +1,6 @@
+use noise::core::value;
+use pixel::Pixel;
+
 use crate::utils::logger;
 
 use super::screen::Screen;
@@ -21,47 +24,62 @@ impl Portal {
 		self.prompt = prompt;
 	}
 
-	pub fn build_screen(&mut self, width:i64) {
+	pub fn build_screen(&mut self, height:u16, width:u16) {
+		let screen_lines = self.create_raster_vector(width,height);
+		self.screen.screen.clear();
+		
+		for i in 0..height {
+			for j in 0..width {
+				self.screen.screen.push(screen_lines[i as usize].chars().nth(j as usize).unwrap());
+			}
+			self.screen.screen.push('\n');
+		}
+		
+	}
+
+	fn create_raster_vector(&mut self, width:u16, height:u16) -> Vec<String> {
 		self.screen.x = width;
+		self.screen.y = height;
+		self.screen.screen.clear();
 		
-		let art_lines = self.art.lines().count();
-		let prompt_lines = self.prompt.lines().count();
-		let max_lines = if art_lines > prompt_lines {art_lines} else {prompt_lines};
+		let mut pixels:Vec<Pixel> = Vec::new();
 		
-
-		let mut i = 0;
-
-		let mut scr = String::new();
-
-		loop {
-			if i >= max_lines {
-				break;
+		for y in 0..height {
+			for x in 0..width {
+				let pixel = Pixel::new(1, 0);
+				pixels.push(pixel);
 			}
-			let art_line = self.art.lines().rev().nth(i).unwrap_or("");
-			let prompt_line = self.prompt.lines().rev().nth(i).unwrap_or(".\n");
-		
-			let white_space = self.screen.x - ((art_line.len() + prompt_line.len()) as i64);
-			let mut white_space_string:String = String::new();
-			for _n in 0..white_space{
-				white_space_string.push(' ');
-			}
-
-			let art_line = if let Some(pos) = art_line.find('\n') {
-				&art_line[..pos]
-			} else {
-				art_line
-			};
-
-			let lin = format!("{}{}{}", art_line, white_space_string, prompt_line);
-			
-			logger::Logger::save_log_sp("./res/logs/", "screen", format!("{}", lin));
-			
-			scr.push_str(&lin.chars().rev().collect::<String>());
-			
-			i += 1;
 		}
 
-		self.screen.from_string(scr);
+		self.build_vector_screen(pixels.clone(), width, height)
+	}	
 
+	fn build_vector_screen(&mut self, pixels: Vec<Pixel>, width:u16, height:u16) -> Vec<String>{
+		let mut screen:Vec<String> = Vec::new();
+		let mut line:String = String::new();
+		let mut k:usize = 0;
+
+		for i in 0..height {
+			for j in 0..width {
+				line.push(Self::get_char_from_value(pixels[k].value).clone());
+				k += 1
+			}
+			screen.push(line);
+
+			line = String::new();
+		}
+
+		screen
+
+	}
+
+	fn get_char_from_value(value: u8) -> char {
+		match value {
+			0 => '█',
+			1 => '▒',
+			2 => '░',
+			3 => ' ',
+			_ => ' ',
+		}
 	}
 }
