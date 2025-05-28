@@ -13,17 +13,14 @@ pub enum GameObject {
 }
 
 pub struct Entity {
-	pub x: i64,
-	pub y: i64,
-
-	pub priority:Priority,
-
+	pub x: u16,
+	pub y: u16,
+	pub priority: Priority,
 	pub self_: char,
-	pub id:String,
-	
+	pub id: String,
 }
 
-#[derive(PartialEq, PartialOrd, Clone)]
+#[derive(Hash, Eq, PartialEq, PartialOrd, Clone)]
 pub enum Priority {
 	LOW = 0,
 	MED = 1,
@@ -32,7 +29,7 @@ pub enum Priority {
 
 impl Entity {
 
-	pub fn new(x: i64, y: i64, self_: char, id:String, priority:Priority) -> Self {
+	pub fn new(x: u16, y: u16, self_: char, id:String, priority:Priority) -> Self {
 		Entity { x, y, self_, id, priority}
 	}
 
@@ -69,17 +66,18 @@ impl Entity {
 		self.set_position(x, y);
 
 	}
-
-	pub fn set_position(&mut self, new_x: i64, new_y: i64) {
+	pub fn set_position(&mut self, new_x: u16, new_y: u16) {
 		self.x = new_x;
 		self.y = new_y;
 	}
 	
-	pub fn get(&self) -> (i64, i64, String){
-		(self.x, self.y, self.id.clone())
+	#[inline]
+	pub fn get(&self) -> (u16, u16, &str) {
+		(self.x, self.y, &self.id)
 	}
 
-	pub fn get_position(&self) -> (i64, i64) {
+	#[inline]
+	pub fn get_position(&self) -> (u16, u16) {
 		(self.x, self.y)
 	}
 
@@ -88,11 +86,11 @@ impl Entity {
 impl Clone for Entity {
 	fn clone(&self) -> Self {
 		Entity {
-			x: self.x.clone(),
-			y: self.y.clone(),
-			self_: self.self_.clone(),
+			x: self.x,
+			y: self.y,
+			self_: self.self_,
 			priority: self.priority.clone(),
-			id:self.id.clone(),
+			id: self.id.clone(),
 		}
 	}
 }

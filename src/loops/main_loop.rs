@@ -114,8 +114,6 @@ impl MainLoop {
 
 			self.portal.set_portal(art, prompt);
 
-			self.portal.build_screen(self.terminal.size().unwrap().width as i64);
-			
 			self.tick += 1;
 
 			self.logger.log(&format!("Tick: {}", self.tick));
@@ -133,7 +131,10 @@ impl MainLoop {
 
 		self.logger.log(&format!("Size:{}x{}", w, h));
 
-		
+
+		tokio::task::block_in_place( || {
+			self.portal.build_screen(self.terminal.size().unwrap().height, self.terminal.size().unwrap().width);
+		});
 
 		render(&mut self.terminal, 
 			&self.logger,

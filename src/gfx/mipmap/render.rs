@@ -26,23 +26,24 @@ impl ToString for Render {
 
 impl Render {
 	/// Creates a new render with specified dimensions and character set
-	pub fn init(width: i64, height: i64, charset: CHARSETS) -> Self {
+	pub fn init(width: u16, height: u16, charset: CHARSETS) -> Self {
 		Self {
 			render: Screen::new(width, height),
 			charset,
 		}
 	}
-	
-	/// Renders all entities from the field to the screen buffer
+		/// Renders all entities from the field to the screen buffer
 	pub fn rasterize(&mut self, field: &Field) {
 		// Clear screen buffer
 		self.render.screen.clear();
 		
-		// Create a raster with only the highest priority entity at each position
-		let mut position_map: std::collections::HashMap<(i64, i64), &Entity> = std::collections::HashMap::new();
+		// Pre-allocate with estimated capacity
+		let estimated_capacity = (self.render.x as usize * self.render.y as usize / 10).max(field.entities.len());
+		let mut position_map: std::collections::HashMap<(u16, u16), &Entity> = 
+			std::collections::HashMap::with_capacity(estimated_capacity);
 
 		// First pass: collect highest priority entity at each position
-		for (_, entity) in field.entities.iter() {
+		for entity in field.entities.values() {
 			let pos = (entity.x, entity.y);
 			
 			match position_map.get(&pos) {
@@ -56,6 +57,10 @@ impl Render {
 				}
 			}
 		}
+		
+		// Pre-allocate screen buffer
+		let total_size = (self.render.x as usize + 1) * self.render.y as usize; // +1 for newlines
+		self.render.screen.reserve(total_size);
 		
 		// Render the screen
 		for y in 0..self.render.y {

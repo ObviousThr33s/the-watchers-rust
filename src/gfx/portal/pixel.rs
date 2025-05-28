@@ -1,23 +1,21 @@
+use noise::core::value;
+
 pub struct Pixel {
-	pub x: u16,
-	pub y: u16,
+	pub value: u8,
 	pub color: u128,
-	pub char: char,
 }
 
 impl Clone for Pixel {
 	fn clone(&self) -> Self {
 		Self {
-			x: self.x,
-			y: self.y,
+			value: self.value,
 			color: self.color,
-			char: self.char,
 		}
 	}
 }
 
 impl Pixel {
-	pub fn new(x: u16, y: u16, color: u128, char: char) -> Self {
-		Self { x, y, color, char }
+	pub fn new(value: u8, color: u128) -> Self {
+		Self { value, color }
 	}
 }

@@ -1,7 +1,7 @@
 //just playing around with structs here
 pub struct Screen{
-	pub x:i64,
-	pub y:i64,
+	pub x:u16,
+	pub y:u16,
 	pub screen: Vec<char>,
 }
 
@@ -37,7 +37,7 @@ impl ToString for Screen{
 
 impl Screen{
 
-	pub fn new(width:i64, height:i64) -> Self{
+	pub fn new(width:u16, height:u16) -> Self{
 		let screen = Screen{
 			x:width,
 			y:height,
@@ -67,7 +67,7 @@ impl Screen{
 		self.screen = s.chars().collect();
 	}
 
-	pub fn _get_size(&self) -> i64{
+	pub fn _get_size(&self) -> u16{
 		self.x*self.y
 	}
 }
