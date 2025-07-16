@@ -1,11 +1,9 @@
-use noise::core::value;
 use pixel::Pixel;
-
-use crate::utils::logger;
 
 use super::screen::Screen;
 
 pub mod pixel;
+pub mod raster;
 
 pub struct Portal {
 	pub screen:Screen,
@@ -16,7 +14,11 @@ pub struct Portal {
 impl Portal {
 
 	pub fn new() -> Self {
-		Self { screen: Screen::new(0, 0), art:"none".to_owned(), prompt:"none".to_owned()}
+		Self {	
+				screen: Screen::new(0, 0), 
+				art:"none".to_owned(),
+				prompt:"none".to_owned(),
+		}
 	}
 	
 	pub fn set_portal(&mut self, art:String, prompt:String) {
@@ -29,8 +31,8 @@ impl Portal {
 		self.screen.screen.clear();
 		
 		for i in 0..height {
-			for j in 0..width {
-				self.screen.screen.push(screen_lines[i as usize].chars().nth(j as usize).unwrap());
+			for ch in screen_lines[i as usize].chars() {
+				self.screen.screen.push(ch);
 			}
 			self.screen.screen.push('\n');
 		}
@@ -44,8 +46,8 @@ impl Portal {
 		
 		let mut pixels:Vec<Pixel> = Vec::new();
 		
-		for y in 0..height {
-			for x in 0..width {
+		for _y in 0..height {
+			for _x in 0..width {
 				let pixel = Pixel::new(1, 0);
 				pixels.push(pixel);
 			}
@@ -59,8 +61,8 @@ impl Portal {
 		let mut line:String = String::new();
 		let mut k:usize = 0;
 
-		for i in 0..height {
-			for j in 0..width {
+		for _i in 0..height {
+			for _j in 0..width {
 				line.push(Self::get_char_from_value(pixels[k].value).clone());
 				k += 1
 			}

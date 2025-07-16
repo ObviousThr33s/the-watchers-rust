@@ -7,7 +7,7 @@ pub struct Field {
 	/// Map of entity IDs to their corresponding Entity objects
 	pub entities: HashMap<String, Entity>,
 	/// Spatial index for fast position-based lookups: (x, y) -> entity_id
-	pub spatial_index: HashMap<(u16, u16), String>,
+	pub spatial_index: HashMap<(i16, i16), String>,
 }
 
 impl Clone for Field {
@@ -74,7 +74,7 @@ impl Field {
 	
 	/// Gets an entity at a specific position (x, y), if it exists
 	#[inline]
-	pub fn get_entity_by_position(&self, x: u16, y: u16) -> Option<&Entity> {
+	pub fn get_entity_by_position(&self, x: i16, y: i16) -> Option<&Entity> {
 		self.spatial_index.get(&(x, y))
 			.and_then(|id| self.entities.get(id))
 	}

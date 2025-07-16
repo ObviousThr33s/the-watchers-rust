@@ -39,7 +39,7 @@ impl Render {
 		
 		// Pre-allocate with estimated capacity
 		let estimated_capacity = (self.render.x as usize * self.render.y as usize / 10).max(field.entities.len());
-		let mut position_map: std::collections::HashMap<(u16, u16), &Entity> = 
+		let mut position_map: std::collections::HashMap<(i16, i16), &Entity> = 
 			std::collections::HashMap::with_capacity(estimated_capacity);
 
 		// First pass: collect highest priority entity at each position
@@ -66,7 +66,7 @@ impl Render {
 		for y in 0..self.render.y {
 			for x in 0..self.render.x {
 				// Check if an entity exists at this position
-				if let Some(entity) = position_map.get(&(x, y)) {
+				if let Some(entity) = position_map.get(&(x as i16, y as i16)) {
 					self.render.screen.push(entity.self_);
 				} else {
 					self.render.screen.push(' ');

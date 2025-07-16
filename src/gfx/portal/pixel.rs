@@ -1,5 +1,3 @@
-use noise::core::value;
-
 pub struct Pixel {
 	pub value: u8,
 	pub color: u128,

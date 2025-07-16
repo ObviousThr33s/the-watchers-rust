@@ -1,6 +1,10 @@
 
+use std::time::Duration;
+
 use ratatui::DefaultTerminal;
+use tokio::time::sleep;
 use crate::game::Game;
+use crate::gfx::portal::raster::Raster;
 use crate::gfx::portal::Portal;
 use crate::gfx::render;
 use crate::input::handle_events;
@@ -19,7 +23,8 @@ pub struct MainLoop{
 
 	state:GameStates,
 	terminal:DefaultTerminal,
-	_output:String
+	_output:String,
+raster: Raster
 }
 
 //state loops definition
@@ -41,6 +46,7 @@ impl MainLoop {
 			start:start_time.clone(),
 			portal:Portal::new(),
 			game:Game::new(),
+			raster:Raster::new(),
 
 			tick:0,
 
@@ -58,7 +64,7 @@ impl MainLoop {
 	pub async fn state_loop(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + '_>> {
 		
 		Box::pin(async move {
-			//sleep(Duration::from_millis(1)).await;
+			sleep(Duration::from_micros(10)).await;
 			match self.state {
 				GameStates::Exit   => self.exit(),
 				GameStates::Run    => self.run().await,
@@ -85,43 +91,38 @@ impl MainLoop {
 	//running section of the main loop
 	//always a work in progress
 	pub async fn run(&mut self){
-		
-		
-		loop {
-			//event key which sends signals for game state and player movement
+		//event key which sends signals for game state and player movement
 			
-			let (new_state, player_input) = 
-				handle_events(&mut self.terminal, &mut self.logger);
+		let (new_state, player_input) = 
+			handle_events(&mut self.terminal, &mut self.logger);
 
-			if new_state == GameStates::Exit {	
-				self.exit();
-				break;
-			}
-			let (mut art, mut prompt):(String,String) = (String::new(), String::new());
-			
-			tokio::task::block_in_place(|| {
-				PlayerLoop::player_move(
-					&mut self.game.player,
-					player_input,
-					&mut self.logger,
-				);
+		//self.logger.log(format!("{:?}", player_input).as_str());
 
-				self.game.field.set_entity(self.game.player.player.clone());
-
-				self.game.update(&mut art, &mut prompt, self.tick, &mut self.logger);
-			});
-
-
-			self.portal.set_portal(art, prompt);
-
-			self.tick += 1;
-
-			self.logger.log(&format!("Tick: {}", self.tick));
-
-			self.state = GameStates::Render;
-			self.state_loop().await.await;
+		if new_state == GameStates::Exit {	
+			self.exit();
 		}
+		let (mut art, mut prompt):(String,String) = (String::new(), String::new());
+		
+		PlayerLoop::player_move(
+			&mut self.game.player,
+			player_input,
+			&mut self.logger,
+		);
 
+		self.game.field.set_entity(self.game.player.player.clone());
+		self.game.update(&mut art, &mut prompt, self.tick, &mut self.logger);
+	
+
+		self.portal.set_portal(art, prompt);
+
+		self.tick += 1;
+
+		self.logger.log(&format!("Tick: {}", self.tick));
+
+		self.state = GameStates::Render;
+		
+		self.render().await;
+	
 	}
 
 	pub async fn render(&mut self) {
@@ -132,25 +133,47 @@ impl MainLoop {
 		self.logger.log(&format!("Size:{}x{}", w, h));
 
 
-		tokio::task::block_in_place( || {
-			self.portal.build_screen(self.terminal.size().unwrap().height, self.terminal.size().unwrap().width);
-		});
+		//self.portal.build_screen(self.terminal.size().unwrap().height, self.terminal.size().unwrap().width);
+		let fov = std::f32::consts::PI / 3.0;
+
+		self.update_raster_walls();
 
 		render(&mut self.terminal, 
 			&self.logger,
 			&self.game.field,
-			&self.portal.screen.to_string(),
+			&self.raster.to_2d5_view(
+				&self.game.field, 
+				self.game.player.player.get_position().0 as f32, 
+				self.game.player.player.get_position().1 as f32, 
+				self.game.player.heading.0 as f32 * std::f32::consts::PI / 180.0, // Convert degrees to radians
+				fov,
+				w as usize,
+				h as usize // Half the terminal height for the 3D view
+			),
 			).await;
 
 		self.state = GameStates::Run;
 		self.state_loop().await.await;
 	}
 
-	// Helper method to use Field entities to update the raster walls
-
-
-	// Helper method to determine wall type from an entity
-
+	fn update_raster_walls(&mut self) {
+		// Clear existing walls
+		self.raster.clear();
+		
+		// Add walls from field entities
+		for (_, entity) in &self.game.field.entities {
+			// Check if this entity should be treated as a wall
+			// For example, entities with '#' character or specific type
+			if entity.self_ == 'F' {
+				// Add the entity position to the raster as a wall
+				self.raster.add_point(
+					entity.x,
+					entity.y,
+					"#".to_string()
+				);
+			}
+		}
+	}
 
 	pub fn exit(&mut self) {
 		//force halt to save files

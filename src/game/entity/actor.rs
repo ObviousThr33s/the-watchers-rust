@@ -1,4 +1,4 @@
-use std::{fs::File, io::Read, path::Path};
+use std::{fs::File, io::Read, path::{Path, PathBuf}};
 
 
 pub struct Actor{
@@ -78,9 +78,10 @@ pub trait ActorData {
 	fn set_name(&mut self, name: String);
 
 	fn set_art_from_file(&mut self, name:String) {
-		let path = &format!("./res/entities/{}/art.txt", name);
-		let art_file = Path::new(path);
-		let mut file = File::open(art_file).unwrap_or_else(|_| panic!("Error loading art file for: {}", name));
+		let cwd = std::env::current_dir().expect("Failed to get current directory");
+		let path = &format!("{}/res/entities/{}/art.txt", cwd.display(), name);
+		let art_file = PathBuf::from(path);
+		let mut file = File::open(&art_file).unwrap_or_else(|_| panic!("Error loading art file for: {} at {}", name, art_file.display()));
 		let mut buf:String = String::new();
 		file.read_to_string(&mut buf).expect("Error reading art file");
 		*self.art_mut() = buf;

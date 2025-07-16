@@ -1,5 +1,5 @@
 pub mod ui;
-pub mod mipmap;
+pub mod minimap;
 pub mod portal;
 pub mod charset;
 
