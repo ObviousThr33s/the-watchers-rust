@@ -3,7 +3,7 @@ use ratatui::{
 };
 use crate::{game::spaces::field::Field, utils::logger::Logger};
 
-use super::{charset::CHARSETS, mipmap::render::Render};
+use super::{charset::CHARSETS, minimap::render::Render};
 
 struct _UI {
 	//Too complicated to explain one comment at a time but essentially
@@ -71,6 +71,10 @@ fn draw_log <'a> (style:Style, border:BorderType, log_:&Logger) -> Paragraph <'a
 }
 
 pub(crate) fn draw_(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger) {
+	default(frame, screen, entities, log_);
+}
+
+pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger) {
 	let mut _frame_sizes: Vec<( u16, u16)> = Vec::new();
 
 	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);
@@ -126,5 +130,4 @@ pub(crate) fn draw_(frame: &mut Frame, screen:&String, entities:&Field, log_:&Lo
 	frame.render_widget(invty, inner_left);
 	frame.render_widget(frame0, inner_cent);
 	frame.render_widget(stats, inner_right);
-	
 }

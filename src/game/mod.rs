@@ -57,25 +57,25 @@ impl Game {
 		
 		let mut haps:Haps = Haps::new();
 
-		haps.add_event(
-			Hap {
-				id: "add_fairy".to_string(),
-				priority: entity::Priority::MED,
-				self_: {
-					if tick == 3 {
-						self.create_entity(
-							GamePieces::Fairy(
-								Fairy::new(
-									0,0,
-									"Oolooroo".to_owned(),
-									"0".to_owned()
+		if tick == 0 {
+			haps.add_event(
+				Hap {
+					id: "add_fairy".to_string(),
+					priority: entity::Priority::MED,
+					self_: {
+							self.create_entity(
+								GamePieces::Fairy(
+									Fairy::new(
+										0,0,
+										"Oolooroo".to_owned(),
+										"0".to_owned()
+									)
 								)
 							)
-						)
-					}
-				},
-			}
-		);
+						}
+				}
+			)
+		}
 
 		haps.add_event(Hap {
 			id: "art_gen".to_string(),
@@ -92,7 +92,7 @@ impl Game {
 				for (_id, game_piece) in self.game_pieces.iter_mut() {
 					match game_piece {
 						GamePieces::Fairy(ref mut fairy) => {
-						fairy.warp(tick);
+						//fairy.warp(tick);
 						
 						self.field.set_entity(fairy.entity.clone());
 						logger.log(&format!("Fairy {} health: {}", fairy.entity.id, fairy.actor.health));

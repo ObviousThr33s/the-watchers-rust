@@ -13,8 +13,8 @@ pub enum GameObject {
 }
 
 pub struct Entity {
-	pub x: u16,
-	pub y: u16,
+	pub x: i16,
+	pub y: i16,
 	pub priority: Priority,
 	pub self_: char,
 	pub id: String,
@@ -29,7 +29,7 @@ pub enum Priority {
 
 impl Entity {
 
-	pub fn new(x: u16, y: u16, self_: char, id:String, priority:Priority) -> Self {
+	pub fn new(x: i16, y: i16, self_: char, id:String, priority:Priority) -> Self {
 		Entity { x, y, self_, id, priority}
 	}
 
@@ -66,18 +66,18 @@ impl Entity {
 		self.set_position(x, y);
 
 	}
-	pub fn set_position(&mut self, new_x: u16, new_y: u16) {
+	pub fn set_position(&mut self, new_x: i16, new_y: i16) {
 		self.x = new_x;
 		self.y = new_y;
 	}
 	
 	#[inline]
-	pub fn get(&self) -> (u16, u16, &str) {
+	pub fn get(&self) -> (i16, i16, &str) {
 		(self.x, self.y, &self.id)
 	}
 
 	#[inline]
-	pub fn get_position(&self) -> (u16, u16) {
+	pub fn get_position(&self) -> (i16, i16) {
 		(self.x, self.y)
 	}
 
