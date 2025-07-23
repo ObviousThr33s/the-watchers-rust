@@ -66,7 +66,7 @@ impl Game {
 							self.create_entity(
 								GamePieces::Fairy(
 									Fairy::new(
-										0,0,
+										10,10,
 										"Oolooroo".to_owned(),
 										"0".to_owned()
 									)
@@ -145,7 +145,7 @@ impl Game {
 
 		match &mut entity {
 			GamePieces::Fairy(ref mut fairy) => {
-				fairy.entity.set_position(0, 0);
+				fairy.entity.set_position(fairy.entity.x, fairy.entity.y);
 				fairy.actor.set_art_from_file("Fairy".to_owned());
 				self.field.set_entity(fairy.entity.clone());
 				self.game_pieces.insert(fairy.entity.id.clone(), entity);

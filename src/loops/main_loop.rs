@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use ratatui::DefaultTerminal;
 use tokio::time::sleep;
+use crate::game::entity::player;
 use crate::game::Game;
 use crate::gfx::portal::raster::Raster;
 use crate::gfx::portal::Portal;
@@ -138,6 +139,8 @@ impl MainLoop {
 
 		self.update_raster_walls();
 
+		self.logger.log(format!("{}", self.game.player.heading.0).as_str());
+
 		render(&mut self.terminal, 
 			&self.logger,
 			&self.game.field,
@@ -145,7 +148,7 @@ impl MainLoop {
 				&self.game.field, 
 				self.game.player.player.get_position().0 as f32, 
 				self.game.player.player.get_position().1 as f32, 
-				self.game.player.heading.0 as f32 * std::f32::consts::PI / 180.0, // Convert degrees to radians
+				(self.game.player.heading.0 as f32 * std::f32::consts::PI / 180.0)+275.0, // Convert degrees to radians, add magic number
 				fov,
 				w as usize,
 				h as usize // Half the terminal height for the 3D view
