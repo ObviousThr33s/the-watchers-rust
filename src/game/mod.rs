@@ -14,7 +14,7 @@ pub mod world;*/
 use std::collections::HashMap;
 
 use entity::{actor::ActorData, entities::fairy::{Fairy}, player::Player, Entity};
-use haps_system::haps::{Hap, Haps};
+use haps_system::haps::{Event, Haps};
 use spaces::field::Field;
 
 use crate::utils::logger;
@@ -22,6 +22,7 @@ use crate::utils::logger;
 pub mod entity;
 pub mod spaces;
 pub mod haps_system;
+pub mod vision;
 
 //pub mod group;
 
@@ -49,7 +50,7 @@ impl Game {
 
 	pub fn init(&mut self, logger: &mut logger::Logger) {
 		self.field.add_entity(self.player.player.clone());
-		
+
 		// Add walls to create an interesting layout - starting close to player
 		let walls = vec![
 			// Wall directly ahead (x=2-4, y=3)
@@ -61,100 +62,83 @@ impl Game {
 			// Corner structure
 			(10, 2), (10, 3), (10, 4), (11, 4), (12, 4),
 		];
-		
+
 		let wall_count = walls.len();
 		for (x, y) in walls {
 			self.field.add_entity(Entity::new(x as i16, y as i16, '#', format!("wall_{}", x * 20 + y), entity::Priority::LOW));
 		}
-		
+
 		logger.log(&format!("Game initialized with {} walls", wall_count));
 	}
 
 	pub fn update(&mut self, art: &mut String, prompt: &mut String, tick: usize, logger: &mut logger::Logger) {
-		
-		let mut haps:Haps = Haps::new();
+		// Build this tick's event queue, then apply the events in priority order.
+		let mut haps = Haps::new();
 
 		if tick == 0 {
-			haps.add_event(
-				Hap {
-					id: "add_fairy".to_string(),
-					priority: entity::Priority::MED,
-					self_: {
-							self.create_entity(
-								GamePieces::Fairy(
-									Fairy::new(
-										10,10,
-										"Oolooroo".to_owned(),
-										"0".to_owned()
-									)
-								)
-							)
-						}
-				}
-			)
+			haps.push(
+				entity::Priority::HIG,
+				Event::SpawnFairy {
+					x: 10,
+					y: 10,
+					name: "Oolooroo".to_owned(),
+					id: "0".to_owned(),
+				},
+			);
 		}
 
-		haps.add_event(Hap {
-			id: "art_gen".to_string(),
-			priority: entity::Priority::MED,
-			self_: {
-				self.art_gen(art, prompt)
-			},
-		});
+		haps.push(entity::Priority::MED, Event::AdvanceWatchers);
+		haps.push(entity::Priority::LOW, Event::ReapDead);
 
-		haps.add_event(Hap {
-			id: "update_fairies".to_string(),
-			priority: entity::Priority::MED,
-			self_: {
+		for event in haps.drain_by_priority() {
+			self.apply(event, logger);
+		}
+
+		// Art/prompt still flow out through parameters, so generation stays a
+		// direct call rather than an event for now. Folding it in is the next
+		// pass, once art/prompt live in game state instead of being threaded out.
+		self.art_gen(art, prompt);
+	}
+
+	/// Applies a single queued [`Event`]. This is the one place a tick's actions
+	/// mutate the world, in the priority order `Haps` chose.
+	fn apply(&mut self, event: Event, logger: &mut logger::Logger) {
+		match event {
+			Event::SpawnFairy { x, y, name, id } => {
+				self.create_entity(GamePieces::Fairy(Fairy::new(x, y, name, id)));
+			}
+
+			Event::AdvanceWatchers => {
 				for (_id, game_piece) in self.game_pieces.iter_mut() {
 					match game_piece {
-						GamePieces::Fairy(ref mut fairy) => {
-						//fairy.warp(tick);
-						
-						self.field.set_entity(fairy.entity.clone());
-						logger.log(&format!("Fairy {} health: {}", fairy.entity.id, fairy.actor.health));
-
+						GamePieces::Fairy(fairy) => {
+							// Oolooroo is gentle for now: she stays put, a still
+							// presence. (The stalking behavior is held for a darker
+							// entity, when we are ready for it.)
+							self.field.set_entity(fairy.entity.clone());
+							logger.log(&format!("Oolooroo waits at ({}, {})", fairy.entity.x, fairy.entity.y));
+						}
 					}
 				}
 			}
-			},
-		});
-	
-		let mut to_remove: Vec<String> = Vec::new();
-		
-		haps.add_event(Hap {
-			id: "mark_dead_entities".to_string(),
-			priority: entity::Priority::MED,
-			self_: {
-				for(_id, game_piece) in self.game_pieces.iter_mut() {
+
+			Event::ReapDead => {
+				let mut dead: Vec<String> = Vec::new();
+				for (_id, game_piece) in self.game_pieces.iter() {
 					match game_piece {
-						GamePieces::Fairy(ref mut fairy) => {
+						GamePieces::Fairy(fairy) => {
 							if fairy.actor.health <= 0 {
-								// Mark the entity for removal
-								to_remove.push(fairy.entity.id.clone());
-								// Remove from field immediately
-								self.field.remove_entity(fairy.entity.id.clone());
+								dead.push(fairy.entity.id.clone());
 							}
 						}
 					}
 				}
-			},
-		});
-		
-		// Now remove the marked entities from game_pieces
-		haps.add_event(Hap {
-			id: "remove_dead_entities".to_string(),
-			priority: entity::Priority::MED,
-			self_: {
-				for id in &to_remove {
-					self.game_pieces.remove(id);
+				for id in dead {
+					self.field.remove_entity(id.clone());
+					self.game_pieces.remove(&id);
 				}
-			},
-		});
-
-		
-
-		haps.execute();
+			}
+		}
 	}
 
 	pub fn create_entity(&mut self, piece:GamePieces) {
@@ -169,7 +153,7 @@ impl Game {
 			}
 		}
 
-		
+
 	}
 
 	pub fn art_gen(&mut self, art: &mut String, prompt: &mut String) {
@@ -179,7 +163,7 @@ impl Game {
 		self.check_near(&self.player.player, &mut near);
 
 		let (is_facing, e) = self.player.clone().is_facing(near);
-		
+
 		if is_facing && e.is_some(){
 			if let Some(GamePieces::Fairy(ref mut fairy)) = self.game_pieces.get_mut(&e.unwrap().id) {
 				(*art,*prompt) = (fairy.actor.art.clone(), fairy.actor.prompt.clone());
@@ -193,7 +177,7 @@ impl Game {
 		// Check for collision with other entities
 		// Return true if collision occurs, false otherwise
 		let (x, y) = entity.get_position();
-		
+
 		let near_mask = [
 			(x.saturating_sub(1), y), // left
 			(x + 1, y),               // right
