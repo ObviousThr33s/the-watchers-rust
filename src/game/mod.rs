@@ -50,7 +50,24 @@ impl Game {
 	pub fn init(&mut self, logger: &mut logger::Logger) {
 		self.field.add_entity(self.player.player.clone());
 		
-		logger.log("Game initialized");
+		// Add walls to create an interesting layout - starting close to player
+		let walls = vec![
+			// Wall directly ahead (x=2-4, y=3)
+			(2, 3), (3, 3), (4, 3),
+			// Vertical wall to the right
+			(6, 1), (6, 2), (6, 3), (6, 4), (6, 5),
+			// Horizontal wall below
+			(3, 6), (4, 6), (5, 6), (6, 6), (7, 6),
+			// Corner structure
+			(10, 2), (10, 3), (10, 4), (11, 4), (12, 4),
+		];
+		
+		let wall_count = walls.len();
+		for (x, y) in walls {
+			self.field.add_entity(Entity::new(x as i16, y as i16, '#', format!("wall_{}", x * 20 + y), entity::Priority::LOW));
+		}
+		
+		logger.log(&format!("Game initialized with {} walls", wall_count));
 	}
 
 	pub fn update(&mut self, art: &mut String, prompt: &mut String, tick: usize, logger: &mut logger::Logger) {

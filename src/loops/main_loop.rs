@@ -3,9 +3,8 @@ use std::time::Duration;
 
 use ratatui::DefaultTerminal;
 use tokio::time::sleep;
-use crate::game::entity::player;
 use crate::game::Game;
-use crate::gfx::portal::raster::Raster;
+use crate::gfx::Viewport;
 use crate::gfx::portal::Portal;
 use crate::gfx::render;
 use crate::input::handle_events;
@@ -25,7 +24,7 @@ pub struct MainLoop{
 	state:GameStates,
 	terminal:DefaultTerminal,
 	_output:String,
-raster: Raster
+	viewport: Viewport,
 }
 
 //state loops definition
@@ -47,8 +46,7 @@ impl MainLoop {
 			start:start_time.clone(),
 			portal:Portal::new(),
 			game:Game::new(),
-			raster:Raster::new(),
-
+			viewport: Viewport::new(80, 20, std::f32::consts::PI / 3.0),
 			tick:0,
 
 			//Set game version here
@@ -107,13 +105,13 @@ impl MainLoop {
 		PlayerLoop::player_move(
 			&mut self.game.player,
 			player_input,
+			&self.game.field,
 			&mut self.logger,
 		);
 
 		self.game.field.set_entity(self.game.player.player.clone());
 		self.game.update(&mut art, &mut prompt, self.tick, &mut self.logger);
 	
-
 		self.portal.set_portal(art, prompt);
 
 		self.tick += 1;
@@ -133,49 +131,46 @@ impl MainLoop {
 
 		self.logger.log(&format!("Size:{}x{}", w, h));
 
+		// Update viewport dimensions
+		self.viewport = Viewport::new(
+			(w as usize).saturating_sub(2),
+			(h as usize).saturating_sub(10),
+			std::f32::consts::PI / 3.0
+		);
 
-		//self.portal.build_screen(self.terminal.size().unwrap().height, self.terminal.size().unwrap().width);
-		let fov = std::f32::consts::PI / 3.0;
+		let player_pos = self.game.player.player.get_position();
+		// Map the player's heading (0=up, 90=right, 180=down, -90=left) into the
+		// ray caster's angle convention, where 0 rad points along +x and +y is
+		// "down" on screen. Facing "up" is therefore -90 degrees of ray angle.
+		let angle = (self.game.player.heading.0 as f32 - 90.0) * std::f32::consts::PI / 180.0;
 
-		self.update_raster_walls();
+		// Get walls from field entities (simplified: all entities are obstacles for now)
+		let walls: Vec<(i16, i16)> = self
+			.game
+			.field
+			.entities
+			.values()
+			.map(|e| (e.x, e.y))
+			.filter(|&pos| pos != (player_pos.0, player_pos.1))
+			.collect();
 
-		self.logger.log(format!("{}", self.game.player.heading.0).as_str());
+		// Render the viewport
+		let view_text = self.viewport.render_raycasted(
+			player_pos.0 as f32,
+			player_pos.1 as f32,
+			angle,
+			&walls,
+		);
 
-		render(&mut self.terminal, 
+		render(&mut self.terminal,
 			&self.logger,
 			&self.game.field,
-			&self.raster.to_2d5_view(
-				&self.game.field, 
-				self.game.player.player.get_position().0 as f32, 
-				self.game.player.player.get_position().1 as f32, 
-				(self.game.player.heading.0 as f32 * std::f32::consts::PI / 180.0)+275.0, // Convert degrees to radians, add magic number
-				fov,
-				w as usize,
-				h as usize // Half the terminal height for the 3D view
-			),
-			).await;
+			&view_text,
+			player_pos,
+		).await;
 
 		self.state = GameStates::Run;
 		self.state_loop().await.await;
-	}
-
-	fn update_raster_walls(&mut self) {
-		// Clear existing walls
-		self.raster.clear();
-		
-		// Add walls from field entities
-		for (_, entity) in &self.game.field.entities {
-			// Check if this entity should be treated as a wall
-			// For example, entities with '#' character or specific type
-			if entity.self_ == 'F' {
-				// Add the entity position to the raster as a wall
-				self.raster.add_point(
-					entity.x,
-					entity.y,
-					"#".to_string()
-				);
-			}
-		}
 	}
 
 	pub fn exit(&mut self) {
