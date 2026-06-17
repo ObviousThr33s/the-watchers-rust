@@ -20,7 +20,7 @@ pub struct Entity {
 	pub id: String,
 }
 
-#[derive(Hash, Eq, PartialEq, PartialOrd, Clone)]
+#[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Clone)]
 pub enum Priority {
 	LOW = 0,
 	MED = 1,
