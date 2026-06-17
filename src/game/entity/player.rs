@@ -19,9 +19,9 @@ pub enum Direction_ {
 
 impl Clone for Player {
 	fn clone(&self) -> Self {
-		Self { 
+		Self {
 			player: self.player.clone(),
-			heading:Degrees(0.0f64).clone(),
+			heading: self.heading,
 			direction:self.direction.clone()
 		}
 	}

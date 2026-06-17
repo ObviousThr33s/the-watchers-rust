@@ -44,6 +44,19 @@ fn draw_stats<'a> (style:Style, border:BorderType) -> Paragraph <'a>{
 	stats
 }
 
+fn draw_minimap<'a>(style:Style, border:BorderType, entity:&Field, player_pos:(i16, i16)) -> Paragraph<'a> {
+	let bot_block_minimap = Block::bordered()
+		.title("Map")
+		.title_style(style)
+		.border_type(border);
+
+	// A small ASCII map (20x10) scrolled to keep the player centered.
+	let map_text = entity.to_ascii_map(20, 10, player_pos.0, player_pos.1);
+
+	let minimap:Paragraph = Paragraph::new(map_text).block(bot_block_minimap);
+	minimap
+}
+
 fn draw_invty<'a> (style:Style, border:BorderType) -> Paragraph <'a>{
 	let bot_block_left = Block::bordered()
 		.title("Inventory")
@@ -70,11 +83,11 @@ fn draw_log <'a> (style:Style, border:BorderType, log_:&Logger) -> Paragraph <'a
 	logger_ui
 }
 
-pub(crate) fn draw_(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger) {
-	default(frame, screen, entities, log_);
+pub(crate) fn draw_(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16)) {
+	default(frame, screen, entities, log_, player_pos);
 }
 
-pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger) {
+pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16)) {
 	let mut _frame_sizes: Vec<( u16, u16)> = Vec::new();
 
 	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);
@@ -104,8 +117,9 @@ pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&
 			.direction(Direction::Horizontal)
 			.constraints(vec![
 				Constraint::Percentage(20),
-				Constraint::Percentage(40),
-				Constraint::Percentage(40)
+				Constraint::Percentage(30),
+				Constraint::Percentage(25),
+				Constraint::Percentage(25)
 			])
 			.split(layout[2]);
 
@@ -123,11 +137,14 @@ pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&
 
 	let stats:Paragraph = draw_stats(style, border);
 	let invty:Paragraph = draw_invty(style, border);
+	let minimap:Paragraph = draw_minimap(style, border, entities, player_pos);
 	let inner_left = outter_bottom.inner(bottom_layout[0]);
 	let inner_cent = outter_bottom.inner(bottom_layout[1]);
-	let inner_right = outter_bottom.inner(bottom_layout[2]);
+	let inner_minimap = outter_bottom.inner(bottom_layout[2]);
+	let inner_right = outter_bottom.inner(bottom_layout[3]);
 	
 	frame.render_widget(invty, inner_left);
 	frame.render_widget(frame0, inner_cent);
+	frame.render_widget(minimap, inner_minimap);
 	frame.render_widget(stats, inner_right);
 }
