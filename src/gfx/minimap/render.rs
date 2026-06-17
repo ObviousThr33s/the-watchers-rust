@@ -2,7 +2,7 @@ use crate::{
 	game::{entity::Entity, spaces::field::Field}, 
 	gfx::{charset::CHARSETS, screen::Screen}
 };
-
+//how much of this can we put in the mod file
 /// Handles rendering entities from a Field to a screen buffer
 pub struct Render {
 	render: Screen,

@@ -71,7 +71,7 @@ impl Game {
 		logger.log(&format!("Game initialized with {} walls", wall_count));
 	}
 
-	pub fn update(&mut self, art: &mut String, prompt: &mut String, tick: usize, logger: &mut logger::Logger) {
+	pub fn update(&mut self, art: &mut String, prompt: &mut String, stats: &mut String, tick: usize, logger: &mut logger::Logger) {
 		// Build this tick's event queue, then apply the events in priority order.
 		let mut haps = Haps::new();
 
@@ -97,15 +97,20 @@ impl Game {
 		// Art/prompt still flow out through parameters, so generation stays a
 		// direct call rather than an event for now. Folding it in is the next
 		// pass, once art/prompt live in game state instead of being threaded out.
-		self.art_gen(art, prompt);
+		self.art_gen(art, prompt, stats);
 	}
 
 	/// Applies a single queued [`Event`]. This is the one place a tick's actions
 	/// mutate the world, in the priority order `Haps` chose.
 	fn apply(&mut self, event: Event, logger: &mut logger::Logger) {
+		
+		//what is the purpose of this. purpose not function in this case. as in match.
+		//you have 6 minutes of my time how much is left over when I give it back? 
+		//this should not be funny to you under any circumstances.
+
 		match event {
 			Event::SpawnFairy { x, y, name, id } => {
-				self.create_entity(GamePieces::Fairy(Fairy::new(x, y, name, id)));
+				self.create_entity(GamePieces::Fairy(Fairy::new(x, y, name, id)), logger);
 			}
 
 			Event::AdvanceWatchers => {
@@ -141,13 +146,18 @@ impl Game {
 		}
 	}
 
-	pub fn create_entity(&mut self, piece:GamePieces) {
+	pub fn create_entity(&mut self, piece:GamePieces, logger: &mut logger::Logger) {
 		let mut entity:GamePieces = piece;
 
 		match &mut entity {
 			GamePieces::Fairy(ref mut fairy) => {
 				fairy.entity.set_position(fairy.entity.x, fairy.entity.y);
-				fairy.actor.set_art_from_file("Fairy".to_owned());
+				if let Err(e) = fairy.actor.set_art_from_file("Fairy") {
+					// A missing asset shouldn't crash a fresh clone: note it in
+					// the log and show a visible placeholder instead.
+					logger.log(&format!("Could not load Fairy art: {e}; using placeholder"));
+					*fairy.actor.art_mut() = "[Fairy art missing]".to_string();
+				}
 				self.field.set_entity(fairy.entity.clone());
 				self.game_pieces.insert(fairy.entity.id.clone(), entity);
 			}
@@ -156,10 +166,11 @@ impl Game {
 
 	}
 
-	pub fn art_gen(&mut self, art: &mut String, prompt: &mut String) {
+	pub fn art_gen(&mut self, art: &mut String, prompt: &mut String, stats: &mut String) {
 		// An entity reveals itself when the player can actually *see* it: inside
 		// the view cone, within range, and not hidden behind a wall. The first
-		// one seen fills the portal with its art and line.
+		// one seen fills the portal with its art and line, and its stats fill the
+		// Stats panel — gaze is the interaction that surfaces them.
 		let facing = (self.player.heading.0 as f32 - 90.0) * std::f32::consts::PI / 180.0;
 		let player_pos = self.player.player.get_position();
 		let player_id = self.player.player.id.clone();
@@ -183,6 +194,8 @@ impl Game {
 					if seen {
 						*art = fairy.actor.art.clone();
 						*prompt = fairy.actor.prompt.clone();
+						let (name, health, power) = fairy.actor.get_stats();
+						*stats = format!("{name}\n\nHP   {health}\nATK  {power}");
 						return;
 					}
 				}
@@ -239,9 +252,11 @@ mod tests {
 
 		let mut art = String::new();
 		let mut prompt = String::new();
-		game.art_gen(&mut art, &mut prompt);
+		let mut stats = String::new();
+		game.art_gen(&mut art, &mut prompt, &mut stats);
 
 		assert_eq!(art, "the-fairy", "a clear line of sight should reveal the entity");
+		assert!(stats.contains("Test"), "the seen entity's stats should fill the panel");
 	}
 
 	#[test]
@@ -256,8 +271,10 @@ mod tests {
 
 		let mut art = String::new();
 		let mut prompt = String::new();
-		game.art_gen(&mut art, &mut prompt);
+		let mut stats = String::new();
+		game.art_gen(&mut art, &mut prompt, &mut stats);
 
 		assert!(art.is_empty(), "an entity outside the view cone should stay hidden");
+		assert!(stats.is_empty(), "no gaze, no stats readout");
 	}
 }

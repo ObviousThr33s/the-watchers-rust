@@ -29,6 +29,7 @@ impl Clone for Player {
 
 impl Player {
 
+	//please keep these neat. for now.
 	pub fn new() -> Self {
 		Self {
 			player: Entity::new(
@@ -43,6 +44,7 @@ impl Player {
 		}
 	}
 
+	//I still cannot understand this although someday-- I hope I can
 	pub fn add_direction(&mut self, amnt:f64){
 		let old_dir = self.heading.0;
 		self.heading = Degrees(old_dir) - Degrees(amnt);
@@ -57,7 +59,7 @@ impl Player {
 	
 
 	pub fn poll_heading(&mut self) {
-
+		//we should redo this but Im thinking more like a fishing reel
 		if self.heading.0 == -90.0 {
 			self.direction = Direction_::LEFT;
 			self.player.self_ = '<';
@@ -78,6 +80,8 @@ impl Player {
 	}
 
 	pub fn is_facing(self, ents:Vec<Entity>) -> (bool, Option<Entity>) {
+		//what the hell is this ROn
+		
 		let (player_x, player_y) = self.player.get_position();
 
 		for e in ents {

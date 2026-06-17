@@ -1,5 +1,5 @@
 use ratatui::{
-	layout::{Constraint, Direction, Layout, Rect}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Clear, Paragraph}, Frame,
+	layout::{Alignment, Constraint, Direction, Layout, Rect}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Clear, Paragraph}, Frame,
 };
 use crate::{game::spaces::field::Field, utils::logger::Logger};
 
@@ -11,7 +11,7 @@ struct _UI {
 	//-ated and add to their respective part of th frame
 	//each draw method has a hook to that part of the game which is being rend
 	//0ered
-
+	//mess-- as perusual
 }
 
 fn draw_portal<'a>(screen: &'a String) -> Paragraph<'a> {
@@ -32,16 +32,22 @@ fn draw_center<'a>(width: u16, height: u16, entity:&Field) -> Paragraph<'a> {
 	frame_ui
 }
 
-fn draw_stats<'a> (style:Style, border:BorderType) -> Paragraph <'a>{
+fn draw_stats<'a>(style: Style, border: BorderType, readout: &str) -> Paragraph<'a> {
 	let bot_block_right = Block::bordered()
 		.title("Stats")
 		.title_style(style)
 		.border_type(border)
 		.borders(Borders::LEFT);
 
-	let stats:Paragraph = Paragraph::new("Stats").block(bot_block_right);
+	// The panel reads out whatever the player can currently see. With nothing in
+	// view there's no signal, so we show a muted dash rather than stale numbers.
+	let body = if readout.trim().is_empty() {
+		"—".to_string()
+	} else {
+		readout.to_string()
+	};
 
-	stats
+	Paragraph::new(Text::from(body)).block(bot_block_right)
 }
 
 fn draw_minimap<'a>(style:Style, border:BorderType, entity:&Field, player_pos:(i16, i16)) -> Paragraph<'a> {
@@ -142,8 +148,15 @@ pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&
 		let rows = body.lines().count() as u16 + 2;
 		let cols = body.lines().map(|l| l.chars().count()).max().unwrap_or(0) as u16 + 2;
 		let area = centered_rect(layout[1], cols, rows);
-		let reveal = Paragraph::new(Text::from(body))
-			.block(Block::bordered().border_type(border).title("✦"));
+		// Placeholder frame for the reveal — a rounded border (softer than the
+		// double-line UI chrome, so it reads as an apparition) and a centered
+		// mark. Swap this block for your own design whenever you like.
+		let reveal = Paragraph::new(Text::from(body)).block(
+			Block::bordered()
+				.border_type(BorderType::Rounded)
+				.title("✦")
+				.title_alignment(Alignment::Center),
+		);
 		frame.render_widget(Clear, area);
 		frame.render_widget(reveal, area);
 	}
@@ -153,7 +166,7 @@ pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&
 
 	frame.render_widget(outter_bottom.clone(), layout[2]);
 
-	let stats:Paragraph = draw_stats(style, border);
+	let stats:Paragraph = draw_stats(style, border, &portal.stats);
 	let invty:Paragraph = draw_invty(style, border);
 	let minimap:Paragraph = draw_minimap(style, border, entities, player_pos);
 	let inner_left = outter_bottom.inner(bottom_layout[0]);
