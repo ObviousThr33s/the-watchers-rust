@@ -1,6 +1,0 @@
-
-fix weird memory bug where character movement is tracked wrong 
-cast a ray using the old lava lamp code(?)
-
-add simple 2.5 map from terrain
-
