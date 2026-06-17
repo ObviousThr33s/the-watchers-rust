@@ -157,19 +157,37 @@ impl Game {
 	}
 
 	pub fn art_gen(&mut self, art: &mut String, prompt: &mut String) {
+		// An entity reveals itself when the player can actually *see* it: inside
+		// the view cone, within range, and not hidden behind a wall. The first
+		// one seen fills the portal with its art and line.
+		let facing = (self.player.heading.0 as f32 - 90.0) * std::f32::consts::PI / 180.0;
+		let player_pos = self.player.player.get_position();
+		let player_id = self.player.player.id.clone();
 
-		let mut near:Vec<Entity> = Vec::new();
-
-		self.check_near(&self.player.player, &mut near);
-
-		let (is_facing, e) = self.player.clone().is_facing(near);
-
-		if is_facing && e.is_some(){
-			if let Some(GamePieces::Fairy(ref mut fairy)) = self.game_pieces.get_mut(&e.unwrap().id) {
-				(*art,*prompt) = (fairy.actor.art.clone(), fairy.actor.prompt.clone());
+		for (_id, piece) in self.game_pieces.iter() {
+			match piece {
+				GamePieces::Fairy(fairy) => {
+					let target = fairy.entity.get_position();
+					let target_id = fairy.entity.id.clone();
+					let seen = vision::can_see(
+						player_pos,
+						facing,
+						std::f32::consts::PI / 2.0,
+						20.0,
+						target,
+						|x, y| match self.field.get_entity_by_position(x, y) {
+							Some(e) => e.id != player_id && e.id != target_id,
+							None => false,
+						},
+					);
+					if seen {
+						*art = fairy.actor.art.clone();
+						*prompt = fairy.actor.prompt.clone();
+						return;
+					}
+				}
 			}
 		}
-
 	}
 
 
@@ -194,5 +212,52 @@ impl Game {
 				entities.push(entity.clone());
 			}
 		}
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::game::entity::entities::fairy::Fairy;
+	use angle_sc::Degrees;
+
+	fn fairy_at(x: i16, y: i16, art: &str, id: &str) -> Fairy {
+		let mut f = Fairy::new(x, y, "Test".to_owned(), id.to_owned());
+		f.actor.art = art.to_owned();
+		f
+	}
+
+	#[test]
+	fn reveals_entity_in_view() {
+		let mut game = Game::new();
+		game.player.player.set_position(0, 0);
+		game.player.heading = Degrees(90.0); // facing RIGHT (+x), straight at the fairy
+
+		let fairy = fairy_at(5, 0, "the-fairy", "f1");
+		game.field.set_entity(fairy.entity.clone());
+		game.game_pieces.insert("f1".to_owned(), GamePieces::Fairy(fairy));
+
+		let mut art = String::new();
+		let mut prompt = String::new();
+		game.art_gen(&mut art, &mut prompt);
+
+		assert_eq!(art, "the-fairy", "a clear line of sight should reveal the entity");
+	}
+
+	#[test]
+	fn hides_entity_out_of_view() {
+		let mut game = Game::new();
+		game.player.player.set_position(0, 0);
+		game.player.heading = Degrees(0.0); // facing UP (-y); the fairy is off to +x
+
+		let fairy = fairy_at(5, 0, "the-fairy", "f1");
+		game.field.set_entity(fairy.entity.clone());
+		game.game_pieces.insert("f1".to_owned(), GamePieces::Fairy(fairy));
+
+		let mut art = String::new();
+		let mut prompt = String::new();
+		game.art_gen(&mut art, &mut prompt);
+
+		assert!(art.is_empty(), "an entity outside the view cone should stay hidden");
 	}
 }
