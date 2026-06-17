@@ -167,6 +167,7 @@ impl MainLoop {
 			&self.game.field,
 			&view_text,
 			player_pos,
+			&self.portal,
 		).await;
 
 		self.state = GameStates::Run;

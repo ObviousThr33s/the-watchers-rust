@@ -1,9 +1,9 @@
 use ratatui::{
-	layout::{Constraint, Direction, Layout}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Paragraph}, Frame,
+	layout::{Constraint, Direction, Layout, Rect}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Clear, Paragraph}, Frame,
 };
 use crate::{game::spaces::field::Field, utils::logger::Logger};
 
-use super::{charset::CHARSETS, minimap::render::Render};
+use super::{charset::CHARSETS, minimap::render::Render, portal::Portal};
 
 struct _UI {
 	//Too complicated to explain one comment at a time but essentially
@@ -83,11 +83,11 @@ fn draw_log <'a> (style:Style, border:BorderType, log_:&Logger) -> Paragraph <'a
 	logger_ui
 }
 
-pub(crate) fn draw_(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16)) {
-	default(frame, screen, entities, log_, player_pos);
+pub(crate) fn draw_(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16), portal:&Portal) {
+	default(frame, screen, entities, log_, player_pos, portal);
 }
 
-pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16)) {
+pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16), portal:&Portal) {
 	let mut _frame_sizes: Vec<( u16, u16)> = Vec::new();
 
 	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);
@@ -130,6 +130,24 @@ pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&
 	//mid
 	frame.render_widget(frame1, layout[1]);
 
+	// An entity reveals itself: when the portal holds art (the player can see
+	// something), draw it as a bordered panel floating over the view. The frame
+	// is deliberately bare here — its final look is yours to shape.
+	if !portal.art.is_empty() && portal.art != "none" {
+		let body = if portal.prompt.is_empty() || portal.prompt == "none" {
+			portal.art.clone()
+		} else {
+			format!("{}\n\n{}", portal.art, portal.prompt)
+		};
+		let rows = body.lines().count() as u16 + 2;
+		let cols = body.lines().map(|l| l.chars().count()).max().unwrap_or(0) as u16 + 2;
+		let area = centered_rect(layout[1], cols, rows);
+		let reveal = Paragraph::new(Text::from(body))
+			.block(Block::bordered().border_type(border).title("✦"));
+		frame.render_widget(Clear, area);
+		frame.render_widget(reveal, area);
+	}
+
 	//Bottom UI
 	let outter_bottom:Block = Block::bordered().border_type(border).borders(Borders::TOP);
 
@@ -147,4 +165,16 @@ pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&
 	frame.render_widget(frame0, inner_cent);
 	frame.render_widget(minimap, inner_minimap);
 	frame.render_widget(stats, inner_right);
+}
+
+/// A `width` x `height` rectangle centered inside `area`, clamped to fit.
+fn centered_rect(area: Rect, width: u16, height: u16) -> Rect {
+	let w = width.min(area.width);
+	let h = height.min(area.height);
+	Rect {
+		x: area.x + (area.width - w) / 2,
+		y: area.y + (area.height - h) / 2,
+		width: w,
+		height: h,
+	}
 }
