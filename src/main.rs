@@ -1,17 +1,16 @@
 
-use the_watchers_rust::loops::main_loop::{self, MainLoop};
+use the_watchers_rust::loops::main_loop::MainLoop;
 use the_watchers_rust::utils::time::Time;
 
-
-#[tokio::main]
-pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//cool.
+fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let start: Time = Time::new();
 	let terminal = ratatui::init();
-	
-	let mut game: main_loop::MainLoop = MainLoop::new(start, terminal);
-	
-	game.init().await;
-	
+
+	let mut game: MainLoop = MainLoop::new(start, terminal);
+
+	game.run_game();
+
 	ratatui::restore();
 	Ok(())
 }
