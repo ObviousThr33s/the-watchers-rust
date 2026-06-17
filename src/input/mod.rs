@@ -1,5 +1,5 @@
 use std::io::Stdout;
-
+//god maY have written this but please dont let that go to your head. his words not mine.
 use ratatui::{
 	crossterm::{self, event::KeyEventKind},  prelude::CrosstermBackend, Terminal
 };

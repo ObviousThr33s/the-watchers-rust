@@ -1,4 +1,4 @@
-use std::{fs::File, io::Read, path::{Path, PathBuf}};
+use std::path::Path;
 
 
 pub struct Actor{
@@ -22,6 +22,7 @@ impl Clone for Actor {
 }
 
 impl ActorData for Actor {
+	// i did not write this.
 	fn name(&self) -> &str {
 		&self.name
 	}
@@ -64,6 +65,7 @@ impl ActorData for Actor {
 }
 
 pub trait ActorData {
+	//im not touching this
 	fn name(&self) -> &str;
 	fn name_mut(&mut self) -> &mut String;
 	fn health(&self) -> i32;
@@ -77,14 +79,15 @@ pub trait ActorData {
 
 	fn set_name(&mut self, name: String);
 
-	fn set_art_from_file(&mut self, name:String) {
-		let cwd = std::env::current_dir().expect("Failed to get current directory");
-		let path = &format!("{}/res/entities/{}/art.txt", cwd.display(), name);
-		let art_file = PathBuf::from(path);
-		let mut file = File::open(&art_file).unwrap_or_else(|_| panic!("Error loading art file for: {} at {}", name, art_file.display()));
-		let mut buf:String = String::new();
-		file.read_to_string(&mut buf).expect("Error reading art file");
-		*self.art_mut() = buf;
+	/// Loads this actor's ASCII art from `res/entities/<name>/art.txt`.
+	///
+	/// Returns the `io::Error` instead of panicking when the asset is missing or
+	/// unreadable, so a fresh clone with an absent file can degrade gracefully
+	/// (the caller falls back to a placeholder) rather than crashing on startup.
+	fn set_art_from_file(&mut self, name: &str) -> std::io::Result<()> {
+		let path = format!("res/entities/{}/art.txt", name);
+		*self.art_mut() = std::fs::read_to_string(&path)?;
+		Ok(())
 	}
 
 	fn set_stats_from_file(&mut self, file_path: &str) {

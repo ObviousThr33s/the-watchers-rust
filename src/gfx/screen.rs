@@ -5,7 +5,7 @@ pub struct Screen {
 	pub y: u16,
 	pub screen: Vec<char>,
 }
-
+//this is the kind of cleanliness I was talking about, ^v
 impl Clone for Screen {
 	fn clone(&self) -> Screen {
 		Screen {

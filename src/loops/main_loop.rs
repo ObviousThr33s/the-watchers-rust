@@ -84,7 +84,8 @@ impl MainLoop {
 			return;
 		}
 
-		let (mut art, mut prompt):(String,String) = (String::new(), String::new());
+		let (mut art, mut prompt, mut stats):(String,String,String) =
+			(String::new(), String::new(), String::new());
 
 		PlayerLoop::player_move(
 			&mut self.game.player,
@@ -94,9 +95,9 @@ impl MainLoop {
 		);
 
 		self.game.field.set_entity(self.game.player.player.clone());
-		self.game.update(&mut art, &mut prompt, self.tick, &mut self.logger);
+		self.game.update(&mut art, &mut prompt, &mut stats, self.tick, &mut self.logger);
 
-		self.portal.set_portal(art, prompt);
+		self.portal.set_portal(art, prompt, stats);
 
 		self.tick += 1;
 		self.logger.log(&format!("Tick: {}", self.tick));
@@ -105,9 +106,15 @@ impl MainLoop {
 	}
 
 	fn render(&mut self) {
-		// Get terminal size
-		let (w, h) = (self.terminal.size().unwrap().width,
-					  self.terminal.size().unwrap().height);
+		// Get terminal size. Querying it can fail (e.g. a detached or non-tty
+		// terminal); fall back to a conventional 80x24 rather than crashing.
+		let (w, h) = match self.terminal.size() {
+			Ok(size) => (size.width, size.height),
+			Err(e) => {
+				self.logger.log(&format!("Could not read terminal size: {e}; using 80x24"));
+				(80, 24)
+			}
+		};
 
 		self.logger.log(&format!("Size:{}x{}", w, h));
 
@@ -154,9 +161,10 @@ impl MainLoop {
 	}
 
 	pub fn exit(&mut self) {
-		// Save and quit. No async runtime to coordinate with anymore.
-		self.terminal.flush().unwrap();
-		self.terminal.clear().unwrap();
+		// Save and quit. No async runtime to coordinate with anymore. We're on
+		// the way out, so a failed flush/clear shouldn't panic over the exit.
+		let _ = self.terminal.flush();
+		let _ = self.terminal.clear();
 		println!("Saving log...");
 		self.logger.save_log();
 		println!("Saved log.");

@@ -1,1 +1,4 @@
 /target
+
+# Runtime-generated logs (kept on disk, not tracked)
+/res/logs/

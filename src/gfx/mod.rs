@@ -19,6 +19,6 @@ pub fn render(terminal: &mut ratatui::DefaultTerminal, log:&Logger, field:&Field
 }
 
 pub fn clear(terminal: &mut ratatui::DefaultTerminal){
-	terminal.clear().unwrap()
+	let _ = terminal.clear();
 }
 
