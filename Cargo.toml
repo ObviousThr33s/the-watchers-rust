@@ -10,7 +10,6 @@ micromath = "2.1.0"
 noise = "0.9.0"
 rand = "0.9.1"
 ratatui = "0.29.0"
-tokio = { version = "1.44.2", features = ["full"] }
 
 [[bin]]
 name = "the-watchers-rust"

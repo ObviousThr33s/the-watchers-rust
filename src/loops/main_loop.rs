@@ -1,8 +1,5 @@
 
-use std::time::Duration;
-
 use ratatui::DefaultTerminal;
-use tokio::time::sleep;
 use crate::game::Game;
 use crate::gfx::Viewport;
 use crate::gfx::portal::Portal;
@@ -36,12 +33,12 @@ pub enum GameStates{
 	Exit = 3,
 }
 
-
+//does anyone want to take a crack at this? I would need help.
 impl MainLoop {
 	pub fn new(start_time:Time, terminal:DefaultTerminal) -> MainLoop {
-		
 
-		MainLoop { 
+
+		MainLoop {
 			state: GameStates::Init,
 			start:start_time.clone(),
 			portal:Portal::new(),
@@ -56,52 +53,39 @@ impl MainLoop {
 		}
 	}
 
-	//state loop to allow for memory management
-	//using the lifetime specifiers here to keep the
-	//memory from going out of scope while other processes
-	//are run
-	pub async fn state_loop(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + '_>> {
-		
-		Box::pin(async move {
-			sleep(Duration::from_micros(10)).await;
-			match self.state {
-				GameStates::Exit   => self.exit(),
-				GameStates::Run    => self.run().await,
-				GameStates::Render => self.render().await,
-				GameStates::Init   => self.init().await,
-			}
-		})
-
-		
-	}
-
-	pub async  fn init(&mut self) {
-		
+	/// The main game loop. A plain synchronous loop now: set up once, then
+	/// dispatch the current state forever — input, update, render, repeat.
+	/// `handle_events` blocks on a keypress, which paces the loop. No async
+	/// runtime, no recursion, no per-tick heap-allocated futures.
+	pub fn run_game(&mut self) {
 		self.logger.log("Initializing...");
-
-		self.state = GameStates::Render;
 		self.game.init(&mut self.logger);
+		self.state = GameStates::Render;
 
-		//each method requires a call back to the state loop
-		self.state_loop().await.await;
+		loop {
+			match self.state {
+				GameStates::Run    => self.run(),
+				GameStates::Render => self.render(),
+				GameStates::Exit   => self.exit(), // exits the process
+				GameStates::Init   => self.state = GameStates::Render,
+			}
+		}
 	}
-
 
 	//running section of the main loop
 	//always a work in progress
-	pub async fn run(&mut self){
+	fn run(&mut self) {
 		//event key which sends signals for game state and player movement
-			
-		let (new_state, player_input) = 
+		let (new_state, player_input) =
 			handle_events(&mut self.terminal, &mut self.logger);
 
-		//self.logger.log(format!("{:?}", player_input).as_str());
-
-		if new_state == GameStates::Exit {	
-			self.exit();
+		if new_state == GameStates::Exit {
+			self.state = GameStates::Exit;
+			return;
 		}
+
 		let (mut art, mut prompt):(String,String) = (String::new(), String::new());
-		
+
 		PlayerLoop::player_move(
 			&mut self.game.player,
 			player_input,
@@ -111,22 +95,18 @@ impl MainLoop {
 
 		self.game.field.set_entity(self.game.player.player.clone());
 		self.game.update(&mut art, &mut prompt, self.tick, &mut self.logger);
-	
+
 		self.portal.set_portal(art, prompt);
 
 		self.tick += 1;
-
 		self.logger.log(&format!("Tick: {}", self.tick));
 
 		self.state = GameStates::Render;
-		
-		self.render().await;
-	
 	}
 
-	pub async fn render(&mut self) {
+	fn render(&mut self) {
 		// Get terminal size
-		let (w, h) = (self.terminal.size().unwrap().width, 
+		let (w, h) = (self.terminal.size().unwrap().width,
 					  self.terminal.size().unwrap().height);
 
 		self.logger.log(&format!("Size:{}x{}", w, h));
@@ -168,26 +148,19 @@ impl MainLoop {
 			&view_text,
 			player_pos,
 			&self.portal,
-		).await;
+		);
 
 		self.state = GameStates::Run;
-		self.state_loop().await.await;
 	}
 
 	pub fn exit(&mut self) {
-		//force halt to save files
-		tokio::task::block_in_place(|| {
-			self.terminal.flush().unwrap();
-			
-			self.terminal.clear().unwrap();
-			println!("Saving log...");
-	
-			self.logger.save_log();
-		});
+		// Save and quit. No async runtime to coordinate with anymore.
+		self.terminal.flush().unwrap();
+		self.terminal.clear().unwrap();
+		println!("Saving log...");
+		self.logger.save_log();
 		println!("Saved log.");
 		println!("Exited.");
-		//let _ = self.terminal.clear();
-		//exit peaceably
 		std::process::exit(0x0);
 	}
 }
