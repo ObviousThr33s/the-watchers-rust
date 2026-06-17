@@ -79,6 +79,15 @@ impl Field {
 			.and_then(|id| self.entities.get(id))
 	}
 
+	/// Returns true if some entity other than `ignore_id` occupies (x, y).
+	/// Every entity is treated as solid, matching how the ray caster renders
+	/// them all as walls.
+	#[inline]
+	pub fn is_occupied(&self, x: i16, y: i16, ignore_id: &str) -> bool {
+		self.get_entity_by_position(x, y)
+			.is_some_and(|e| e.id != ignore_id)
+	}
+
 	/// Gets an entity by its ID, if it exists
 	#[inline]
 	pub fn get_entity_by_id(&self, id: &str) -> Option<&Entity> {
@@ -94,5 +103,53 @@ impl Field {
 		if let Some(entity) = self.entities.remove(&id) {
 			self.spatial_index.remove(&(entity.x, entity.y));
 		}
+	}
+
+	/// Renders entities to an ASCII map of the given size, scrolled so that
+	/// (center_x, center_y) sits in the middle. Centering on the player keeps
+	/// them pinned to the middle of the minimap as they move around the world.
+	pub fn to_ascii_map(&self, width: usize, height: usize, center_x: i16, center_y: i16) -> String {
+		let mut output = vec![vec![' '; width]; height];
+
+		// World coordinate of the visible window's top-left corner.
+		let origin_x = center_x - (width as i16) / 2;
+		let origin_y = center_y - (height as i16) / 2;
+
+		for entity in self.entities.values() {
+			let sx = entity.x - origin_x;
+			let sy = entity.y - origin_y;
+
+			// Only draw entities that fall inside the visible window.
+			if sx >= 0 && (sx as usize) < width && sy >= 0 && (sy as usize) < height {
+				output[sy as usize][sx as usize] = entity.self_;
+			}
+		}
+
+		output
+			.iter()
+			.map(|row| row.iter().collect::<String>())
+			.collect::<Vec<_>>()
+			.join("\n")
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::game::entity::{Entity, Priority};
+
+	#[test]
+	fn minimap_centers_on_the_given_point() {
+		let mut field = Field::new();
+		field.add_entity(Entity::new(5, 5, '^', "Player".to_string(), Priority::MED));
+		field.add_entity(Entity::new(5, 4, '#', "wall".to_string(), Priority::LOW));
+
+		// A 5x5 window centered on (5,5) has origin (3,3), so the player lands
+		// dead center at (2,2) and the wall one row above it at (2,1).
+		let map = field.to_ascii_map(5, 5, 5, 5);
+		let rows: Vec<&str> = map.lines().collect();
+
+		assert_eq!(rows[2].chars().nth(2), Some('^'), "player should be centered");
+		assert_eq!(rows[1].chars().nth(2), Some('#'), "wall should sit one row above");
 	}
 }
