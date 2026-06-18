@@ -6,8 +6,6 @@ use std::path::PathBuf;
 
 use super::time::Time;
 
-//i have, my whole life. ;)
-
 pub struct Logger {
 	pub tick:usize,
 	pub start_time: Time,

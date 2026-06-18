@@ -9,8 +9,6 @@ pub struct Portal {
 	pub stats: String,
 }
 
-
-//lets think about that later. very cold.
 impl Portal {
 	pub fn new() -> Self {
 		Self {

@@ -22,7 +22,7 @@ impl Fairy {
 				y,
 				'F',
 				id,
-				crate::game::entity::Priority::MED, // Assuming there's a Priority enum, adjust as needed
+				crate::game::entity::Priority::MED,
 			),
 			actor:Actor {
 				name: name,
@@ -42,12 +42,9 @@ impl Fairy {
 			self.actor.health -= 1;
 		}
 	}
-	//somebody else, please not Ron
 }
 
 impl EntityData for Fairy {
-	//we need to look at the timefunction event system first
-	
 	fn get_health(self) -> i32{
 		self.actor.health
 	}
@@ -66,10 +63,8 @@ impl EntityData for Fairy {
 }
 
 impl Actions for Fairy {
-	fn attack(self, actor: &mut Actor) {
-		//actor.health = actor.health/*somethinghere*/self.get_power();
-		//self.heal;
-		//self.attack();
-		// etc.
+	fn attack(self, _actor: &mut Actor) {
+		// TODO: combat is being reworked from HP toward light-as-resource;
+		// left intentionally empty until the event system is settled.
 	}
 }

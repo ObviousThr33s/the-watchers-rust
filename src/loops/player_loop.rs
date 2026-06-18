@@ -4,7 +4,6 @@ use crate::{
 	input::PlayerMove,
 	utils::logger::Logger,
 };
-//this need to be consolidated, lets talk about this one. or come to me with something ready. so many options
 
 pub struct PlayerLoop{
 

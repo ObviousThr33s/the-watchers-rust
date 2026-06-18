@@ -5,6 +5,7 @@ pub mod floor;
 pub mod actor;
 
 pub mod entities;
+pub mod being;
 
 pub enum GameObject {
 	Player(Entity),

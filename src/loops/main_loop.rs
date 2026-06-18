@@ -33,7 +33,6 @@ pub enum GameStates{
 	Exit = 3,
 }
 
-//does anyone want to take a crack at this? I would need help.
 impl MainLoop {
 	pub fn new(start_time:Time, terminal:DefaultTerminal) -> MainLoop {
 
@@ -73,7 +72,6 @@ impl MainLoop {
 	}
 
 	//running section of the main loop
-	//always a work in progress
 	fn run(&mut self) {
 		//event key which sends signals for game state and player movement
 		let (new_state, player_input) =
