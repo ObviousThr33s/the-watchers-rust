@@ -17,8 +17,6 @@
 ///
 /// `blocked(x, y)` reports whether a cell is opaque. The caller decides what
 /// counts as opaque, and should exclude the viewer and the target themselves.
-/// 
-/// idk what you are doing, but think fluid and also. neat direction here. keep going.
 pub fn can_see(
 	origin: (i16, i16),
 	facing: f32,

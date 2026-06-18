@@ -103,11 +103,6 @@ impl Game {
 	/// Applies a single queued [`Event`]. This is the one place a tick's actions
 	/// mutate the world, in the priority order `Haps` chose.
 	fn apply(&mut self, event: Event, logger: &mut logger::Logger) {
-		
-		//what is the purpose of this. purpose not function in this case. as in match.
-		//you have 6 minutes of my time how much is left over when I give it back? 
-		//this should not be funny to you under any circumstances.
-
 		match event {
 			Event::SpawnFairy { x, y, name, id } => {
 				self.create_entity(GamePieces::Fairy(Fairy::new(x, y, name, id)), logger);

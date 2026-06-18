@@ -49,6 +49,7 @@ mod tests {
 
 	#[test]
 	fn drains_highest_priority_first() {
+		
 		let mut haps = Haps::new();
 		haps.push(Priority::LOW, Event::ReapDead);
 		haps.push(Priority::HIG, Event::AdvanceWatchers);

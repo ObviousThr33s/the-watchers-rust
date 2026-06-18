@@ -11,7 +11,6 @@ struct _UI {
 	//-ated and add to their respective part of th frame
 	//each draw method has a hook to that part of the game which is being rend
 	//0ered
-	//mess-- as perusual
 }
 
 fn draw_portal<'a>(screen: &'a String) -> Paragraph<'a> {
@@ -189,5 +188,56 @@ fn centered_rect(area: Rect, width: u16, height: u16) -> Rect {
 		y: area.y + (area.height - h) / 2,
 		width: w,
 		height: h,
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::draw_;
+	use crate::game::Game;
+	use crate::gfx::Viewport;
+	use crate::gfx::portal::Portal;
+	use crate::utils::{logger::Logger, time::Time};
+	use ratatui::{backend::TestBackend, Terminal};
+
+	#[test]
+	fn game_runs_and_renders_headless() {
+		// Drive the real runtime end to end without a terminal: init, several
+		// logic ticks (entity spawn, the event queue, sight/reveal, asset load),
+		// then a full UI render through a headless backend. A panic or an
+		// out-of-bounds anywhere fails this — which "it compiles" cannot catch.
+		let mut logger = Logger::new(Time::new(), "test".to_owned());
+		let mut game = Game::new();
+		game.init(&mut logger);
+
+		for tick in 0..5usize {
+			let (mut art, mut prompt, mut stats) =
+				(String::new(), String::new(), String::new());
+			game.update(&mut art, &mut prompt, &mut stats, tick, &mut logger);
+		}
+
+		let player_pos = game.player.player.get_position();
+		let walls: Vec<(i16, i16)> =
+			game.field.entities.values().map(|e| (e.x, e.y)).collect();
+		let viewport = Viewport::new(78, 20, std::f32::consts::PI / 3.0);
+		let view = viewport.render_raycasted(
+			player_pos.0 as f32,
+			player_pos.1 as f32,
+			0.0,
+			&walls,
+		);
+
+		// Force the reveal panel on, so its overlay path renders too.
+		let mut portal = Portal::new();
+		portal.set_portal("◉".to_owned(), "seen".to_owned(), "HP 10".to_owned());
+
+		let mut terminal =
+			Terminal::new(TestBackend::new(80, 30)).expect("headless test terminal");
+		terminal
+			.draw(|frame| draw_(frame, &view, &game.field, &logger, player_pos, &portal))
+			.expect("headless draw");
+
+		// Reaching here = init + 5 logic ticks + a full UI render, no panics.
+		assert!(game.field.get_entity_by_id("Player").is_some());
 	}
 }
