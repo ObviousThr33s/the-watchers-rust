@@ -22,7 +22,6 @@ impl Clone for Actor {
 }
 
 impl ActorData for Actor {
-	// i did not write this.
 	fn name(&self) -> &str {
 		&self.name
 	}
@@ -65,7 +64,6 @@ impl ActorData for Actor {
 }
 
 pub trait ActorData {
-	//im not touching this
 	fn name(&self) -> &str;
 	fn name_mut(&mut self) -> &mut String;
 	fn health(&self) -> i32;
