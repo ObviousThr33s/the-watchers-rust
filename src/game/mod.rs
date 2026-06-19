@@ -47,7 +47,24 @@ impl Game {
 		// field so the renderer always has, at minimum, the player to draw. The
 		// rest of the population (beings, behaviors) is the rebuild still to come.
 		self.field.add_entity(entity::player::Player::new().player);
-		logger.log("Player placed in the field");
+
+		// Structural geometry (not narrative): a small alcove around the player
+		// so the first-person view has walls to cast against. The player faces
+		// "up" (-y) from (2,2), so the front wall sits at y=0 dead ahead with a
+		// wall down each side. Scaffolding for the view — this will likely move to
+		// per-field level data later, not stay hardcoded here.
+		let walls = [
+			(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), // front wall, dead ahead
+			(0, 1), (0, 2),                         // left wall
+			(4, 1), (4, 2),                         // right wall
+		];
+		for (x, y) in walls {
+			self.field.add_entity(entity::Entity::new(
+				x, y, '#', format!("wall_{x}_{y}"), entity::Priority::LOW,
+			));
+		}
+
+		logger.log(&format!("Player placed; {} walls built", walls.len()));
 	}
 
 	pub fn update(&mut self, tick: usize, logger: &mut logger::Logger, recollection: Recollection) {
@@ -109,6 +126,21 @@ mod tests {
 		assert!(
 			lamp.to_string().contains(player.self_),
 			"the renderer should draw the player glyph, not an empty panel"
+		);
+	}
+
+	/// The first-person view needs walls to cast against; an empty field renders
+	/// as blank space. init must build the alcove so the live viewport shows a
+	/// surface dead ahead of the (up-facing) player.
+	#[test]
+	fn init_builds_a_room_so_the_first_person_view_has_walls() {
+		let mut logger = Logger::new(Time::new(), "test".to_owned());
+		let mut game = Game::new();
+		game.init(&mut logger);
+
+		assert!(
+			game.field.get_entity_by_position(2, 0).is_some(),
+			"expected a wall dead ahead of the up-facing player at (2,0)"
 		);
 	}
 }

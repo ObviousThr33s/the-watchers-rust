@@ -21,6 +21,7 @@ pub struct MainLoop{
 	terminal:DefaultTerminal,
 	_output:String,
 	viewport: Viewport,
+	portal: Portal,
 }
 
 //state loops definition
@@ -47,6 +48,7 @@ impl MainLoop {
 			logger: Logger::new(start_time, "0.5.4".to_string()),
 			_output:String::new(),
 			terminal:terminal,
+			portal: Portal::new(),
 		}
 	}
 
@@ -112,49 +114,54 @@ impl MainLoop {
 			}
 		};
 
-		self.logger.log(&format!("Size:{}x{}", w, h));
-
-		// Update viewport dimensions
+		// Size the first-person viewport to the terminal, leaving room for the UI
+		// chrome (borders + the bottom panels).
 		self.viewport = Viewport::new(
 			(w as usize).saturating_sub(2),
 			(h as usize).saturating_sub(10),
-			std::f32::consts::PI / 3.0
+			std::f32::consts::PI / 3.0,
 		);
 
-		//let player_pos = self.game.player.player.get_position();
-		// Map the player's heading (0=up, 90=right, 180=down, -90=left) into the
-		// ray caster's angle convention, where 0 rad points along +x and +y is
-		// "down" on screen. Facing "up" is therefore -90 degrees of ray angle.
-		//let angle = (self.game.player.heading.0 as f32 - 90.0) * std::f32::consts::PI / 180.0;
+		// The player lives in the field now (id "Player"); read the position from
+		// there. The fallback keeps render() honest if the player is ever absent.
+		let player_pos = self
+			.game
+			.field
+			.get_entity_by_id("Player")
+			.map(|p| p.get_position())
+			.unwrap_or((2, 2));
 
-		// Get walls from field entities (simplified: all entities are obstacles for now)
-		/*
+		// Heading is fixed "up" for now — turning/movement is the next pass. Map
+		// "up" into the ray caster's convention (0 rad = +x, +y = down on screen),
+		// so facing up is -90 degrees.
+		let angle = -std::f32::consts::FRAC_PI_2;
+
+		// Every entity other than the player is a solid wall for the ray caster.
 		let walls: Vec<(i16, i16)> = self
 			.game
 			.field
 			.entities
 			.values()
 			.map(|e| (e.x, e.y))
-			.filter(|&pos| pos != (player_pos.0, player_pos.1))
+			.filter(|&pos| pos != player_pos)
 			.collect();
-		
-		// Render the viewport
-		let view_text = self.viewport.render_raycasted(
+
+		let view = self.viewport.render_raycasted(
 			player_pos.0 as f32,
 			player_pos.1 as f32,
 			angle,
 			&walls,
 		);
-		
-		render(&mut self.terminal,
+
+		render(
+			&mut self.terminal,
 			&self.logger,
 			&self.game.field,
-			&view_text,
+			&view,
 			player_pos,
 			&self.portal,
 		);
-		*/
-		
+
 		self.state = GameStates::Run;
 	}
 
