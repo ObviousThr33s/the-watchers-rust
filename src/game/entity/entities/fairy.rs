@@ -1,4 +1,5 @@
 use crate::game::entity::{Actions, Actor, Entity, EntityData};
+use crate::game::entity::being::Being;
 
 pub struct Fairy {
 	pub entity:Entity,
@@ -36,6 +37,18 @@ impl Fairy {
 }
 
 impl Fairy {
+	/// Overlay a `.being` definition onto this fairy: the file is the source of
+	/// truth for name, stats, glyph, and art. This is the seam where the
+	/// data-driven model starts driving the running game.
+	pub fn apply_being(&mut self, being: &Being) {
+		self.actor.name = being.name.clone();
+		self.actor.health = being.health;
+		self.actor.attack_power = being.power;
+		self.actor.art = being.art.clone();
+		self.actor.prompt = being.line.clone();
+		self.entity.self_ = being.glyph;
+	}
+
 	pub fn warp(&mut self, tick:usize) {
 		if tick%3 == 0 {
 			self.entity.set_position(rand::random_range(0..10), rand::random_range(0..10));

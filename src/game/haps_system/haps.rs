@@ -7,7 +7,7 @@ use crate::game::entity::Priority;
 /// To add a new kind of event: add a variant here carrying everything the
 /// handler needs, then handle it in `Game::apply` (game/mod.rs).
 pub enum Event {
-	/// Spawn the fairy (Oolooroo) at a position, with a name and id.
+	/// Spawn the fairy (Ooloonoo) at a position, with a name and id.
 	SpawnFairy { x: i16, y: i16, name: String, id: String },
 	/// Sync every game-piece into the field (and, later, run its behavior).
 	AdvanceWatchers,

@@ -4,7 +4,7 @@
 //! Where `utils::logger::Logger` records for the developer (timestamps, ticks,
 //! a file on exit), `Voice` speaks to the *player*. Lines are queued, then
 //! surfaced one at a time — the terminal trying to talk — and they corrupt as
-//! the light fails. It is the channel for entity transmissions (Oolooroo's
+//! the light fails. It is the channel for entity transmissions (Ooloonoo's
 //! fragments, whatever the dark murmurs) and for the void at the open and close.
 
 use std::collections::VecDeque;

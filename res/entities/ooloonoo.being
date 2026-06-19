@@ -1,0 +1,16 @@
+# Ooloonoo — the gentle one. A friend.
+name     Ooloonoo
+glyph    F
+visible  true
+health   10
+power    10
+bloom    2
+behavior gentle
+--- art
+   . * .
+  \  o  /
+ --( | )--
+   /   \
+    " "
+--- line
+She regards you without fear. The light around her does not flinch.

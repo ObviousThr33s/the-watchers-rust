@@ -4,7 +4,7 @@ pub mod portal;
 pub mod charset;
 pub mod viewport;
 
-mod screen;
+pub mod screen;
 
 use crate::{game::spaces::field::Field, utils::logger::Logger};
 pub use viewport::Viewport;

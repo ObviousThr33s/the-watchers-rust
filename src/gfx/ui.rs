@@ -23,10 +23,12 @@ fn draw_center<'a>(width: u16, height: u16, entity:&Field) -> Paragraph<'a> {
 	let middle_block = Block::new().title_bottom("*Live*");
 	
 	let mut lamp: Render = Render::init(width.into(), height.into(), CHARSETS::Charset0);
-	
+
 	lamp.rasterize(entity);
-	
-	let frame_ui: Paragraph = Paragraph::new(Text::from(lamp.to_string())).block(middle_block);
+
+	// Hand the panel over as styled text so cell colour/attributes survive to the
+	// screen (a flat string would drop them).
+	let frame_ui: Paragraph = Paragraph::new(lamp.to_text()).block(middle_block);
 
 	frame_ui
 }

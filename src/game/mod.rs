@@ -13,7 +13,7 @@ pub mod world;*/
 
 use std::collections::HashMap;
 
-use entity::{actor::ActorData, entities::fairy::{Fairy}, player::Player, Entity};
+use entity::{actor::ActorData, being::Being, entities::fairy::{Fairy}, player::Player, Entity};
 use haps_system::haps::{Event, Haps};
 use spaces::field::Field;
 
@@ -81,7 +81,7 @@ impl Game {
 				Event::SpawnFairy {
 					x: 10,
 					y: 10,
-					name: "Oolooroo".to_owned(),
+					name: "Ooloonoo".to_owned(),
 					id: "0".to_owned(),
 				},
 			);
@@ -112,11 +112,11 @@ impl Game {
 				for (_id, game_piece) in self.game_pieces.iter_mut() {
 					match game_piece {
 						GamePieces::Fairy(fairy) => {
-							// Oolooroo is gentle for now: she stays put, a still
+							// Ooloonoo is gentle for now: she stays put, a still
 							// presence. (The stalking behavior is held for a darker
 							// entity, when we are ready for it.)
 							self.field.set_entity(fairy.entity.clone());
-							logger.log(&format!("Oolooroo waits at ({}, {})", fairy.entity.x, fairy.entity.y));
+							logger.log(&format!("Ooloonoo waits at ({}, {})", fairy.entity.x, fairy.entity.y));
 						}
 					}
 				}
@@ -147,11 +147,15 @@ impl Game {
 		match &mut entity {
 			GamePieces::Fairy(ref mut fairy) => {
 				fairy.entity.set_position(fairy.entity.x, fairy.entity.y);
-				if let Err(e) = fairy.actor.set_art_from_file("Fairy") {
-					// A missing asset shouldn't crash a fresh clone: note it in
-					// the log and show a visible placeholder instead.
-					logger.log(&format!("Could not load Fairy art: {e}; using placeholder"));
-					*fairy.actor.art_mut() = "[Fairy art missing]".to_string();
+				// The .being file is the source of truth for this watcher's
+				// name, stats, glyph, and art. A missing or malformed file
+				// degrades to a visible placeholder instead of crashing.
+				match Being::load("res/entities/ooloonoo.being") {
+					Ok(being) => fairy.apply_being(&being),
+					Err(e) => {
+						logger.log(&format!("Could not load ooloonoo.being: {e}; using placeholder"));
+						*fairy.actor.art_mut() = "[Ooloonoo art missing]".to_string();
+					}
 				}
 				self.field.set_entity(fairy.entity.clone());
 				self.game_pieces.insert(fairy.entity.id.clone(), entity);
