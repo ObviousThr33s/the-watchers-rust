@@ -46,7 +46,7 @@ impl MainLoop {
 			tick:0,
 
 			//Set game version here
-			logger: Logger::new(start_time, "0.4.0".to_string()),
+			logger: Logger::new(start_time, "0.5.4".to_string()),
 			_output:String::new(),
 			terminal:terminal,
 		}

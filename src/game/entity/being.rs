@@ -28,6 +28,9 @@ pub struct Being {
 	/// Behaviour tag — "gentle" is a friend, the rest are watchers.
 	pub behavior: String,
 	pub art: String,
+	/// The narrative line this being surfaces when seen. Authored in the file,
+	/// never in code — the story lives at the file boundary, not the engine.
+	pub line: String,
 }
 
 impl Being {
@@ -37,14 +40,17 @@ impl Being {
 	pub fn parse(text: &str) -> Result<Being, String> {
 		let mut being = Being { glyph: '?', visible: true, ..Being::default() };
 		let mut lines = text.lines();
-		let mut saw_separator = false;
+		let mut block: Option<String> = None;
 
+		// Header: `key value` lines until the first `---` separator. A separator
+		// may name the block it opens (`--- line`); a bare `---` opens `art`.
 		for line in lines.by_ref() {
-			if line.trim() == "---" {
-				saw_separator = true;
+			let trimmed = line.trim();
+			if let Some(rest) = trimmed.strip_prefix("---") {
+				let name = rest.trim();
+				block = Some(if name.is_empty() { "art".into() } else { name.into() });
 				break;
 			}
-			let trimmed = line.trim();
 			if trimmed.is_empty() || trimmed.starts_with('#') {
 				continue;
 			}
@@ -66,11 +72,26 @@ impl Being {
 			}
 		}
 
-		// Everything past the separator is art, verbatim.
-		if saw_separator {
-			let rest: Vec<&str> = lines.collect();
-			being.art = rest.join("\n");
+		// Verbatim blocks: each block runs until the next `---` line or the end
+		// of the file, kept exactly. Unknown block names are ignored, so a file
+		// can carry narrative sections before the engine reads them — the story
+		// can grow ahead of the code.
+		let mut name = match block {
+			Some(name) => name,
+			None => return Ok(being), // header-only file: no art, no narrative
+		};
+		let mut buf: Vec<&str> = Vec::new();
+		for line in lines.by_ref() {
+			if let Some(rest) = line.trim().strip_prefix("---") {
+				assign_block(&mut being, &name, buf.join("\n"));
+				buf.clear();
+				let next = rest.trim();
+				name = if next.is_empty() { "art".into() } else { next.into() };
+				continue;
+			}
+			buf.push(line);
 		}
+		assign_block(&mut being, &name, buf.join("\n"));
 
 		Ok(being)
 	}
@@ -84,15 +105,26 @@ impl Being {
 	}
 }
 
+/// Routes a verbatim block's content into the matching `Being` field. Unknown
+/// block names are dropped, so a file can carry sections the engine does not
+/// read yet — the story can grow ahead of the code.
+fn assign_block(being: &mut Being, name: &str, content: String) {
+	match name {
+		"art" => being.art = content,
+		"line" => being.line = content,
+		_ => {}
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
 
 	#[test]
 	fn parses_header_and_art() {
-		let text = "name Oolooroo\nglyph F\nvisible true\nhealth 10\npower 10\nbloom 2\nbehavior gentle\n---\nAAA\nBBB";
+		let text = "name Ooloonoo\nglyph F\nvisible true\nhealth 10\npower 10\nbloom 2\nbehavior gentle\n---\nAAA\nBBB";
 		let b = Being::parse(text).expect("parse");
-		assert_eq!(b.name, "Oolooroo");
+		assert_eq!(b.name, "Ooloonoo");
 		assert_eq!(b.glyph, 'F');
 		assert!(b.visible);
 		assert_eq!(b.health, 10);
@@ -131,11 +163,27 @@ mod tests {
 	}
 
 	#[test]
-	fn loads_oolooroo_from_disk() {
-		let b = Being::load("res/entities/oolooroo.being").expect("load oolooroo");
-		assert_eq!(b.name, "Oolooroo");
+	fn loads_ooloonoo_from_disk() {
+		let b = Being::load("res/entities/ooloonoo.being").expect("load ooloonoo");
+		assert_eq!(b.name, "Ooloonoo");
 		assert_eq!(b.glyph, 'F');
 		assert_eq!(b.behavior, "gentle");
 		assert!(!b.art.is_empty());
+		assert!(!b.line.is_empty(), "Ooloonoo should surface a narrative line from her file");
+	}
+
+	#[test]
+	fn parses_named_art_and_line_blocks() {
+		let text = "name Ooloonoo\nglyph F\n--- art\nAAA\nBBB\n--- line\nshe waits, unblinking";
+		let b = Being::parse(text).expect("parse");
+		assert_eq!(b.art, "AAA\nBBB");
+		assert_eq!(b.line, "she waits, unblinking");
+	}
+
+	#[test]
+	fn unknown_block_is_ignored_for_forward_compat() {
+		let b = Being::parse("name X\n--- art\nart\n--- future\nnot read yet").unwrap();
+		assert_eq!(b.art, "art");
+		assert_eq!(b.line, "");
 	}
 }
