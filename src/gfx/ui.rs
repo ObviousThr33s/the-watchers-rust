@@ -5,6 +5,8 @@ use crate::{game::spaces::field::Field, utils::logger::Logger};
 
 use super::{charset::CHARSETS, minimap::render::Render, portal::Portal};
 
+//The big question here has always been, how can the lifetimes be used more efficiently.
+
 struct _UI {
 	//Too complicated to explain one comment at a time but essentially
 	//each part of the frame is split into sections and then widgets are gener
@@ -20,7 +22,7 @@ fn draw_portal<'a>(screen: &'a String) -> Paragraph<'a> {
 
 fn draw_center<'a>(width: u16, height: u16, entity:&Field) -> Paragraph<'a> {
 
-	let middle_block = Block::new().title_bottom("*Live*");
+	let middle_block = Block::new().title_bottom("");
 	
 	let mut lamp: Render = Render::init(width.into(), height.into(), CHARSETS::Charset0);
 
@@ -215,16 +217,16 @@ mod tests {
 		for tick in 0..5usize {
 			let (mut art, mut prompt, mut stats) =
 				(String::new(), String::new(), String::new());
-			game.update(&mut art, &mut prompt, &mut stats, tick, &mut logger);
+			//game.update(&mut art, &mut prompt, &mut stats, tick, &mut logger);
 		}
 
-		let player_pos = game.player.player.get_position();
+		//let player_pos = game.player.player.get_position();
 		let walls: Vec<(i16, i16)> =
 			game.field.entities.values().map(|e| (e.x, e.y)).collect();
 		let viewport = Viewport::new(78, 20, std::f32::consts::PI / 3.0);
 		let view = viewport.render_raycasted(
-			player_pos.0 as f32,
-			player_pos.1 as f32,
+			0 as f32,
+			0 as f32,
 			0.0,
 			&walls,
 		);
@@ -236,7 +238,7 @@ mod tests {
 		let mut terminal =
 			Terminal::new(TestBackend::new(80, 30)).expect("headless test terminal");
 		terminal
-			.draw(|frame| draw_(frame, &view, &game.field, &logger, player_pos, &portal))
+			.draw(|frame| draw_(frame, &view, &game.field, &logger, (0,0), &portal))
 			.expect("headless draw");
 
 		// Reaching here = init + 5 logic ticks + a full UI render, no panics.

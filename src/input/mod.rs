@@ -16,7 +16,7 @@ pub enum PlayerMove {
 	RIGHT,
 	NONE
 }
-
+//Controller support probably.
 #[allow(unused_mut)]
 pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logger:&mut Logger) -> (GameStates, PlayerMove) {
 	let mut gs:GameStates = GameStates::Run;

@@ -101,6 +101,8 @@ impl Render {
 	}
 }
 
+
+//Good reminder for me to say: tests are documentation for now
 #[cfg(test)]
 mod tests {
 	use super::*;

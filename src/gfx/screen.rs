@@ -298,7 +298,7 @@ impl Screen {
 		Text::from(lines)
 	}
 }
-
+//remember what I said about tests being a good way to inform documentation.
 #[cfg(test)]
 mod tests {
 	use super::*;

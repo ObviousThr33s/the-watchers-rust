@@ -82,28 +82,7 @@ pub trait ActorData {
 	/// Returns the `io::Error` instead of panicking when the asset is missing or
 	/// unreadable, so a fresh clone with an absent file can degrade gracefully
 	/// (the caller falls back to a placeholder) rather than crashing on startup.
-	fn set_art_from_file(&mut self, name: &str) -> std::io::Result<()> {
-		let path = format!("res/entities/{}/art.txt", name);
-		*self.art_mut() = std::fs::read_to_string(&path)?;
-		Ok(())
-	}
-
-	fn set_stats_from_file(&mut self, file_path: &str) {
-		// Load the stats from the file
-		let stats = std::fs::read_to_string(Path::new(file_path)).unwrap_or_else(|_| "Error loading stats".to_string());
-		let parts: Vec<&str> = stats.split(',').collect();
-		if parts.len() == 3 {
-			*self.name_mut() = parts[0].to_string();
-			*self.health_mut() = parts[1].parse().unwrap_or(0);
-			*self.attack_power_mut() = parts[2].parse().unwrap_or(0);
-		}
-	}
-	
-	fn get_art(&self) -> &str {
-		self.art()
-	}
-
-	fn get_stats(&self) -> (String, i32, i32) {
-		(self.name().to_string(), self.health(), self.attack_power())
+	fn get_stats(&self) -> (String, i32) {
+		(self.name().to_string(), self.health())
 	}
 }

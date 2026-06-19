@@ -40,6 +40,8 @@ impl Haps {
 		self.queue.sort_by(|a, b| b.0.cmp(&a.0));
 		self.queue.drain(..).map(|(_, event)| event).collect()
 	}
+
+	//We need blocks/chunks and major modal clears vs minor modal clears.
 }
 
 #[cfg(test)]

@@ -2,7 +2,7 @@ extern crate chrono;
 use std::time::SystemTime;
 use chrono::prelude::DateTime;
 use chrono::Utc;
-
+//this is boilerplate and can be redone a number of different ways for some different purposes
 pub struct Time {
 	pub start_time: SystemTime,
 }

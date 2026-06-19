@@ -1,0 +1,18 @@
+# Oolooroo — the harder name. With Ooloonoo, a dyad: two you can mistake for one.
+name     Oolooroo
+glyph    F
+visible  true
+health   10
+power    10
+bloom    2
+behavior gentle
+--- dyad
+Ooloonoo
+--- art
+   . * .
+  \  o  /
+ --) | (--
+   /   \
+    ' '
+--- line
+They tilt their head, as if you'd taken them for another. Gently, they forgive it.

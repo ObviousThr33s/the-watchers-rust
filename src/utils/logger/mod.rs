@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 
-
+// this can be redone easily sometime.
 use super::time::Time;
 
 pub struct Logger {
