@@ -173,6 +173,28 @@ mod tests {
 	}
 
 	#[test]
+	fn loads_oolooroo_the_twin_from_disk() {
+		let b = Being::load("res/entities/oolooroo.being").expect("load oolooroo");
+		assert_eq!(b.name, "Oolooroo");
+		assert_eq!(b.glyph, 'F'); // shares the fairy glyph with Ooloonoo — a twin you can mistake
+		assert_eq!(b.behavior, "gentle");
+		assert!(!b.art.is_empty());
+		assert!(!b.line.is_empty());
+	}
+
+	#[test]
+	fn loads_vesh_the_watcher_from_disk() {
+		// Vesh carries `--- faction` and `--- behaviors` blocks the engine does
+		// not read yet; the file must still parse cleanly (unknown blocks are
+		// dropped) — the design grows ahead of the code.
+		let b = Being::load("res/entities/vesh.being").expect("load vesh");
+		assert_eq!(b.name, "Vesh");
+		assert_eq!(b.glyph, 'v');
+		assert!(!b.art.is_empty());
+		assert!(!b.line.is_empty());
+	}
+
+	#[test]
 	fn parses_named_art_and_line_blocks() {
 		let text = "name Ooloonoo\nglyph F\n--- art\nAAA\nBBB\n--- line\nshe waits, unblinking";
 		let b = Being::parse(text).expect("parse");

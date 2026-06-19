@@ -1,4 +1,4 @@
-use crate::game::entity::{Actions, Actor, Entity, EntityData};
+use crate::game::entity::{ Actor, Entity, EntityData};
 use crate::game::entity::being::Being;
 
 pub struct Fairy {
@@ -16,19 +16,29 @@ impl Clone for Fairy {
 }
 
 impl Fairy {
+	/// A fairy is built *before* its `.being` is loaded, so `new` fills only
+	/// inert placeholders. The real glyph, stats, and art arrive from the
+	/// `.being` file via [`apply_being`] — that file is the source of truth, not
+	/// this code. The placeholder glyph is a deliberately-wrong `?` so a fairy
+	/// that was never applied (e.g. the file failed to load) shows up on the map
+	/// as "unloaded" instead of masquerading as the real thing. The placeholder
+	/// health stays positive so a missing `.being` degrades to a visible
+	/// placeholder rather than being reaped as dead.
 	pub fn new(x:i16, y:i16, name:String, id:String) -> Self{
+		const PLACEHOLDER_GLYPH: char = '?';
+		const PLACEHOLDER_STAT: i32 = 1;
 		Self {
 			entity: Entity::new(
 				x,
 				y,
-				'F',
+				PLACEHOLDER_GLYPH,
 				id,
 				crate::game::entity::Priority::MED,
 			),
 			actor:Actor {
-				name: name,
-				health: 10,
-				attack_power:10,
+				name,
+				health: PLACEHOLDER_STAT,
+				attack_power: PLACEHOLDER_STAT,
 				art:String::new(),
 				prompt:String::new(),
 			}
@@ -72,12 +82,5 @@ impl EntityData for Fairy {
 	
 	fn set_power(&mut self, attack_power:i32) {
 		self.actor.attack_power = attack_power
-	}
-}
-
-impl Actions for Fairy {
-	fn attack(self, _actor: &mut Actor) {
-		// TODO: combat is being reworked from HP toward light-as-resource;
-		// left intentionally empty until the event system is settled.
 	}
 }

@@ -8,7 +8,7 @@ pub struct Viewport {
 	pub fov: f32,
 	pub max_distance: f32,
 }
-
+/// Very good and all but a human (not me) probably wrote this initially.
 /// Brightness ramp from nearest/brightest to farthest/faintest.
 /// Walls facing the viewer along the y-axis are shaded one step darker
 /// than x-facing walls so corners read as distinct surfaces.

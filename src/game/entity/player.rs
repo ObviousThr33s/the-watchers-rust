@@ -27,6 +27,9 @@ impl Clone for Player {
 	}
 }
 
+//this may be the only place we hardcode anything. but even then-- controller support.
+//maybe learn how the player plays.
+
 impl Player {
 
 	pub fn new() -> Self {

@@ -1,5 +1,7 @@
 /// Portal stores metadata for rendering prompts and art
 /// The actual screen rendering is handled by the viewport and render system
+//what are we going to do when we add portals in. maybe rename this to Porthole
+
 #[derive(Clone)]
 pub struct Portal {
 	pub art: String,

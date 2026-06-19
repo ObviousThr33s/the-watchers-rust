@@ -13,7 +13,6 @@ use super::player_loop::PlayerLoop;
 pub struct MainLoop{
 	pub start: Time,
 	pub logger:Logger,
-	pub portal:Portal,
 	pub game:Game,
 
 	tick:usize,
@@ -34,14 +33,13 @@ pub enum GameStates{
 }
 
 impl MainLoop {
-	pub fn new(start_time:Time, terminal:DefaultTerminal) -> MainLoop {
-
-
+	pub fn new(start_time:Time, terminal:DefaultTerminal, game:Game) -> MainLoop {
 		MainLoop {
-			state: GameStates::Init,
+			game,
 			start:start_time.clone(),
-			portal:Portal::new(),
-			game:Game::new(),
+			
+			state: GameStates::Init,
+			
 			viewport: Viewport::new(80, 20, std::f32::consts::PI / 3.0),
 			tick:0,
 
@@ -84,18 +82,18 @@ impl MainLoop {
 
 		let (mut art, mut prompt, mut stats):(String,String,String) =
 			(String::new(), String::new(), String::new());
-
+		/*
 		PlayerLoop::player_move(
 			&mut self.game.player,
 			player_input,
 			&self.game.field,
 			&mut self.logger,
 		);
+		*/
+		
+		//self.game.update(self, self.tick, &mut self.logger);
 
-		self.game.field.set_entity(self.game.player.player.clone());
-		self.game.update(&mut art, &mut prompt, &mut stats, self.tick, &mut self.logger);
-
-		self.portal.set_portal(art, prompt, stats);
+		//self.portal.set_portal(art, prompt, stats);
 
 		self.tick += 1;
 		self.logger.log(&format!("Tick: {}", self.tick));
@@ -123,13 +121,14 @@ impl MainLoop {
 			std::f32::consts::PI / 3.0
 		);
 
-		let player_pos = self.game.player.player.get_position();
+		//let player_pos = self.game.player.player.get_position();
 		// Map the player's heading (0=up, 90=right, 180=down, -90=left) into the
 		// ray caster's angle convention, where 0 rad points along +x and +y is
 		// "down" on screen. Facing "up" is therefore -90 degrees of ray angle.
-		let angle = (self.game.player.heading.0 as f32 - 90.0) * std::f32::consts::PI / 180.0;
+		//let angle = (self.game.player.heading.0 as f32 - 90.0) * std::f32::consts::PI / 180.0;
 
 		// Get walls from field entities (simplified: all entities are obstacles for now)
+		/*
 		let walls: Vec<(i16, i16)> = self
 			.game
 			.field
@@ -138,7 +137,7 @@ impl MainLoop {
 			.map(|e| (e.x, e.y))
 			.filter(|&pos| pos != (player_pos.0, player_pos.1))
 			.collect();
-
+		
 		// Render the viewport
 		let view_text = self.viewport.render_raycasted(
 			player_pos.0 as f32,
@@ -146,7 +145,7 @@ impl MainLoop {
 			angle,
 			&walls,
 		);
-
+		
 		render(&mut self.terminal,
 			&self.logger,
 			&self.game.field,
@@ -154,7 +153,8 @@ impl MainLoop {
 			player_pos,
 			&self.portal,
 		);
-
+		*/
+		
 		self.state = GameStates::Run;
 	}
 

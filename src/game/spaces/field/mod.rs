@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::game::entity::Entity;
-
+//this must be able to translate to any UI system
 /// Represents a 2D field where entities can be placed
 pub struct Field {
 	/// Map of entity IDs to their corresponding Entity objects

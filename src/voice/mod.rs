@@ -7,6 +7,8 @@
 //! the light fails. It is the channel for entity transmissions (Ooloonoo's
 //! fragments, whatever the dark murmurs) and for the void at the open and close.
 
+//very interesting idea but how does this get passed to the renderer (player facing) without trouble
+
 use std::collections::VecDeque;
 
 /// Glyphs a transmission decays into as it is lost to noise.

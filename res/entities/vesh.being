@@ -1,0 +1,20 @@
+# Vesh — watching, and seen only when they allow it.
+# Her behaviors live in a block the engine does not read yet: the
+# file carries her design ahead of the code.
+name     Vesh
+glyph    v
+visible  true
+health   6
+power    3
+bloom    2
+--- behaviors
+stalk
+feed
+recoil
+--- art
+   .---.
+  ( o o )
+   \ v /
+    '-'
+--- line
+They were watching before you turned. Caught, they do not flee — they let you see them.

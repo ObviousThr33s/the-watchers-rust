@@ -3,8 +3,8 @@ use actor::Actor;
 pub mod player;
 pub mod floor;
 pub mod actor;
+pub mod fairy;
 
-pub mod entities;
 pub mod being;
 
 pub enum GameObject {
@@ -114,8 +114,4 @@ pub trait EntityData {
 
 	fn get_power(self) -> i32;
 	fn set_power(&mut self, attack_power:i32);
-}
-
-pub trait Actions {
-	fn attack(self, actor: &mut Actor);
 }
