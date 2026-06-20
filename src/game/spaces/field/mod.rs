@@ -71,7 +71,25 @@ impl Field {
 		self.spatial_index.insert(new_pos, id.clone());
 		self.entities.insert(id.clone(), entity);
 	}
-	
+
+	/// Moves entity `id` by `(dx, dy)` if the destination cell is free, returning
+	/// whether it actually moved. Every entity is solid (the ray caster treats
+	/// them all as walls), so a step into any occupied cell is blocked. The
+	/// spatial index is kept in sync via [`set_entity`].
+	pub fn move_entity(&mut self, id: &str, dx: i16, dy: i16) -> bool {
+		let mut moved = match self.get_entity_by_id(id) {
+			Some(e) => e.clone(),
+			None => return false,
+		};
+		let (nx, ny) = (moved.x + dx, moved.y + dy);
+		if self.is_occupied(nx, ny, id) {
+			return false; // blocked by a wall (or anything else solid)
+		}
+		moved.set_position(nx, ny);
+		self.set_entity(moved);
+		true
+	}
+
 	/// Gets an entity at a specific position (x, y), if it exists
 	#[inline]
 	pub fn get_entity_by_position(&self, x: i16, y: i16) -> Option<&Entity> {
@@ -151,5 +169,32 @@ mod tests {
 
 		assert_eq!(rows[2].chars().nth(2), Some('^'), "player should be centered");
 		assert_eq!(rows[1].chars().nth(2), Some('#'), "wall should sit one row above");
+	}
+
+	#[test]
+	fn move_entity_steps_into_open_space() {
+		let mut field = Field::new();
+		field.add_entity(Entity::new(2, 2, '^', "Player".to_string(), Priority::MED));
+
+		assert!(field.move_entity("Player", 0, 1), "an open cell should be steppable");
+
+		let p = field.get_entity_by_id("Player").unwrap();
+		assert_eq!(p.get_position(), (2, 3), "the player moved one cell down");
+		assert!(field.get_entity_by_position(2, 3).is_some(), "spatial index follows the move");
+		assert!(field.get_entity_by_position(2, 2).is_none(), "the old cell is vacated");
+	}
+
+	#[test]
+	fn move_entity_is_blocked_by_a_wall() {
+		let mut field = Field::new();
+		field.add_entity(Entity::new(2, 2, '^', "Player".to_string(), Priority::MED));
+		field.add_entity(Entity::new(2, 1, '#', "wall".to_string(), Priority::LOW));
+
+		assert!(!field.move_entity("Player", 0, -1), "a wall must block the step");
+		assert_eq!(
+			field.get_entity_by_id("Player").unwrap().get_position(),
+			(2, 2),
+			"a blocked player does not move"
+		);
 	}
 }
