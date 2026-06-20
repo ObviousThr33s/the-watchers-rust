@@ -75,6 +75,16 @@ impl Cell {
 }
 
 /// A panel of the shōji: a `x` by `y` grid of cells, drawn into by coordinate.
+///
+/// ```
+/// use the_watchers_rust::gfx::screen::Screen;
+///
+/// let mut panel = Screen::new(3, 1);
+/// panel.put(0, 0, 'h');
+/// panel.put(1, 0, 'i');
+/// // Unpainted cells stay bare paper (a space), never blanked out.
+/// assert_eq!(panel.to_string(), "hi ");
+/// ```
 #[derive(Clone)]
 pub struct Screen {
 	/// Width in cells. Named `x`/`y` for the grid axes a caller addresses.

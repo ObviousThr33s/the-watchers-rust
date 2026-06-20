@@ -1,117 +1,82 @@
-
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 
-// this can be redone easily sometime.
 use super::time::Time;
 
+#[derive(Clone)]
 pub struct Logger {
-	pub tick:usize,
+	pub tick: usize,
 	pub start_time: Time,
 
 	log_stream: Vec<String>,
-	vers:String
-}
-
-impl Clone for Logger {
-	fn clone(&self) -> Self {
-		Self {
-				log_stream: self.log_stream.clone(), 
-				start_time: self.start_time.clone(),
-				tick: self.tick.clone(),
-				vers: self.vers.clone()
-		}
-	}
+	vers: String,
 }
 
 impl Logger {
-
-	pub fn new(start_time:Time, version:String) -> Self {
-		Logger { 
+	pub fn new(start_time: Time, version: String) -> Self {
+		Logger {
 			log_stream: Vec::new(),
-			start_time: start_time,
+			start_time,
 			tick: 0,
-			vers: version
+			vers: version,
 		}
 	}
 
+	/// Append one timestamped line: `[YYYY-MM-DD HH:MM:SS.mmm]<tick> message`.
+	/// The stamp is taken at the moment the line is written, so the log reads as
+	/// a true timeline rather than every entry sharing the run's start time.
 	pub fn log(&mut self, message: &str) {
-		let s0: String = self.start_time.to_string();
-		self.log_stream.push(format!("[{}]<{}> {}\n", s0, self.tick, message));
-		
+		let stamp = Time::timestamp();
+		self.log_stream.push(format!("[{stamp}]<{}> {message}\n", self.tick));
 		self.tick += 1;
 	}
 
-	pub fn get_log(self) -> Vec<String> {
-		let mut log_:Vec<String> = Vec::new();
-		
-		for i in self.log_stream{
-			log_.push(i.clone());
-		}
-		log_.reverse();
-
-		log_
+	/// The log so far, newest line first. Borrows rather than consuming `self`,
+	/// so callers (e.g. the live UI) no longer have to clone the whole logger to
+	/// read it.
+	pub fn get_log(&self) -> Vec<String> {
+		let mut lines = self.log_stream.clone();
+		lines.reverse();
+		lines
 	}
 
-	pub fn get_version(self) -> String {
-		self.vers
+	pub fn get_version(&self) -> &str {
+		&self.vers
 	}
 
-
-	//saves a special log to a specific directory
-	pub fn save_log_sp(dir:&str, file_name:&str, message:String){
-		let dir = format!("./{}/", dir);
-		let file_name = format!("{}.txt", file_name);
-
-		let mut file_path = PathBuf::from(dir.clone());
-		file_path.push(file_name);
-
-		
-		if let Err(e) = std::fs::create_dir_all(dir) {
-			eprintln!("Failed to create directory: {}", e);
-			return;
-		}
-
-		let mut f: File = match File::create(file_path) {
-			Ok(file) => file,
-			Err(e) => {
-				eprintln!("Failed to create file: {}", e);
-				return;
-			}
-		};
-
-		let log_data = message;
-		if let Err(e) = f.write_all(&log_data.as_bytes()) {
-			eprintln!("Failed to write to file: {}", e);
-		}
-	}
-
-	//saves the main log
-	pub fn save_log(&mut self) {
+	/// Write the full log to `res/logs/log_<session>.txt` — one file per run,
+	/// named for when the run began, so successive sessions don't overwrite one
+	/// another. Led by a header naming the start time and version. On the way
+	/// out, so an I/O failure is reported to stderr rather than panicking over
+	/// the exit.
+	pub fn save_log(&self) {
 		let dir = "./res/logs";
-		let file_name = "log.txt";
-
 		let mut file_path = PathBuf::from(dir);
-		file_path.push(file_name);
+		file_path.push(format!("log_{}.txt", self.start_time.file_stamp()));
 
-		
 		if let Err(e) = std::fs::create_dir_all(dir) {
-			eprintln!("Failed to create directory: {}", e);
+			eprintln!("Failed to create directory: {e}");
 			return;
 		}
 
 		let mut f: File = match File::create(file_path) {
 			Ok(file) => file,
 			Err(e) => {
-				eprintln!("Failed to create file: {}", e);
+				eprintln!("Failed to create file: {e}");
 				return;
 			}
 		};
 
-		let log_data = self.log_stream.join("").into_bytes();
-		if let Err(e) = f.write_all(&log_data) {
-			eprintln!("Failed to write to file: {}", e);
+		let header = format!(
+			"# session started {} — v{}\n",
+			self.start_time.started_at(),
+			self.vers,
+		);
+		let body = self.log_stream.join("");
+
+		if let Err(e) = f.write_all(header.as_bytes()).and_then(|_| f.write_all(body.as_bytes())) {
+			eprintln!("Failed to write log: {e}");
 		}
 	}
 }

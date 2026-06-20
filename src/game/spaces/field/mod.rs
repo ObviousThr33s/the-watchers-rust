@@ -3,33 +3,12 @@ use std::collections::HashMap;
 use crate::game::entity::Entity;
 //this must be able to translate to any UI system
 /// Represents a 2D field where entities can be placed
+#[derive(Clone)]
 pub struct Field {
 	/// Map of entity IDs to their corresponding Entity objects
 	pub entities: HashMap<String, Entity>,
 	/// Spatial index for fast position-based lookups: (x, y) -> entity_id
 	pub spatial_index: HashMap<(i16, i16), String>,
-}
-
-impl Clone for Field {
-	fn clone(&self) -> Self {
-		Self { 
-			entities: self.entities.clone(),
-			spatial_index: self.spatial_index.clone(),
-		}
-	}
-}
-
-impl ToString for Field {
-	fn to_string(&self) -> String {
-		let mut output: Vec<String> = Vec::with_capacity(self.entities.len() + 1);
-		output.push(String::from("\n"));
-
-		for id in self.entities.keys() {
-			output.push(format!("\t{}\n", id));
-		}
-
-		output.concat()
-	}
 }
 
 impl Field {

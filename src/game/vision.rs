@@ -19,7 +19,16 @@
 /// counts as opaque, and should exclude the viewer and the target themselves.
 /// 
 /// This was cool when I first saw it.
-/// 
+///
+/// ```
+/// use the_watchers_rust::game::vision::can_see;
+/// use std::f32::consts::PI;
+///
+/// // Facing +x (0 rad), a 60° cone, range 20: a clear shot to (5,0) is seen;
+/// // a wall at (3,0) blocks the same shot.
+/// assert!( can_see((0, 0), 0.0, PI / 3.0, 20.0, (5, 0), |_, _| false));
+/// assert!(!can_see((0, 0), 0.0, PI / 3.0, 20.0, (5, 0), |x, y| (x, y) == (3, 0)));
+/// ```
 pub fn can_see(
 	origin: (i16, i16),
 	facing: f32,

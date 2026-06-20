@@ -8,9 +8,9 @@ use the_watchers_rust::utils::time::Time;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let start: Time = Time::new();
 	let terminal = ratatui::init();
-	let game:Game = Game::new(/*server stuff?*/);
+	let game:Game = Game::new(/*server stuff?*/ );
 
-	let mut game: MainLoop = MainLoop::new(start, terminal, game);
+	let mut game: MainLoop = MainLoop::new(start, terminal, game, "0.6.0".to_string());
 
 	game.run_game();
 

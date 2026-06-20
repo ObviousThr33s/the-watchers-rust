@@ -1,18 +1,14 @@
+use std::fmt;
+
 use actor::Actor;
 
 pub mod player;
-pub mod floor;
 pub mod actor;
 pub mod fairy;
 
 pub mod being;
 
-pub enum GameObject {
-	Player(Entity),
-	Floor(Entity),
-	Fairy(Entity),
-}
-
+#[derive(Clone)]
 pub struct Entity {
 	pub x: i16,
 	pub y: i16,
@@ -34,44 +30,11 @@ impl Entity {
 		Entity { x, y, self_, id, priority}
 	}
 
-	pub fn update(&mut self, e: Entity) {
-		self.x = e.x;
-		self.y = e.y;
-		self.self_ = e.self_;
-		self.id = e.id.clone();
-	}
-
-	pub fn move_up(&mut self){
-		let (x, mut y) = self.get_position();
-		if y != 0 {
-			y -= 1;
-		}
-
-		self.set_position(x, y);
-	}
-	pub fn move_down(&mut self){
-		let (x, mut y) = self.get_position();
-		y += 1;
-		self.set_position(x, y);
-	}
-	pub fn move_left(&mut self){
-		let (mut x, y) = self.get_position();
-		if x != 0 {
-			x -= 1;
-		}
-		self.set_position(x, y);
-	}
-	pub fn move_right(&mut self){
-		let (mut x, y) = self.get_position();
-		x += 1;
-		self.set_position(x, y);
-
-	}
 	pub fn set_position(&mut self, new_x: i16, new_y: i16) {
 		self.x = new_x;
 		self.y = new_y;
 	}
-	
+
 	#[inline]
 	pub fn get(&self) -> (i16, i16, &str) {
 		(self.x, self.y, &self.id)
@@ -84,26 +47,9 @@ impl Entity {
 
 }
 
-impl Clone for Entity {
-	fn clone(&self) -> Self {
-		Entity {
-			x: self.x,
-			y: self.y,
-			self_: self.self_,
-			priority: self.priority.clone(),
-			id: self.id.clone(),
-		}
-	}
-}
-
-impl ToString for Entity {
-	fn to_string(&self) -> String {
-		let e_y = self.x.clone();
-		let e_x = self.y.clone();
-		let e_id = self.id.clone();
-		let s:String = format!("{} ({},{})",e_id, e_x, e_y).clone();
-		let s_ = s.clone();
-		s_
+impl fmt::Display for Entity {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "{} ({},{})", self.id, self.x, self.y)
 	}
 }
 

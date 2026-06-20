@@ -2,7 +2,7 @@ use ratatui::style::{Color, Modifier};
 
 use crate::{
 	game::{entity::Entity, spaces::field::Field},
-	gfx::{charset::CHARSETS, screen::{Cell, Screen}},
+	gfx::screen::{Cell, Screen},
 };
 
 /// Glyph painted for a cell the watcher cannot currently see. The unseen is
@@ -13,18 +13,9 @@ use crate::{
 const FOG: char = '░';
 
 /// Handles rendering entities from a Field to a screen buffer
+#[derive(Clone)]
 pub struct Render {
 	render: Screen,
-	charset: CHARSETS,
-}
-
-impl Clone for Render {
-	fn clone(&self) -> Self { 
-		Self {
-			render: self.render.clone(),
-			charset: self.charset,
-		}
-	} 
 }
 
 impl ToString for Render {
@@ -42,11 +33,10 @@ impl Render {
 }
 
 impl Render {
-	/// Creates a new render with specified dimensions and character set
-	pub fn init(width: u16, height: u16, charset: CHARSETS) -> Self {
+	/// Creates a new render with specified dimensions
+	pub fn init(width: u16, height: u16) -> Self {
 		Self {
 			render: Screen::new(width, height),
-			charset,
 		}
 	}
 		/// Renders all entities from the field to the screen buffer
@@ -116,7 +106,7 @@ mod tests {
 
 	#[test]
 	fn all_visible_reveals_the_entity() {
-		let mut r = Render::init(5, 3, CHARSETS::Charset0);
+		let mut r = Render::init(5, 3);
 		r.rasterize_visible(&one_entity_field(), |_, _| true);
 		let out = r.to_string();
 		assert!(out.contains('F'), "a fully-lit map should reveal the entity");
@@ -125,7 +115,7 @@ mod tests {
 
 	#[test]
 	fn all_hidden_fogs_the_entity_away() {
-		let mut r = Render::init(5, 3, CHARSETS::Charset0);
+		let mut r = Render::init(5, 3);
 		r.rasterize_visible(&one_entity_field(), |_, _| false);
 		let out = r.to_string();
 		assert!(!out.contains('F'), "an unseen entity must not appear on the watcher's map");
@@ -134,7 +124,7 @@ mod tests {
 
 	#[test]
 	fn default_rasterize_stays_omniscient() {
-		let mut r = Render::init(5, 3, CHARSETS::Charset0);
+		let mut r = Render::init(5, 3);
 		r.rasterize(&one_entity_field());
 		let out = r.to_string();
 		assert!(out.contains('F'));

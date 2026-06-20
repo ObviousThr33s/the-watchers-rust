@@ -1,0 +1,8 @@
+# rustfmt owns layout so it stops being something to argue about. Hard tabs keep
+# the house look the codebase already uses.
+#
+# NOTE: the full `cargo fmt` sweep is deferred on purpose — it would touch nearly
+# every file, so it lands as its own deliberate commit rather than riding along
+# with feature work. Until then `cargo fmt --check` will report the codebase as
+# unformatted; that's expected.
+hard_tabs = true

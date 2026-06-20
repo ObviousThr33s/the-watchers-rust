@@ -49,7 +49,7 @@ pub enum GameStates{
 }
 
 impl MainLoop {
-	pub fn new(start_time:Time, terminal:DefaultTerminal, game:Game) -> MainLoop {
+	pub fn new(start_time:Time, terminal:DefaultTerminal, game:Game, version:String) -> MainLoop {
 		MainLoop {
 			game,
 			start:start_time.clone(),
@@ -60,7 +60,7 @@ impl MainLoop {
 			tick:0,
 
 			//Set game version here
-			logger: Logger::new(start_time, "0.5.4".to_string()),
+			logger: Logger::new(start_time, version),
 			_output:String::new(),
 			terminal:terminal,
 			portal: Portal::new(),

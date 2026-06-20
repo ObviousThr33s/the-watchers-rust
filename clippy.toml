@@ -1,0 +1,6 @@
+# Tests legitimately use unwrap()/expect() as their assertion mechanism — a
+# failed expect IS the test failure. This carve-out keeps the safe-subset lints
+# (see Cargo.toml [lints.clippy]) from firing inside tests, so test-docs stay
+# uncluttered by error-handling ceremony. See STYLE.md, "Tests as documentation".
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true

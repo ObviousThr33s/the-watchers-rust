@@ -1,7 +1,6 @@
 pub mod ui;
 pub mod minimap;
 pub mod portal;
-pub mod charset;
 pub mod viewport;
 
 pub mod screen;
