@@ -11,12 +11,9 @@ pub mod levels;
 pub mod entities;
 pub mod world;*/
 
-use std::collections::HashMap;
-//we have to write this before we write the other stuff but we have to write the other stuff before we write this. 
-
 use spaces::field::Field;
 
-use crate::{game::{haps::Haps, recollection::Recollection}, utils::{logger, time}};
+use crate::{game::{haps::Haps, recollection::Recollection}, utils::logger};
 
 pub mod entity;
 pub mod spaces;
@@ -33,8 +30,6 @@ pub struct Game {
 
 impl Game {
 	pub fn new() -> Self {
-
-
 		Game {
 			field: Field::new(),
 			time: Haps::new(),
@@ -85,7 +80,6 @@ impl Game {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::gfx::charset::CHARSETS;
 	use crate::gfx::minimap::render::Render;
 	use crate::utils::{logger::Logger, time::Time};
 
@@ -120,7 +114,7 @@ mod tests {
 			.expect("init must place the player")
 			.clone();
 
-		let mut lamp = Render::init(20, 20, CHARSETS::Charset0);
+		let mut lamp = Render::init(20, 20);
 		lamp.rasterize(&game.field);
 
 		assert!(

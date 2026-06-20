@@ -3,7 +3,7 @@ use ratatui::{
 };
 use crate::{game::spaces::field::Field, utils::logger::Logger};
 
-use super::{charset::CHARSETS, minimap::render::Render, portal::Portal};
+use super::{minimap::render::Render, portal::Portal};
 
 //The big question here has always been, how can the lifetimes be used more efficiently.
 
@@ -24,7 +24,7 @@ fn draw_center<'a>(width: u16, height: u16, entity:&Field) -> Paragraph<'a> {
 
 	let middle_block = Block::new().title_bottom("");
 	
-	let mut lamp: Render = Render::init(width.into(), height.into(), CHARSETS::Charset0);
+	let mut lamp: Render = Render::init(width.into(), height.into());
 
 	lamp.rasterize(entity);
 
@@ -79,13 +79,13 @@ fn draw_invty<'a> (style:Style, border:BorderType) -> Paragraph <'a>{
 
 fn draw_log <'a> (style:Style, border:BorderType, log_:&Logger) -> Paragraph <'a>{
 	let top_block = Block::bordered()
-		.title(format!("The Watchers v{}", log_.clone().get_version()))
+		.title(format!("The Watchers v{}", log_.get_version()))
 		.title_style(style)
 		.border_type(border)
 		.borders(Borders::ALL);
-	
+
 	let logger_ui:Paragraph = Paragraph::new(
-		Text::from(log_.clone().get_log()
+		Text::from(log_.get_log()
 						.concat()))
 		.block(top_block);
 
@@ -206,30 +206,18 @@ mod tests {
 
 	#[test]
 	fn game_runs_and_renders_headless() {
-		// Drive the real runtime end to end without a terminal: init, several
-		// logic ticks (entity spawn, the event queue, sight/reveal, asset load),
-		// then a full UI render through a headless backend. A panic or an
-		// out-of-bounds anywhere fails this — which "it compiles" cannot catch.
+		// Drive the runtime end to end without a terminal: init the game, then a
+		// full UI render through a headless backend. A panic or an out-of-bounds
+		// anywhere fails this — which "it compiles" cannot catch. (Per-tick logic
+		// will be folded in here once Game::update is wired.)
 		let mut logger = Logger::new(Time::new(), "test".to_owned());
 		let mut game = Game::new();
 		game.init(&mut logger);
 
-		for tick in 0..5usize {
-			let (mut art, mut prompt, mut stats) =
-				(String::new(), String::new(), String::new());
-			//game.update(&mut art, &mut prompt, &mut stats, tick, &mut logger);
-		}
-
-		//let player_pos = game.player.player.get_position();
 		let walls: Vec<(i16, i16)> =
 			game.field.entities.values().map(|e| (e.x, e.y)).collect();
 		let viewport = Viewport::new(78, 20, std::f32::consts::PI / 3.0);
-		let view = viewport.render_raycasted(
-			0 as f32,
-			0 as f32,
-			0.0,
-			&walls,
-		);
+		let view = viewport.render_raycasted(0.0, 0.0, 0.0, &walls);
 
 		// Force the reveal panel on, so its overlay path renders too.
 		let mut portal = Portal::new();
@@ -241,7 +229,7 @@ mod tests {
 			.draw(|frame| draw_(frame, &view, &game.field, &logger, (0,0), &portal))
 			.expect("headless draw");
 
-		// Reaching here = init + 5 logic ticks + a full UI render, no panics.
+		// Reaching here = init + a full UI render, no panics.
 		assert!(game.field.get_entity_by_id("Player").is_some());
 	}
 }

@@ -2,6 +2,7 @@ use angle_sc::Degrees;
 
 use super::{Entity, Priority};
 
+#[derive(Clone)]
 pub struct Player {
 	pub player:Entity,
 	pub heading:Degrees,
@@ -15,16 +16,6 @@ pub enum Direction_ {
 	DOWN = 1,
 	RIGHT = 2,
 	LEFT = 3,
-}
-
-impl Clone for Player {
-	fn clone(&self) -> Self {
-		Self {
-			player: self.player.clone(),
-			heading: self.heading,
-			direction:self.direction.clone()
-		}
-	}
 }
 
 //this may be the only place we hardcode anything. but even then-- controller support.
@@ -77,26 +68,5 @@ impl Player {
 			self.player.self_ = '^';
 		}
 
-	}
-
-	pub fn is_facing(self, ents:Vec<Entity>) -> (bool, Option<Entity>) {
-		let (player_x, player_y) = self.player.get_position();
-
-		for e in ents {
-			let (e_x, e_y) = e.get_position();
-			if player_x-1 == e_x && self.direction == Direction_::LEFT {
-				return (true, Some(e));
-			}
-			if player_x+1 == e_x && self.direction == Direction_::RIGHT {
-				return (true, Some(e));
-			}
-			if player_y-1 == e_y && self.direction == Direction_::UP {
-				return (true, Some(e));
-			}
-			if player_y+1 == e_y && self.direction == Direction_::DOWN {
-				return (true, Some(e));
-			}
-		}
-		(false, None)
 	}
 }

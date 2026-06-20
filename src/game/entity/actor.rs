@@ -1,6 +1,3 @@
-use std::path::Path;
-
-
 pub struct Actor{
 	pub(crate) name: String,
 	pub(crate) health: i32,

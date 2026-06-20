@@ -4,6 +4,8 @@
 //! adding data, not code. Parsing is a pure function over a string; the file
 //! wrapper on top is thin, and a malformed file is an error, never a panic.
 
+use std::fmt;
+
 /// What can currently be seen of a thing. `Partial` is the seam where failing
 /// light, signal corruption, and half-remembered places all live: `0.0` is
 /// nearly gone, `1.0` is nearly clear.
@@ -33,11 +35,53 @@ pub struct Being {
 	pub line: String,
 }
 
+/// Why a `.being` definition failed to parse or load. A typed error rather than
+/// a free string, so a caller can match on the cause (and a malformed file is
+/// always an error, never a panic).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum BeingError {
+	/// A header line that wasn't `key value`.
+	NotKeyValue(String),
+	/// A `glyph` line with no character after the key.
+	EmptyGlyph,
+	/// A numeric field (`health`/`power`/`bloom`) whose value didn't parse.
+	NotANumber { key: String, value: String },
+	/// A header key the parser doesn't recognise.
+	UnknownKey(String),
+	/// The file could not be read from disk.
+	Io { path: String, message: String },
+}
+
+impl fmt::Display for BeingError {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		match self {
+			BeingError::NotKeyValue(line) => write!(f, "not a `key value` line: {line:?}"),
+			BeingError::EmptyGlyph => write!(f, "glyph is empty"),
+			BeingError::NotANumber { key, value } => write!(f, "{key} not a number: {value:?}"),
+			BeingError::UnknownKey(key) => write!(f, "unknown key: {key:?}"),
+			BeingError::Io { path, message } => write!(f, "could not read {path}: {message}"),
+		}
+	}
+}
+
+impl std::error::Error for BeingError {}
+
 impl Being {
 	/// Parses one `.being` definition: `key value` header lines, then a line
 	/// that is exactly `---`, then the ascii art verbatim to the end. Blank
 	/// lines and `#` comments in the header are ignored.
-	pub fn parse(text: &str) -> Result<Being, String> {
+	///
+	/// ```
+	/// use the_watchers_rust::game::entity::being::{Being, BeingError};
+	///
+	/// let being = Being::parse("name Wisp\nglyph w").unwrap();
+	/// assert_eq!(being.name, "Wisp");
+	/// assert_eq!(being.glyph, 'w');
+	///
+	/// // An unknown key is a typed error, never a panic.
+	/// assert_eq!(Being::parse("huh what"), Err(BeingError::UnknownKey("huh".into())));
+	/// ```
+	pub fn parse(text: &str) -> Result<Being, BeingError> {
 		let mut being = Being { glyph: '?', visible: true, ..Being::default() };
 		let mut lines = text.lines();
 		let mut block: Option<String> = None;
@@ -57,18 +101,18 @@ impl Being {
 
 			let (key, value) = trimmed
 				.split_once(char::is_whitespace)
-				.ok_or_else(|| format!("not a `key value` line: {line:?}"))?;
+				.ok_or_else(|| BeingError::NotKeyValue(line.to_string()))?;
 			let value = value.trim();
 
 			match key {
 				"name" => being.name = value.to_string(),
-				"glyph" => being.glyph = value.chars().next().ok_or("glyph is empty")?,
+				"glyph" => being.glyph = value.chars().next().ok_or(BeingError::EmptyGlyph)?,
 				"visible" => being.visible = value == "true",
-				"health" => being.health = value.parse().map_err(|_| format!("health not a number: {value:?}"))?,
-				"power" => being.power = value.parse().map_err(|_| format!("power not a number: {value:?}"))?,
-				"bloom" => being.bloom = value.parse().map_err(|_| format!("bloom not a number: {value:?}"))?,
+				"health" => being.health = parse_field(key, value)?,
+				"power" => being.power = parse_field(key, value)?,
+				"bloom" => being.bloom = parse_field(key, value)?,
 				"behavior" => being.behavior = value.to_string(),
-				other => return Err(format!("unknown key: {other:?}")),
+				other => return Err(BeingError::UnknownKey(other.to_string())),
 			}
 		}
 
@@ -98,11 +142,23 @@ impl Being {
 
 	/// Loads and parses a `.being` file (UTF-8). A missing or malformed file is
 	/// a descriptive error, never a panic.
-	pub fn load<P: AsRef<std::path::Path>>(path: P) -> Result<Being, String> {
-		let text = std::fs::read_to_string(&path)
-			.map_err(|e| format!("could not read {}: {e}", path.as_ref().display()))?;
+	pub fn load<P: AsRef<std::path::Path>>(path: P) -> Result<Being, BeingError> {
+		let text = std::fs::read_to_string(&path).map_err(|e| BeingError::Io {
+			path: path.as_ref().display().to_string(),
+			message: e.to_string(),
+		})?;
 		Being::parse(&text)
 	}
+}
+
+/// Parses a numeric header field, tagging a failure with its key and the raw
+/// value. Generic so one helper serves `health`/`power` (`i32`) and `bloom`
+/// (`u16`) alike.
+fn parse_field<T: std::str::FromStr>(key: &str, value: &str) -> Result<T, BeingError> {
+	value.parse().map_err(|_| BeingError::NotANumber {
+		key: key.to_string(),
+		value: value.to_string(),
+	})
 }
 
 /// Routes a verbatim block's content into the matching `Being` field. Unknown

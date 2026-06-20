@@ -1,53 +1,40 @@
-extern crate chrono;
 use std::time::SystemTime;
 use chrono::prelude::DateTime;
 use chrono::Utc;
-//this is boilerplate and can be redone a number of different ways for some different purposes
+
+/// The clock for one run: when it began (`started_at`), plus the wall-clock
+/// stamp each log line carries (`timestamp`). Formatting is to millisecond
+/// precision so two entries in the same second stay distinguishable.
+#[derive(Clone, Copy)]
 pub struct Time {
-	pub start_time: SystemTime,
-}
-
-impl Clone for Time {
-	fn clone(&self) -> Self {
-		
-		Self { 
-			start_time: self.start_time,
-		}
-	
-	}
-
-}
-
-impl ToString for Time {
-
-	fn to_string(&self) -> String {
-
-		let time = Self::get_system_time(); 
-
-		let datetime: DateTime<Utc> = time.into();
-		let out: String = datetime.format("%Y-%m-%d %H:%M:%S").to_string();
-		out
-	}
+	start_time: SystemTime,
 }
 
 impl Time {
-	pub fn new() -> Self{
-	
-		Time { start_time: Self::get_system_time() }
-	
+	pub fn new() -> Self {
+		Time { start_time: SystemTime::now() }
 	}
 
-	pub fn get_current_time() -> SystemTime {
-		let st:SystemTime = SystemTime::now();
-		st.clone()
+	/// Wall-clock time of *now*: `YYYY-MM-DD HH:MM:SS.mmm`. Stamped onto each
+	/// log line as it is written.
+	pub fn timestamp() -> String {
+		Self::format(SystemTime::now(), "%Y-%m-%d %H:%M:%S%.3f")
 	}
 
-	pub fn get_system_time() -> SystemTime {
-		let n: SystemTime = SystemTime::now();
-		n
+	/// When this run began, in the same format — used for the log file header.
+	pub fn started_at(&self) -> String {
+		Self::format(self.start_time, "%Y-%m-%d %H:%M:%S%.3f")
 	}
 
+	/// A filesystem-safe stamp of when this run began: `YYYY-MM-DD_HH-MM-SS`
+	/// (no colons — those are illegal in Windows filenames). Names each
+	/// session's log file so runs don't overwrite one another.
+	pub fn file_stamp(&self) -> String {
+		Self::format(self.start_time, "%Y-%m-%d_%H-%M-%S")
+	}
+
+	fn format(at: SystemTime, pattern: &str) -> String {
+		let dt: DateTime<Utc> = at.into();
+		dt.format(pattern).to_string()
+	}
 }
-
-
-

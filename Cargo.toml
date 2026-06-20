@@ -14,3 +14,24 @@ ratatui = "0.29.0"
 [[bin]]
 name = "the-watchers-rust"
 path = "src/main.rs"
+
+# Engineering standard — see STYLE.md for the rationale and the Shall/Will/Should
+# tiers. Almost everything sits at `warn` (the build stays green) and ratchets to
+# `deny` as the code is cleaned. Clippy lints fire under `cargo clippy`; the test
+# carve-outs (unwrap/expect allowed in tests) live in clippy.toml.
+[lints.rust]
+# Already at full strength: there is no unsafe to clean up, and never should be.
+unsafe_code = "forbid"
+
+[lints.clippy]
+# Safe subset — ban the footguns Rust left in (panics & lossy casts).
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+indexing_slicing = "warn"
+cast_possible_truncation = "warn"
+cast_sign_loss = "warn"
+cast_precision_loss = "warn"
+# Borrow before you clone.
+needless_pass_by_value = "warn"
+inefficient_to_string = "warn"
