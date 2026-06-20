@@ -4,10 +4,22 @@ use crate::game::Game;
 use crate::gfx::Viewport;
 use crate::gfx::portal::Portal;
 use crate::gfx::render;
-use crate::input::handle_events;
+use crate::input::{handle_events, PlayerMove};
 use crate::utils::{logger::Logger, time::Time};
 
-use super::player_loop::PlayerLoop;
+/// Map a directional key to the player's response: a grid step `(dx, dy)`, the
+/// ray-caster angle to face, and the glyph that shows that facing on the Map.
+/// Any non-movement key (`NONE`) leaves the player as they are.
+fn facing_of(input: &PlayerMove) -> Option<(i16, i16, f32, char)> {
+	use std::f32::consts::{FRAC_PI_2, PI};
+	match input {
+		PlayerMove::UP    => Some((0, -1, -FRAC_PI_2, '^')),
+		PlayerMove::DOWN  => Some((0,  1,  FRAC_PI_2, 'v')),
+		PlayerMove::LEFT  => Some((-1, 0,  PI,        '<')),
+		PlayerMove::RIGHT => Some((1,  0,  0.0,       '>')),
+		PlayerMove::NONE  => None,
+	}
+}
 
 //See new() to update version
 pub struct MainLoop{
@@ -22,6 +34,9 @@ pub struct MainLoop{
 	_output:String,
 	viewport: Viewport,
 	portal: Portal,
+	/// The ray-caster angle the player is currently facing (updated on each
+	/// directional key). Starts facing "up" to match the player's `^` glyph.
+	facing: f32,
 }
 
 //state loops definition
@@ -49,6 +64,7 @@ impl MainLoop {
 			_output:String::new(),
 			terminal:terminal,
 			portal: Portal::new(),
+			facing: -std::f32::consts::FRAC_PI_2, // facing "up", matching '^'
 		}
 	}
 
@@ -82,20 +98,17 @@ impl MainLoop {
 			return;
 		}
 
-		let (mut art, mut prompt, mut stats):(String,String,String) =
-			(String::new(), String::new(), String::new());
-		/*
-		PlayerLoop::player_move(
-			&mut self.game.player,
-			player_input,
-			&self.game.field,
-			&mut self.logger,
-		);
-		*/
-		
-		//self.game.update(self, self.tick, &mut self.logger);
-
-		//self.portal.set_portal(art, prompt, stats);
+		// A directional key turns the player to face that way and tries to step
+		// one cell; a wall blocks the step but the turn still happens. Movement is
+		// grid-based for now — the view and Map follow because they read the
+		// player's position straight from the field.
+		if let Some((dx, dy, angle, glyph)) = facing_of(&player_input) {
+			self.facing = angle;
+			self.game.field.move_entity("Player", dx, dy);
+			if let Some(player) = self.game.field.get_entity_by_id_mut("Player") {
+				player.self_ = glyph;
+			}
+		}
 
 		self.tick += 1;
 		self.logger.log(&format!("Tick: {}", self.tick));
@@ -131,10 +144,10 @@ impl MainLoop {
 			.map(|p| p.get_position())
 			.unwrap_or((2, 2));
 
-		// Heading is fixed "up" for now — turning/movement is the next pass. Map
-		// "up" into the ray caster's convention (0 rad = +x, +y = down on screen),
-		// so facing up is -90 degrees.
-		let angle = -std::f32::consts::FRAC_PI_2;
+		// Face the way the player last moved. The ray caster's convention: 0 rad
+		// is +x, +y is down on screen, so "up" is -90 degrees (set in `new`, then
+		// updated by `run` on each directional key).
+		let angle = self.facing;
 
 		// Every entity other than the player is a solid wall for the ray caster.
 		let walls: Vec<(i16, i16)> = self
