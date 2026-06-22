@@ -91,11 +91,14 @@ impl Field {
 		self.entities.get(id)
 	}
 
+	/// Mutable lookup by id. Editing the position through this skips the spatial
+	/// index — use [`move_entity`](Self::move_entity)/[`set_entity`](Self::set_entity) to keep it in sync.
 	#[inline]
 	pub fn get_entity_by_id_mut(&mut self, id: &str) -> Option<&mut Entity> {
 		self.entities.get_mut(id)
 	}
 
+	/// Remove entity `id` from both the map and the spatial index.
 	pub fn remove_entity(&mut self, id: String) {
 		if let Some(entity) = self.entities.remove(&id) {
 			self.spatial_index.remove(&(entity.x, entity.y));

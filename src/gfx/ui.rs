@@ -1,3 +1,9 @@
+//! The UI layout: how a frame is split into panels and what each one draws.
+//! [`draw_`] is the entry point [`gfx::render`](crate::gfx::render) calls; it
+//! carves the frame into a top log bar, a central first-person view, and a bottom
+//! row of panels (inventory, field, map, stats), then renders a widget into each.
+//! A reveal overlay floats over the view when the player is looking at something.
+
 use ratatui::{
 	layout::{Alignment, Constraint, Direction, Layout, Rect}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Clear, Paragraph}, Frame,
 };
@@ -15,11 +21,15 @@ struct _UI {
 	//0ered
 }
 
+/// The central panel's body: the first-person view as a paragraph, straight from
+/// the raycast text.
 fn draw_portal<'a>(screen: &'a String) -> Paragraph<'a> {
 	let p: Paragraph = Paragraph::new(Text::from(screen.as_str()));
 	p
 }
 
+/// The "Field" panel: a top-down rasterized view of the field, drawn into a
+/// fresh [`Render`] panel and handed over as styled text so colour survives.
 fn draw_center<'a>(width: u16, height: u16, entity:&Field, style: Style, border: BorderType) -> Paragraph<'a> {
 
 	// A neat frame so this map reads as a panel of its own, matching the "Map"
@@ -40,6 +50,8 @@ fn draw_center<'a>(width: u16, height: u16, entity:&Field, style: Style, border:
 	frame_ui
 }
 
+/// The "Stats" panel: the read-out of whatever the player currently sees, or a
+/// muted dash when nothing is in view.
 fn draw_stats<'a>(style: Style, border: BorderType, readout: &str) -> Paragraph<'a> {
 	let bot_block_right = Block::bordered()
 		.title("Stats")
@@ -58,6 +70,7 @@ fn draw_stats<'a>(style: Style, border: BorderType, readout: &str) -> Paragraph<
 	Paragraph::new(Text::from(body)).block(bot_block_right)
 }
 
+/// The "Map" panel: a small ASCII minimap scrolled to keep the player centered.
 fn draw_minimap<'a>(style:Style, border:BorderType, entity:&Field, player_pos:(i16, i16)) -> Paragraph<'a> {
 	let bot_block_minimap = Block::bordered()
 		.title("Map")
@@ -71,6 +84,7 @@ fn draw_minimap<'a>(style:Style, border:BorderType, entity:&Field, player_pos:(i
 	minimap
 }
 
+/// The "Inventory" panel — a placeholder until inventory exists.
 fn draw_invty<'a> (style:Style, border:BorderType) -> Paragraph <'a>{
 	let bot_block_left = Block::bordered()
 		.title("Inventory")
@@ -82,6 +96,8 @@ fn draw_invty<'a> (style:Style, border:BorderType) -> Paragraph <'a>{
 	invty
 }
 
+/// The top log bar: the title carries the product name and version, the body the
+/// live developer log.
 fn draw_log <'a> (style:Style, border:BorderType, log_:&Logger) -> Paragraph <'a>{
 	let top_block = Block::bordered()
 		.title(format!("{} v{}", crate::NAME, log_.get_version()))
@@ -97,10 +113,15 @@ fn draw_log <'a> (style:Style, border:BorderType, log_:&Logger) -> Paragraph <'a
 	logger_ui
 }
 
+/// Render the whole frame. The entry point [`gfx::render`](crate::gfx::render)
+/// calls; delegates to [`default`], the one layout for now.
 pub(crate) fn draw_(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16), portal:&Portal) {
 	default(frame, screen, entities, log_, player_pos, portal);
 }
 
+/// The default frame layout: a top log bar, the central first-person view, and
+/// the bottom row of panels — plus the floating reveal overlay when the portal
+/// holds art.
 pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16), portal:&Portal) {
 	let mut _frame_sizes: Vec<( u16, u16)> = Vec::new();
 

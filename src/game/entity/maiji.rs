@@ -1,6 +1,13 @@
+//! One being kind: the wandering fairy (Ooloonoo and her twin Oolooroo). Built
+//! inert, then filled from a `.being` file — the data there is the source of
+//! truth, and this is only the shell their behavior hangs on.
+
 use crate::game::entity::{ Actor, Entity, EntityData};
 use crate::game::entity::being::Being;
 
+/// A being-in-the-world: an in-field [`Entity`] (glyph + position) bound to an
+/// [`Actor`] (stats, art, the line they speak). Built inert and brought to life
+/// by [`apply_being`](Self::apply_being).
 pub struct Fairy {
 	pub entity:Entity,
 	pub actor:Actor
@@ -59,6 +66,9 @@ impl Fairy {
 		self.entity.self_ = being.glyph;
 	}
 
+	/// A placeholder wander: every third tick, jump to a random nearby cell and
+	/// lose a point of health. A stand-in from before the data-driven behavior
+	/// model — kept only until gaze-gated behaviors (move when unwatched) replace it.
 	pub fn warp(&mut self, tick:usize) {
 		if tick%3 == 0 {
 			self.entity.set_position(rand::random_range(0..10), rand::random_range(0..10));

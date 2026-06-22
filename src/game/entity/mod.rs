@@ -10,7 +10,7 @@ use actor::Actor;
 
 pub mod player;
 pub mod actor;
-pub mod maichi;
+pub mod maiji;
 
 pub mod being;
 

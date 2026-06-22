@@ -1,3 +1,11 @@
+//! The actor: an entity's mutable game-state — the combat numbers, plus the art
+//! and prompt it reveals when seen — reached through the [`ActorData`] accessors.
+//! This is the *running copy* of what a `.being` file defines; the file stays the
+//! source of truth (see `apply_being` on the kinds that wear an actor).
+
+/// An actor's live state: name, the combat numbers, and the art/prompt surfaced
+/// when it comes into view. Filled from a `.being` definition; edited in place
+/// as the game runs.
 pub struct Actor{
 	pub(crate) name: String,
 	pub(crate) health: i32,
@@ -60,6 +68,10 @@ impl ActorData for Actor {
 	}
 }
 
+/// Accessors over an actor's state — name, health, attack power, art — plus a
+/// constructor. The `*_mut` methods hand back a mutable borrow so a caller can
+/// edit one field in place. A trait rather than bare fields, so any entity kind
+/// can present the same handle to game logic.
 pub trait ActorData {
 	fn name(&self) -> &str;
 	fn name_mut(&mut self) -> &mut String;
@@ -74,11 +86,8 @@ pub trait ActorData {
 
 	fn set_name(&mut self, name: String);
 
-	/// Loads this actor's ASCII art from `res/entities/<name>/art.txt`.
-	///
-	/// Returns the `io::Error` instead of panicking when the asset is missing or
-	/// unreadable, so a fresh clone with an absent file can degrade gracefully
-	/// (the caller falls back to a placeholder) rather than crashing on startup.
+	/// A quick `(name, health)` snapshot for read-outs such as the Stats panel.
+	/// Has a default body, so implementors get it for free.
 	fn get_stats(&self) -> (String, i32) {
 		(self.name().to_string(), self.health())
 	}

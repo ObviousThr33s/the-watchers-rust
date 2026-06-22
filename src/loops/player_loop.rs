@@ -1,3 +1,6 @@
+//! Player movement: turning input into rotation and forward/backward grid steps,
+//! with wall collision. Movement is relative to the way the player faces, so a
+//! step depends on the current [`Direction_`].
 
 use crate::{
 	game::{entity::player::{Direction_, Player}, spaces::field::Field},
@@ -5,6 +8,7 @@ use crate::{
 	utils::logger::Logger,
 };
 
+/// Namespace for the player-movement functions; holds no state of its own.
 pub struct PlayerLoop{
 
 }

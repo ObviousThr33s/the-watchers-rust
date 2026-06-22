@@ -1,3 +1,7 @@
+//! The main loop: the game's heartbeat. [`MainLoop`] owns the terminal, the
+//! [`Game`], and the per-frame state, then runs a plain synchronous state machine
+//! ([`GameStates`]) — input, update, render — paced by a blocking key read. No
+//! async runtime, no recursion, no per-tick heap-allocated futures.
 
 use ratatui::DefaultTerminal;
 use crate::game::Game;
@@ -22,6 +26,9 @@ fn facing_of(input: &PlayerMove) -> Option<(i16, i16, f32, char)> {
 }
 
 //See new() to update version
+/// Everything one running session needs: the run clock and logger, the [`Game`]
+/// world, the terminal, the first-person [`Viewport`], the [`Portal`] reveal
+/// state, and the angle the player currently faces.
 pub struct MainLoop{
 	pub start: Time,
 	pub logger:Logger,
@@ -40,6 +47,8 @@ pub struct MainLoop{
 }
 
 //state loops definition
+/// The loop's state machine. Each pass dispatches on the current state and sets
+/// the next one.
 #[derive(PartialEq)]
 pub enum GameStates{
 	Init = 0,
@@ -49,6 +58,8 @@ pub enum GameStates{
 }
 
 impl MainLoop {
+	/// Build a session around an initialized terminal and a fresh [`Game`].
+	/// `version` is stamped into the logger and shown in the UI header.
 	pub fn new(start_time:Time, terminal:DefaultTerminal, game:Game, version:String) -> MainLoop {
 		MainLoop {
 			game,
