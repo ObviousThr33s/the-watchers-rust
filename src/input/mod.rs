@@ -1,3 +1,7 @@
+//! Input: reading keyboard events and turning them into a [`PlayerMove`] plus a
+//! state signal for the loop. The one place key bindings live — WASD to move,
+//! `q` to quit, space to force a resize.
+
 use std::io::Stdout;
 use ratatui::{
 	crossterm::{self, event::KeyEventKind},  prelude::CrosstermBackend, Terminal
@@ -8,6 +12,8 @@ use crossterm::event::{self, Event, KeyCode};
 use crate::{loops::main_loop::GameStates, utils::logger::Logger};
 
 
+/// A directional intent read from the keyboard, or `NONE` for anything that does
+/// not move the player.
 #[derive(PartialEq, Debug)]
 pub enum PlayerMove {
 	UP,
@@ -17,6 +23,10 @@ pub enum PlayerMove {
 	NONE
 }
 //Controller support probably.
+/// Block on one input event and translate it: returns the next [`GameStates`],
+/// the [`PlayerMove`] it maps to, and whether the frame needs a redraw. Most
+/// events don't warrant a repaint — only a move, a resize, or an explicit
+/// refresh — which is what keeps the screen from strobing on key repeats.
 #[allow(unused_mut)]
 pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logger:&mut Logger) -> (GameStates, PlayerMove, bool) {
 	let mut gs:GameStates = GameStates::Run;
