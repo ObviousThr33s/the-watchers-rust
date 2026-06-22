@@ -1,0 +1,12 @@
+# Bramble — a low thorned tangle, no trunk, all reach.
+name     Bramble
+glyph    ҂
+visible  true
+bloom    2
+behavior flora
+--- art
+ \\//\\//
+ //\\//\\
+ \\//\\//
+--- line
+Whatever crawled in here did not crawl out.

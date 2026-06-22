@@ -1,7 +1,7 @@
 
-use the_watchers_rust::game::Game;
-use the_watchers_rust::loops::main_loop::MainLoop;
-use the_watchers_rust::utils::time::Time;
+use obelisk::game::Game;
+use obelisk::loops::main_loop::MainLoop;
+use obelisk::utils::time::Time;
 
 //Notice how time comes from one place here.
 

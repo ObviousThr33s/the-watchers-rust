@@ -1,0 +1,16 @@
+# Elder — the oldest; the clearing keeps its distance.
+name     Elder
+glyph    ♠
+visible  true
+bloom    4
+behavior flora
+--- art
+    .-=@@@=-.
+  .=@@@@@@@@@=.
+ =@@@@@@@@@@@@@=
+  '=@@@@@@@@@='
+       |||
+      /|||\
+     //|||\\
+--- line
+The oldest of them. Even the clearing keeps its distance.

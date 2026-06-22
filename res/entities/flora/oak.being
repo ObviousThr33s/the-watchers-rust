@@ -1,0 +1,15 @@
+# Oak — old growth; it stood here before the field had a name.
+name     Oak
+glyph    ♣
+visible  true
+bloom    3
+behavior flora
+--- art
+    _(@@)_
+  _(@@@@@@)_
+ (@@@@@@@@@@)
+  `(@@@@@@)`
+      ||
+     /||\
+--- line
+It has watched longer than anything that breathes here, and asks nothing.

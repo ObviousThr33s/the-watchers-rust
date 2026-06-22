@@ -394,6 +394,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "obelisk"
+version = "0.4.0"
+dependencies = [
+ "angle-sc",
+ "chrono",
+ "micromath",
+ "noise",
+ "rand 0.9.1",
+ "ratatui",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -680,18 +692,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
-]
-
-[[package]]
-name = "the-watchers-rust"
-version = "0.4.0"
-dependencies = [
- "angle-sc",
- "chrono",
- "micromath",
- "noise",
- "rand 0.9.1",
- "ratatui",
 ]
 
 [[package]]

@@ -1,0 +1,12 @@
+# Sapling — barely up, two leaves and a thread of stem.
+name     Sapling
+glyph    ╹
+visible  true
+bloom    1
+behavior flora
+--- art
+  \ /
+   Y
+   |
+--- line
+Too young to know what the others are waiting for.

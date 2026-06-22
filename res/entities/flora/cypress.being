@@ -1,0 +1,15 @@
+# Cypress — a tall narrow column, pointing.
+name     Cypress
+glyph    ║
+visible  true
+bloom    3
+behavior flora
+--- art
+   /\
+  |^^|
+  |^^|
+  |^^|
+  |^^|
+   ||
+--- line
+It points at nothing, the way a finger points.

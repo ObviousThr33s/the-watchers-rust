@@ -20,9 +20,14 @@ fn draw_portal<'a>(screen: &'a String) -> Paragraph<'a> {
 	p
 }
 
-fn draw_center<'a>(width: u16, height: u16, entity:&Field) -> Paragraph<'a> {
+fn draw_center<'a>(width: u16, height: u16, entity:&Field, style: Style, border: BorderType) -> Paragraph<'a> {
 
-	let middle_block = Block::new().title_bottom("");
+	// A neat frame so this map reads as a panel of its own, matching the "Map"
+	// minimap beside it — same border type and colour as the rest of the bottom UI.
+	let middle_block = Block::bordered()
+		.title("Field")
+		.title_style(style)
+		.border_type(border);
 	
 	let mut lamp: Render = Render::init(width.into(), height.into());
 
@@ -79,7 +84,7 @@ fn draw_invty<'a> (style:Style, border:BorderType) -> Paragraph <'a>{
 
 fn draw_log <'a> (style:Style, border:BorderType, log_:&Logger) -> Paragraph <'a>{
 	let top_block = Block::bordered()
-		.title(format!("The Watchers v{}", log_.get_version()))
+		.title(format!("{} v{}", crate::NAME, log_.get_version()))
 		.title_style(style)
 		.border_type(border)
 		.borders(Borders::ALL);
@@ -116,7 +121,7 @@ pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&
 	
 
 	//middle block widgets
-	let frame0 = draw_center(frame.area().width, frame.area().height, entities);
+	let frame0 = draw_center(frame.area().width, frame.area().height, entities, style, border);
 	
 
 	let frame1:Paragraph = draw_portal(screen);
