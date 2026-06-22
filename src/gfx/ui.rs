@@ -142,8 +142,9 @@ pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&
 	
 
 	//middle block widgets
-	let frame0 = draw_center(frame.area().width, frame.area().height, entities, style, border);
-	
+	// The Field panel's buffer is sized to its resolved Rect below, once the
+	// bottom row is laid out — ratatui is about ratios, so we rasterize exactly
+	// the cells the panel will show rather than the whole frame.
 
 	let frame1:Paragraph = draw_portal(screen);
 	//bottom block widgets
@@ -202,7 +203,11 @@ pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&
 	let inner_cent = outter_bottom.inner(bottom_layout[1]);
 	let inner_minimap = outter_bottom.inner(bottom_layout[2]);
 	let inner_right = outter_bottom.inner(bottom_layout[3]);
-	
+
+	// Now that the panel's Rect is resolved, rasterize the Field to exactly that
+	// size instead of the whole frame.
+	let frame0 = draw_center(inner_cent.width, inner_cent.height, entities, style, border);
+
 	frame.render_widget(invty, inner_left);
 	frame.render_widget(frame0, inner_cent);
 	frame.render_widget(minimap, inner_minimap);
