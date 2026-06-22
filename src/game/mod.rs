@@ -97,11 +97,11 @@ impl Game {
 	}
 
 	/// Advance the world by one tick. At tick 0 it bootstraps via [`init`](Self::init);
-	/// the per-tick event/behavior pipeline (drain [`Haps`] in priority order, run
+	/// the per-tick event/behavior pipeline (drain [`Haps`] in arrival order, run
 	/// gaze-gated behavior) is the rebuild still ahead, so for now this only seeds
 	/// the world. `recollection` and `logger` are threaded in ahead of that wiring.
 	pub fn update(&mut self, tick: usize, logger: &mut logger::Logger, recollection: Recollection) {
-		// Build this tick's event queue, then apply the events in priority order.
+		// Build this tick's event queue, then apply the events in arrival order.
 		
 		if tick == 0 {
 			self.init(logger);
