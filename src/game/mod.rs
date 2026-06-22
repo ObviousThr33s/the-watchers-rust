@@ -20,7 +20,7 @@ pub mod world;*/
 use spaces::field::Field;
 use spaces::terrain::{self, Sowing};
 
-use crate::{game::{haps::Haps, recollection::Recollection}, utils::logger};
+use crate::{utils::logger};
 
 pub mod entity;
 pub mod spaces;
@@ -34,7 +34,6 @@ pub mod haps;
 /// queue ([`Haps`], named `time` for the tempo it keeps).
 pub struct Game {
 	pub field:Field,
-	time:Haps,
 }
 
 impl Game {
@@ -43,7 +42,6 @@ impl Game {
 	pub fn new() -> Self {
 		Game {
 			field: Field::new(),
-			time: Haps::new(),
 		}
 	}
 
@@ -100,7 +98,7 @@ impl Game {
 	/// the per-tick event/behavior pipeline (drain [`Haps`] in arrival order, run
 	/// gaze-gated behavior) is the rebuild still ahead, so for now this only seeds
 	/// the world. `recollection` and `logger` are threaded in ahead of that wiring.
-	pub fn update(&mut self, tick: usize, logger: &mut logger::Logger, recollection: Recollection) {
+	pub fn update(&mut self, tick: usize, logger: &mut logger::Logger) {
 		// Build this tick's event queue, then apply the events in arrival order.
 		
 		if tick == 0 {

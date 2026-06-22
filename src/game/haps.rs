@@ -1,5 +1,3 @@
-use crate::game::entity::EntityId;
-
 /// A queued game action. Events are *data*: pushed during a tick, then drained
 /// and applied in a deliberate phase, so "what should happen" stays separate from
 /// "when it happens." Per the engine wards (see `CLAUDE.md`): a payload carries
@@ -14,12 +12,17 @@ use crate::game::entity::EntityId;
 /// outside Rust reads it today, but the ward asks for flat, C-compatible payloads,
 /// and the attribute costs nothing while keeping an exhaustive `match`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[repr(C, u8)]
+
+//I don't know what this does and I am not sure you do
+//#[repr(C, u8)]
 pub enum Event {
 	/// Spawn the sekaikan (Ooloonoo) at a position, addressed by its [`EntityId`].
 	/// The readable name is *not* here — it lives in the being's data (component
 	/// storage), looked up at mutation time. The event moves the fact, not the text.
-	SpawnSekaikan { x: i16, y: i16, id: EntityId },
+	
+	//Obvious fix here: we will work on this later.
+	//SpawnSekaikan { x: i16, y: i16, id: EntityId },
+	
 	/// Sync every game-piece into the field (and, later, run its behavior).
 	AdvanceWatchers,
 	/// Remove any game-piece whose health has dropped to zero.
@@ -108,20 +111,23 @@ impl<const CAP: usize> Default for Haps<CAP> {
 mod tests {
 	use super::*;
 
+	//Please study transfiguration first. This is currently more complicated in terms of linkage and stack for the LLVM
+	/*
 	fn spawn(id: EntityId) -> Event {
 		Event::SpawnSekaikan { x: 0, y: 0, id }
 	}
+	*/
 
 	#[test]
 	fn pops_events_in_the_order_they_arrived() {
 		let mut haps = Haps::<4>::new();
 		haps.push(Event::AdvanceWatchers).unwrap();
 		haps.push(Event::ReapDead).unwrap();
-		haps.push(spawn(7)).unwrap();
+		haps.push(Event::ReapDead).unwrap();
 
 		assert_eq!(haps.pop(), Some(Event::AdvanceWatchers));
 		assert_eq!(haps.pop(), Some(Event::ReapDead));
-		assert_eq!(haps.pop(), Some(spawn(7)));
+		assert_eq!(haps.pop(), Some(Event::ReapDead));
 		assert_eq!(haps.pop(), None, "draining an empty queue yields None");
 	}
 
@@ -133,7 +139,7 @@ mod tests {
 		assert!(haps.is_full());
 
 		// The third push has nowhere to go: it comes straight back, untouched.
-		assert_eq!(haps.push(spawn(1)), Err(spawn(1)));
+		assert_eq!(haps.push(Event::ReapDead), Err(Event::ReapDead));
 		assert_eq!(haps.len(), 2, "a rejected push must not grow the ring");
 	}
 
@@ -145,9 +151,9 @@ mod tests {
 		assert_eq!(haps.pop(), Some(Event::AdvanceWatchers)); // frees the first slot
 
 		// The tail wraps into the freed slot; arrival order is still preserved.
-		haps.push(spawn(9)).unwrap();
+		haps.push(Event::AdvanceWatchers).unwrap();
 		assert_eq!(haps.pop(), Some(Event::ReapDead));
-		assert_eq!(haps.pop(), Some(spawn(9)));
+		assert_eq!(haps.pop(), Some(Event::AdvanceWatchers));
 		assert!(haps.is_empty());
 	}
 }
