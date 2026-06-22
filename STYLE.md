@@ -1,4 +1,4 @@
-# The Watchers — Style & Engineering Standard
+# Obelisk — Style & Engineering Standard
 
 A small, enforced house standard in the spirit of the **JSF AV C++** rules: every
 rule carries a *rationale*, rules are *tiered* by how hard they bite, and we

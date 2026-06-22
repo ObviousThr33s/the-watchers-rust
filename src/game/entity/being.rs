@@ -232,7 +232,7 @@ mod tests {
 	fn loads_oolooroo_the_twin_from_disk() {
 		let b = Being::load("res/entities/oolooroo.being").expect("load oolooroo");
 		assert_eq!(b.name, "Oolooroo");
-		assert_eq!(b.glyph, 'F'); // shares the fairy glyph with Ooloonoo — a twin you can mistake
+		assert_eq!(b.glyph, 'F'); // shares the sekaikan glyph with Ooloonoo — a twin you can mistake
 		assert_eq!(b.behavior, "gentle");
 		assert!(!b.art.is_empty());
 		assert!(!b.line.is_empty());

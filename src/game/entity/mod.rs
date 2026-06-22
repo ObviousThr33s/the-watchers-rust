@@ -10,9 +10,15 @@ use actor::Actor;
 
 pub mod player;
 pub mod actor;
-pub mod maiji;
+pub mod sekaikan;
 
 pub mod being;
+
+/// A stable, copyable handle to an entity — the identity that rides in event
+/// payloads. It is pure data (a `u64`), never a pointer or reference, so an
+/// [`Event`](crate::game::haps::Event) can carry *who* without carrying a borrow
+/// (engine ward 1, see `CLAUDE.md`).
+pub type EntityId = u64;
 
 /// A thing standing in the field: a glyph at a grid position, addressed by a
 /// unique `id`. Everything a kind is *made of* (stats, art, the line it surfaces
