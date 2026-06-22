@@ -1,0 +1,15 @@
+# Birch — pale bark scarred with dark marks like shut eyes.
+name     Birch
+glyph    î
+visible  true
+bloom    3
+behavior flora
+--- art
+   (~)
+  (~~~)
+   |-|
+   |~|
+   |-|
+   |~|
+--- line
+Pale as bone, and marked all over with closed eyes.

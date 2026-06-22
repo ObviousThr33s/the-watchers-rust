@@ -21,7 +21,7 @@
 /// This was cool when I first saw it.
 ///
 /// ```
-/// use the_watchers_rust::game::vision::can_see;
+/// use obelisk::game::vision::can_see;
 /// use std::f32::consts::PI;
 ///
 /// // Facing +x (0 rad), a 60° cone, range 20: a clear shot to (5,0) is seen;

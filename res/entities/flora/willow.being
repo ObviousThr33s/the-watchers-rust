@@ -1,0 +1,14 @@
+# Willow — it moves when there is no wind.
+name     Willow
+glyph    ψ
+visible  true
+bloom    3
+behavior flora
+--- art
+   .---.
+  /~~~~~\
+ (|/|\|/|)
+  \|||||/
+   |||||
+--- line
+Its branches stir when the air is still, and hang still when it is not.

@@ -77,7 +77,7 @@ impl Cell {
 /// A panel of the shōji: a `x` by `y` grid of cells, drawn into by coordinate.
 ///
 /// ```
-/// use the_watchers_rust::gfx::screen::Screen;
+/// use obelisk::gfx::screen::Screen;
 ///
 /// let mut panel = Screen::new(3, 1);
 /// panel.put(0, 0, 'h');

@@ -1,0 +1,15 @@
+# Pine — a dark spire; the cold keeps to its needles.
+name     Pine
+glyph    ↟
+visible  true
+bloom    3
+behavior flora
+--- art
+     /\
+    /  \
+   /^^^^\
+  /^^^^^^\
+ /^^^^^^^^\
+     ||
+--- line
+The dark pools beneath it even at noon.

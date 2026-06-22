@@ -12,6 +12,7 @@ pub mod entities;
 pub mod world;*/
 
 use spaces::field::Field;
+use spaces::terrain::{self, Sowing};
 
 use crate::{game::{haps::Haps, recollection::Recollection}, utils::logger};
 
@@ -60,6 +61,26 @@ impl Game {
 		}
 
 		logger.log(&format!("Player placed; {} walls built", walls.len()));
+
+		// Sow the field with flora — trees, brush, and brambles loaded from their
+		// `.being` files. The story (glyph, art, the line each surfaces when seen)
+		// lives in those files; this only scatters them into groves. They're solid,
+		// so the forest is at once scenery on the Map and walls the view casts
+		// against. The clearing keeps the spawn alcove open. (The hardcoded alcove
+		// above can retire once the forest alone gives the view enough to cast on.)
+		let flora = terrain::load_flora();
+		let planted = terrain::sow(&mut self.field, &flora, Sowing {
+			x0: 0,
+			y0: 0,
+			width: 48,
+			height: 30,
+			clear_around: (2, 2),
+			clearing: 3,
+			threshold: 0.35,
+			scale: 0.18,
+			seed: 1,
+		});
+		logger.log(&format!("Sowed {planted} flora from {} kinds", flora.len()));
 	}
 
 	pub fn update(&mut self, tick: usize, logger: &mut logger::Logger, recollection: Recollection) {

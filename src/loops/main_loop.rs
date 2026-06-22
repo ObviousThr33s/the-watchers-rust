@@ -90,7 +90,7 @@ impl MainLoop {
 	//running section of the main loop
 	fn run(&mut self) {
 		//event key which sends signals for game state and player movement
-		let (new_state, player_input) =
+		let (new_state, player_input, redraw) =
 			handle_events(&mut self.terminal, &mut self.logger);
 
 		if new_state == GameStates::Exit {
@@ -110,10 +110,17 @@ impl MainLoop {
 			}
 		}
 
-		self.tick += 1;
-		self.logger.log(&format!("Tick: {}", self.tick));
-
-		self.state = GameStates::Render;
+		// Only repaint when the event actually changed something. Windows delivers
+		// key releases and repeats in bursts; redrawing (and ticking the log) on
+		// every one of them is what made the screen strobe. An idle event drops
+		// straight back to the blocking read instead.
+		if redraw {
+			self.tick += 1;
+			self.logger.log(&format!("Tick: {}", self.tick));
+			self.state = GameStates::Render;
+		} else {
+			self.state = GameStates::Run;
+		}
 	}
 
 	fn render(&mut self) {

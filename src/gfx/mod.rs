@@ -4,6 +4,7 @@ pub mod portal;
 pub mod viewport;
 
 pub mod screen;
+pub mod light;
 
 use crate::{game::spaces::field::Field, utils::logger::Logger};
 pub use viewport::Viewport;

@@ -1,0 +1,14 @@
+# Snag — a dead tree, branches broken to bare points.
+name     Snag
+glyph    †
+visible  true
+bloom    2
+behavior flora
+--- art
+  \   /
+   \ |/
+    \|
+    /|
+   / |
+--- line
+Dead, and still it leans toward you.

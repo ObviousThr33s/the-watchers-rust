@@ -72,7 +72,7 @@ impl Being {
 	/// lines and `#` comments in the header are ignored.
 	///
 	/// ```
-	/// use the_watchers_rust::game::entity::being::{Being, BeingError};
+	/// use obelisk::game::entity::being::{Being, BeingError};
 	///
 	/// let being = Being::parse("name Wisp\nglyph w").unwrap();
 	/// assert_eq!(being.name, "Wisp");
@@ -263,5 +263,22 @@ mod tests {
 		let b = Being::parse("name X\n--- art\nart\n--- future\nnot read yet").unwrap();
 		assert_eq!(b.art, "art");
 		assert_eq!(b.line, "");
+	}
+
+	#[test]
+	fn every_flora_file_parses() {
+		// Fast-cycle safety net: every `.being` under res/entities/flora must load
+		// and parse. Drop a new tree in that folder and `cargo test` guards it —
+		// no per-file test to write each time.
+		let dir = std::path::Path::new("res/entities/flora");
+		let mut count = 0;
+		for entry in std::fs::read_dir(dir).expect("read res/entities/flora") {
+			let path = entry.expect("dir entry").path();
+			if path.extension().and_then(|e| e.to_str()) == Some("being") {
+				Being::load(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+				count += 1;
+			}
+		}
+		assert!(count >= 3, "expected several flora definitions, found {count}");
 	}
 }
