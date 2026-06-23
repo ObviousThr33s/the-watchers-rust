@@ -1,12 +1,15 @@
 use std::collections::HashMap;
 
 use crate::game::entity::{Entity, EntityId};
+
+mod roster;
+use roster::Roster;
 //this must be able to translate to any UI system
 /// Represents a 2D field where entities can be placed
 #[derive(Clone)]
 pub struct Field {
-	/// Map of entity IDs to their corresponding Entity objects
-	pub entities: HashMap<EntityId, Entity>,
+	/// The entity backbone: a fixed-capacity slab addressed by id (see [`Roster`]).
+	pub entities: Roster,
 	/// Spatial index for fast position-based lookups: (x, y) -> entity_id
 	pub spatial_index: HashMap<(i16, i16), EntityId>,
 	/// The next id [`mint`](Self::mint) will hand out. Starts at `1` so minted ids
@@ -18,7 +21,7 @@ impl Field {
 	/// Creates a new empty Field
 	pub fn new() -> Self {
 		Field {
-			entities: HashMap::new(),
+			entities: Roster::new(),
 			spatial_index: HashMap::new(),
 			next_id: 1,
 		}
@@ -40,10 +43,10 @@ impl Field {
 
 		// Remove any existing entity at this position
 		if let Some(old_id) = self.spatial_index.insert(pos, id) {
-			self.entities.remove(&old_id);
+			self.entities.remove(old_id);
 		}
 
-		self.entities.insert(id, entity);
+		self.entities.insert(entity);
 	}
 
 	/// Updates an existing entity in the field with position changes
@@ -52,7 +55,7 @@ impl Field {
 		let id = entity.id;
 
 		// Remove old spatial index entry if entity exists and position changed
-		if let Some(old_entity) = self.entities.get(&id) {
+		if let Some(old_entity) = self.entities.get(id) {
 			let old_pos = (old_entity.x, old_entity.y);
 			if old_pos != new_pos {
 				self.spatial_index.remove(&old_pos);
@@ -61,7 +64,7 @@ impl Field {
 
 		// Update spatial index and entity
 		self.spatial_index.insert(new_pos, id);
-		self.entities.insert(id, entity);
+		self.entities.insert(entity);
 	}
 
 	/// Moves entity `id` by `(dx, dy)` if the destination cell is free, returning
@@ -86,7 +89,7 @@ impl Field {
 	#[inline]
 	pub fn get_entity_by_position(&self, x: i16, y: i16) -> Option<&Entity> {
 		self.spatial_index.get(&(x, y))
-			.and_then(|id| self.entities.get(id))
+			.and_then(|id| self.entities.get(*id))
 	}
 
 	/// Returns true if some entity other than `ignore_id` occupies (x, y).
@@ -101,19 +104,19 @@ impl Field {
 	/// Gets an entity by its ID, if it exists
 	#[inline]
 	pub fn get_entity_by_id(&self, id: EntityId) -> Option<&Entity> {
-		self.entities.get(&id)
+		self.entities.get(id)
 	}
 
 	/// Mutable lookup by id. Editing the position through this skips the spatial
 	/// index — use [`move_entity`](Self::move_entity)/[`set_entity`](Self::set_entity) to keep it in sync.
 	#[inline]
 	pub fn get_entity_by_id_mut(&mut self, id: EntityId) -> Option<&mut Entity> {
-		self.entities.get_mut(&id)
+		self.entities.get_mut(id)
 	}
 
 	/// Remove entity `id` from both the map and the spatial index.
 	pub fn remove_entity(&mut self, id: EntityId) {
-		if let Some(entity) = self.entities.remove(&id) {
+		if let Some(entity) = self.entities.remove(id) {
 			self.spatial_index.remove(&(entity.x, entity.y));
 		}
 	}
