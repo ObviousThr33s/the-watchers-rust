@@ -28,6 +28,7 @@ pub mod spaces;
 pub mod vision;
 pub mod recollection;
 pub mod haps;
+pub mod rover;
 
 //pub mod group;
 
