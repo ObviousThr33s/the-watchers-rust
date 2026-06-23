@@ -49,6 +49,11 @@ order-of-update bugs (A sees B's half-applied change) become impossible by
 construction. It also keeps the borrow checker happy without locks: reads and writes
 never overlap in time.
 
+The rule in one line: **never mutate across time — commit to the queue.** A system
+never reaches back to overwrite a moment another already observed; it commits its
+fact forward and lets dispatch play it out in order. Same shape as a revert: the
+timeline is changed by committing the next moment, not by undoing the last.
+
 ## How to work here
 
 - Read [STYLE.md](STYLE.md) before writing engine code — the safe subset (no
