@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let terminal = ratatui::init();
 	let game:Game = Game::new(/*server stuff?*/ );
 
-	let mut game: MainLoop = MainLoop::new(start, terminal, game, "0.6.0".to_string());
+	let mut game: MainLoop = MainLoop::new(start, terminal, game, env!("CARGO_PKG_VERSION").to_string());
 
 	game.run_game();
 
