@@ -108,11 +108,12 @@ pub fn sow(field: &mut Field, flora: &[Being], plan: Sowing) -> usize {
 			let Some(being) = flora.get(rng.random_range(0..flora.len())) else {
 				continue;
 			};
+			let id = field.mint();
 			field.add_entity(Entity::new(
 				x,
 				y,
 				being.glyph,
-				format!("{}_{x}_{y}", being.name),
+				id,
 				Priority::LOW,
 			));
 			planted += 1;
@@ -212,7 +213,10 @@ mod tests {
 		let flora = load_flora();
 		let mut field = Field::new();
 		// A wall in the middle of the patch: the sow must plant around it, not over.
-		field.add_entity(Entity::new(10, 10, '#', "wall".to_string(), Priority::LOW));
+		// Mint its id like real code does, so it can't collide with the ids the sow
+		// hands out.
+		let wall = field.mint();
+		field.add_entity(Entity::new(10, 10, '#', wall, Priority::LOW));
 
 		let plan = Sowing { threshold: -1.0, ..plan() }; // try to fill every cell
 		sow(&mut field, &flora, plan);

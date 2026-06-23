@@ -8,6 +8,9 @@
 //! from `tests/common/mod.rs`. Unit tests for the ring's basic mechanics live
 //! inline in `src/game/haps.rs`; these are the adversarial/invariant layer on top.
 
+mod common;
+
+use common::spawn;
 use obelisk::game::haps::{Event, Haps};
 
 /// Events are pure, copyable data (engine ward 1). This is a compile-time proof:
@@ -54,10 +57,44 @@ fn a_full_ring_rejects_overflow_without_growing() {
 	}
 }
 
-// PARKED — the identity-FIFO property test once lived here. It drove the ring with
-// `common::spawn(id)`, minting a *distinguishable* event per id so a VecDeque model
-// could prove nothing was reordered, lost, or duplicated. The SpawnSekaikan retreat
-// removed the only value-bearing `Event` variant, so the remaining unit variants
-// (`AdvanceWatchers`/`ReapDead`) can't tell one queued event from another — the test
-// would degrade to checking counts, not order. Restore it (and `common::spawn`) when
-// a value-carrying Event returns; the original is in git history.
+/// The core invariant under a long, deterministic mix of pushes and pops: `len`
+/// never exceeds `CAP`, and the ring always agrees with a simple FIFO model —
+/// nothing is lost, duplicated, or reordered. Deterministic (a seeded xorshift)
+/// so a failure reproduces exactly.
+#[test]
+fn interleaved_push_pop_stays_bounded_and_fifo() {
+	const CAP: usize = 8;
+	let mut ring: Haps<CAP> = Haps::new();
+	let mut model: std::collections::VecDeque<u64> = std::collections::VecDeque::new();
+
+	let mut seed: u64 = 0x1234_5678_9abc_def0;
+	let mut next_id: u64 = 0;
+
+	for _ in 0..100_000 {
+		// xorshift: deterministic, no rand dependency in the safety net.
+		seed ^= seed << 13;
+		seed ^= seed >> 7;
+		seed ^= seed << 17;
+
+		if seed & 1 == 0 {
+			let event = spawn(next_id);
+			match ring.push(event) {
+				Ok(()) => {
+					assert!(model.len() < CAP, "push succeeded only because there was room");
+					model.push_back(next_id);
+				}
+				Err(returned) => {
+					assert_eq!(returned, event, "a rejected push hands the event straight back");
+					assert_eq!(model.len(), CAP, "push rejected only because the ring was full");
+				}
+			}
+			next_id += 1;
+		} else {
+			let expected = model.pop_front().map(spawn);
+			assert_eq!(ring.pop(), expected, "the ring drains in first-in-first-out order");
+		}
+
+		assert!(ring.len() <= CAP, "len must never exceed capacity");
+		assert_eq!(ring.len(), model.len(), "the ring and the model never diverge");
+	}
+}

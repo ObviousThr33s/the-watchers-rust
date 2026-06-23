@@ -2,7 +2,7 @@
 //! inert, then filled from a `.being` file — the data there is the source of
 //! truth, and this is only the shell their behavior hangs on.
 
-use crate::game::entity::{ Actor, Entity, EntityData};
+use crate::game::entity::{ Actor, Entity, EntityData, EntityId};
 use crate::game::entity::being::Being;
 
 /// A being-in-the-world: an in-field [`Entity`] (glyph + position) bound to an
@@ -31,7 +31,7 @@ impl Sekaikan {
 	/// as "unloaded" instead of masquerading as the real thing. The placeholder
 	/// health stays positive so a missing `.being` degrades to a visible
 	/// placeholder rather than being reaped as dead.
-	pub fn new(x:i16, y:i16, name:String, id:String) -> Self{
+	pub fn new(x:i16, y:i16, name:String, id:EntityId) -> Self{
 		const PLACEHOLDER_GLYPH: char = '?';
 		const PLACEHOLDER_STAT: i32 = 1;
 		Self {
