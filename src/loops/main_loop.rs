@@ -5,6 +5,7 @@
 
 use ratatui::DefaultTerminal;
 use crate::game::Game;
+use crate::game::entity::PLAYER;
 use crate::gfx::Viewport;
 use crate::gfx::portal::Portal;
 use crate::gfx::render;
@@ -115,8 +116,8 @@ impl MainLoop {
 		// player's position straight from the field.
 		if let Some((dx, dy, angle, glyph)) = facing_of(&player_input) {
 			self.facing = angle;
-			self.game.field.move_entity("Player", dx, dy);
-			if let Some(player) = self.game.field.get_entity_by_id_mut("Player") {
+			self.game.field.move_entity(PLAYER, dx, dy);
+			if let Some(player) = self.game.field.get_entity_by_id_mut(PLAYER) {
 				player.self_ = glyph;
 			}
 		}
@@ -153,12 +154,12 @@ impl MainLoop {
 			std::f32::consts::PI / 3.0,
 		);
 
-		// The player lives in the field now (id "Player"); read the position from
+		// The player lives in the field now (id PLAYER); read the position from
 		// there. The fallback keeps render() honest if the player is ever absent.
 		let player_pos = self
 			.game
 			.field
-			.get_entity_by_id("Player")
+			.get_entity_by_id(PLAYER)
 			.map(|p| p.get_position())
 			.unwrap_or((2, 2));
 

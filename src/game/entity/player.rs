@@ -5,7 +5,7 @@
 
 use angle_sc::Degrees;
 
-use super::{Entity, Priority};
+use super::{Entity, Priority, PLAYER};
 
 /// The player: the in-field [`Entity`] (glyph + position) paired with a
 /// continuous `heading` in degrees and the cardinal `direction` snapped from it.
@@ -40,7 +40,7 @@ impl Player {
 				2,
 				2,
 				'^',
-				"Player".to_owned(),
+				PLAYER,
 				Priority::MED,
 			),
 			heading: angle_sc::Degrees(0.0),

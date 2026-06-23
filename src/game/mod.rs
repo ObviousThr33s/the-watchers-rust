@@ -66,8 +66,9 @@ impl Game {
 			(4, 1), (4, 2),                         // right wall
 		];
 		for (x, y) in walls {
+			let id = self.field.mint();
 			self.field.add_entity(entity::Entity::new(
-				x, y, '#', format!("wall_{x}_{y}"), entity::Priority::LOW,
+				x, y, '#', id, entity::Priority::LOW,
 			));
 		}
 
@@ -129,7 +130,7 @@ mod tests {
 		game.init(&mut logger);
 
 		assert!(
-			game.field.get_entity_by_id("Player").is_some(),
+			game.field.get_entity_by_id(entity::PLAYER).is_some(),
 			"init must place the player in the field"
 		);
 	}
@@ -146,7 +147,7 @@ mod tests {
 
 		let player = game
 			.field
-			.get_entity_by_id("Player")
+			.get_entity_by_id(entity::PLAYER)
 			.expect("init must place the player")
 			.clone();
 

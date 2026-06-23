@@ -1,45 +1,58 @@
 use std::collections::HashMap;
 
-use crate::game::entity::Entity;
+use crate::game::entity::{Entity, EntityId};
 //this must be able to translate to any UI system
 /// Represents a 2D field where entities can be placed
 #[derive(Clone)]
 pub struct Field {
 	/// Map of entity IDs to their corresponding Entity objects
-	pub entities: HashMap<String, Entity>,
+	pub entities: HashMap<EntityId, Entity>,
 	/// Spatial index for fast position-based lookups: (x, y) -> entity_id
-	pub spatial_index: HashMap<(i16, i16), String>,
+	pub spatial_index: HashMap<(i16, i16), EntityId>,
+	/// The next id [`mint`](Self::mint) will hand out. Starts at `1` so minted ids
+	/// never collide with the player's fixed [`PLAYER`](crate::game::entity::PLAYER) (`0`).
+	next_id: EntityId,
 }
 
 impl Field {
 	/// Creates a new empty Field
 	pub fn new() -> Self {
-		Field { 
-			entities: HashMap::new(), 
+		Field {
+			entities: HashMap::new(),
 			spatial_index: HashMap::new(),
+			next_id: 1,
 		}
+	}
+
+	/// Hands out a fresh, unique [`EntityId`]. The single source of new ids for
+	/// everything the world places procedurally — walls, sown flora, and (later)
+	/// spawned beings — so no two entities are ever minted the same handle.
+	pub fn mint(&mut self) -> EntityId {
+		let id = self.next_id;
+		self.next_id += 1;
+		id
 	}
 
 	/// Adds an entity to the field
 	pub fn add_entity(&mut self, entity: Entity) {
 		let pos = (entity.x, entity.y);
-		let id = entity.id.clone();
-		
+		let id = entity.id;
+
 		// Remove any existing entity at this position
-		if let Some(old_id) = self.spatial_index.insert(pos, id.clone()) {
+		if let Some(old_id) = self.spatial_index.insert(pos, id) {
 			self.entities.remove(&old_id);
 		}
-		
+
 		self.entities.insert(id, entity);
 	}
 
 	/// Updates an existing entity in the field with position changes
 	pub fn set_entity(&mut self, entity: Entity) {
 		let new_pos = (entity.x, entity.y);
-		let id = &entity.id;
-		
+		let id = entity.id;
+
 		// Remove old spatial index entry if entity exists and position changed
-		if let Some(old_entity) = self.entities.get(id) {
+		if let Some(old_entity) = self.entities.get(&id) {
 			let old_pos = (old_entity.x, old_entity.y);
 			if old_pos != new_pos {
 				self.spatial_index.remove(&old_pos);
@@ -47,15 +60,15 @@ impl Field {
 		}
 
 		// Update spatial index and entity
-		self.spatial_index.insert(new_pos, id.clone());
-		self.entities.insert(id.clone(), entity);
+		self.spatial_index.insert(new_pos, id);
+		self.entities.insert(id, entity);
 	}
 
 	/// Moves entity `id` by `(dx, dy)` if the destination cell is free, returning
 	/// whether it actually moved. Every entity is solid (the ray caster treats
 	/// them all as walls), so a step into any occupied cell is blocked. The
 	/// spatial index is kept in sync via [`set_entity`].
-	pub fn move_entity(&mut self, id: &str, dx: i16, dy: i16) -> bool {
+	pub fn move_entity(&mut self, id: EntityId, dx: i16, dy: i16) -> bool {
 		let mut moved = match self.get_entity_by_id(id) {
 			Some(e) => e.clone(),
 			None => return false,
@@ -80,26 +93,26 @@ impl Field {
 	/// Every entity is treated as solid, matching how the ray caster renders
 	/// them all as walls.
 	#[inline]
-	pub fn is_occupied(&self, x: i16, y: i16, ignore_id: &str) -> bool {
+	pub fn is_occupied(&self, x: i16, y: i16, ignore_id: EntityId) -> bool {
 		self.get_entity_by_position(x, y)
 			.is_some_and(|e| e.id != ignore_id)
 	}
 
 	/// Gets an entity by its ID, if it exists
 	#[inline]
-	pub fn get_entity_by_id(&self, id: &str) -> Option<&Entity> {
-		self.entities.get(id)
+	pub fn get_entity_by_id(&self, id: EntityId) -> Option<&Entity> {
+		self.entities.get(&id)
 	}
 
 	/// Mutable lookup by id. Editing the position through this skips the spatial
 	/// index — use [`move_entity`](Self::move_entity)/[`set_entity`](Self::set_entity) to keep it in sync.
 	#[inline]
-	pub fn get_entity_by_id_mut(&mut self, id: &str) -> Option<&mut Entity> {
-		self.entities.get_mut(id)
+	pub fn get_entity_by_id_mut(&mut self, id: EntityId) -> Option<&mut Entity> {
+		self.entities.get_mut(&id)
 	}
 
 	/// Remove entity `id` from both the map and the spatial index.
-	pub fn remove_entity(&mut self, id: String) {
+	pub fn remove_entity(&mut self, id: EntityId) {
 		if let Some(entity) = self.entities.remove(&id) {
 			self.spatial_index.remove(&(entity.x, entity.y));
 		}
@@ -136,13 +149,13 @@ impl Field {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::game::entity::{Entity, Priority};
+	use crate::game::entity::{Entity, Priority, PLAYER};
 
 	#[test]
 	fn minimap_centers_on_the_given_point() {
 		let mut field = Field::new();
-		field.add_entity(Entity::new(5, 5, '^', "Player".to_string(), Priority::MED));
-		field.add_entity(Entity::new(5, 4, '#', "wall".to_string(), Priority::LOW));
+		field.add_entity(Entity::new(5, 5, '^', PLAYER, Priority::MED));
+		field.add_entity(Entity::new(5, 4, '#', 1, Priority::LOW));
 
 		// A 5x5 window centered on (5,5) has origin (3,3), so the player lands
 		// dead center at (2,2) and the wall one row above it at (2,1).
@@ -156,11 +169,11 @@ mod tests {
 	#[test]
 	fn move_entity_steps_into_open_space() {
 		let mut field = Field::new();
-		field.add_entity(Entity::new(2, 2, '^', "Player".to_string(), Priority::MED));
+		field.add_entity(Entity::new(2, 2, '^', PLAYER, Priority::MED));
 
-		assert!(field.move_entity("Player", 0, 1), "an open cell should be steppable");
+		assert!(field.move_entity(PLAYER, 0, 1), "an open cell should be steppable");
 
-		let p = field.get_entity_by_id("Player").unwrap();
+		let p = field.get_entity_by_id(PLAYER).unwrap();
 		assert_eq!(p.get_position(), (2, 3), "the player moved one cell down");
 		assert!(field.get_entity_by_position(2, 3).is_some(), "spatial index follows the move");
 		assert!(field.get_entity_by_position(2, 2).is_none(), "the old cell is vacated");
@@ -169,12 +182,12 @@ mod tests {
 	#[test]
 	fn move_entity_is_blocked_by_a_wall() {
 		let mut field = Field::new();
-		field.add_entity(Entity::new(2, 2, '^', "Player".to_string(), Priority::MED));
-		field.add_entity(Entity::new(2, 1, '#', "wall".to_string(), Priority::LOW));
+		field.add_entity(Entity::new(2, 2, '^', PLAYER, Priority::MED));
+		field.add_entity(Entity::new(2, 1, '#', 1, Priority::LOW));
 
-		assert!(!field.move_entity("Player", 0, -1), "a wall must block the step");
+		assert!(!field.move_entity(PLAYER, 0, -1), "a wall must block the step");
 		assert_eq!(
-			field.get_entity_by_id("Player").unwrap().get_position(),
+			field.get_entity_by_id(PLAYER).unwrap().get_position(),
 			(2, 2),
 			"a blocked player does not move"
 		);

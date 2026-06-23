@@ -100,7 +100,7 @@ mod tests {
 
 	fn one_entity_field() -> Field {
 		let mut field = Field::new();
-		field.add_entity(Entity::new(1, 1, 'F', "f1".to_string(), Priority::MED));
+		field.add_entity(Entity::new(1, 1, 'F', 1, Priority::MED));
 		field
 	}
 

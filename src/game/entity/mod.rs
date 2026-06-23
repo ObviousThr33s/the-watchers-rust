@@ -14,10 +14,23 @@ pub mod sekaikan;
 
 pub mod being;
 
+/// A unique handle to an entity — the identity the event bus moves (ward 1, see
+/// `CLAUDE.md`) and the key the [`Field`](crate::game::spaces::field::Field) and
+/// every lookup use. A plain `u64` so an [`Event`](crate::game::haps::Event) stays
+/// `Copy`, heap-free, and trivially queueable; the *readable* name a thing carries
+/// lives in its [`being::Being`] data, looked up by id, never stored here.
+pub type EntityId = u64;
+
+/// The player's well-known id. The player is the one hardcoded spawn (see
+/// [`player`]), so it gets a fixed id every system can name without a lookup;
+/// minted ids start at `1` (see [`Field::mint`](crate::game::spaces::field::Field::mint)),
+/// so they never collide with it.
+pub const PLAYER: EntityId = 0;
+
 /// A thing standing in the field: a glyph at a grid position, addressed by a
-/// unique `id`. Everything a kind is *made of* (stats, art, the line it surfaces
-/// when seen) lives in its [`being::Being`]; this holds only what the world needs
-/// to place it, draw it, and find it again.
+/// unique [`EntityId`]. Everything a kind is *made of* (stats, art, the line it
+/// surfaces when seen) lives in its [`being::Being`]; this holds only what the
+/// world needs to place it, draw it, and find it again.
 #[derive(Clone)]
 pub struct Entity {
 	pub x: i16,
@@ -28,7 +41,7 @@ pub struct Entity {
 	pub self_: char,
 	/// Unique key into the [`Field`](crate::game::spaces::field::Field) — also how
 	/// the spatial index and every lookup find it.
-	pub id: String,
+	pub id: EntityId,
 }
 
 /// Draw priority for a shared cell: the higher entity is the one painted. Floor
@@ -43,7 +56,7 @@ pub enum Priority {
 impl Entity {
 
 	/// Build an entity at `(x, y)`, drawn as `self_` and keyed by `id`.
-	pub fn new(x: i16, y: i16, self_: char, id:String, priority:Priority) -> Self {
+	pub fn new(x: i16, y: i16, self_: char, id:EntityId, priority:Priority) -> Self {
 		Entity { x, y, self_, id, priority}
 	}
 
@@ -57,8 +70,8 @@ impl Entity {
 
 	/// Position and id together: `(x, y, id)`.
 	#[inline]
-	pub fn get(&self) -> (i16, i16, &str) {
-		(self.x, self.y, &self.id)
+	pub fn get(&self) -> (i16, i16, EntityId) {
+		(self.x, self.y, self.id)
 	}
 
 	/// The entity's grid position.

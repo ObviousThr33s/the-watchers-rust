@@ -35,7 +35,7 @@ impl PlayerLoop {
 		let (x, y) = player.player.get_position();
 		let (nx, ny) = (x + dx, y + dy);
 
-		if field.is_occupied(nx, ny, &player.player.id) {
+		if field.is_occupied(nx, ny, player.player.id) {
 			logger.log(&format!("Blocked at ({}, {})", nx, ny));
 			return;
 		}
@@ -81,7 +81,7 @@ mod tests {
 	fn blocked_by_wall_ahead() {
 		let mut player = Player::new();
 		let mut field = Field::new();
-		field.add_entity(Entity::new(2, 1, '#', "wall".to_string(), Priority::LOW));
+		field.add_entity(Entity::new(2, 1, '#', 1, Priority::LOW));
 		PlayerLoop::player_move(&mut player, PlayerMove::UP, &field, &mut logger());
 		assert_eq!(player.player.get_position(), (2, 2), "should not move into a wall");
 	}

@@ -261,6 +261,6 @@ mod tests {
 			.expect("headless draw");
 
 		// Reaching here = init + a full UI render, no panics.
-		assert!(game.field.get_entity_by_id("Player").is_some());
+		assert!(game.field.get_entity_by_id(crate::game::entity::PLAYER).is_some());
 	}
 }
