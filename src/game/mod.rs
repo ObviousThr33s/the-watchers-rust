@@ -19,6 +19,7 @@ pub mod world;*/
 
 use spaces::field::Field;
 use spaces::terrain::{self, Sowing};
+use haps::{Event, Haps};
 
 use crate::{utils::logger};
 
@@ -34,6 +35,11 @@ pub mod haps;
 /// queue ([`Haps`], named `time` for the tempo it keeps).
 pub struct Game {
 	pub field:Field,
+	/// The per-tick event bus (wards 1–2): a fixed-capacity ring of pure-data
+	/// [`Event`]s. Systems push facts onto it during the read phase;
+	/// [`dispatch`](Self::dispatch) drains and applies them. Named `time` for the
+	/// tempo a drained queue keeps.
+	pub time:Haps,
 }
 
 impl Game {
@@ -42,6 +48,7 @@ impl Game {
 	pub fn new() -> Self {
 		Game {
 			field: Field::new(),
+			time: Haps::new(),
 		}
 	}
 
@@ -112,6 +119,38 @@ impl Game {
 		// pass, once art/prompt live in game state instead of being threaded out.
 	}
 
+	/// Phases 2 and 3 of a tick (see the wards in `CLAUDE.md`): drain the event
+	/// queue in arrival order and apply each event to the field. [`apply`](Self::apply)
+	/// is handed the field *alone*, never the queue, so a handler structurally
+	/// cannot raise a new event mid-drain — ward 3's "no event raised during the
+	/// mutation phase", made impossible by construction rather than by discipline.
+	pub fn dispatch(&mut self) {
+		while let Some(event) = self.time.pop() {
+			Self::apply(&mut self.field, event);
+		}
+	}
+
+	/// Apply one drained event to the world. Pure mutation over the field and the
+	/// event's own data — nothing borrowed, nothing global. Today only
+	/// [`SpawnSekaikan`](Event::SpawnSekaikan) carries everything it needs to act;
+	/// the rest wait on systems still being rebuilt and are honest no-ops until then.
+	fn apply(field: &mut Field, event: Event) {
+		match event {
+			Event::SpawnSekaikan { x, y, id } => {
+				// Place the being's inert shell, addressed by the id the event
+				// carried. Its `.being` (glyph, name, stats, art) is overlaid later
+				// by `apply_being`; component storage for the Actor half doesn't
+				// exist yet, so only the in-field Entity lands here.
+				let shell = entity::sekaikan::Sekaikan::new(x, y, String::new(), id);
+				field.add_entity(shell.entity);
+			}
+			// AdvanceWatchers waits on the gaze-gated behavior pass; ReapDead waits
+			// on health living in the field (it sits on the Actor today, not the
+			// Entity). Honest no-ops until those systems return.
+			Event::AdvanceWatchers | Event::ReapDead => {}
+		}
+	}
+
 }
 
 #[cfg(test)]
@@ -158,6 +197,33 @@ mod tests {
 			lamp.to_string().contains(player.self_),
 			"the renderer should draw the player glyph, not an empty panel"
 		);
+	}
+
+	/// The bus's whole reason to exist: a fact raised in one phase becomes a change
+	/// to the world in a later one. Queue a spawn and nothing moves; *drain* it, and
+	/// the being's shell stands in the field under the very id the event named —
+	/// proof the queue defers, applying facts on dispatch, never on push.
+	#[test]
+	fn dispatch_spawns_the_being_an_event_named() {
+		let mut game = Game::new();
+		let id = game.field.mint();
+		game.time
+			.push(Event::SpawnSekaikan { x: 7, y: 3, id })
+			.expect("a fresh ring has room for one event");
+
+		// Still only queued — the world is unchanged until dispatch runs.
+		assert!(
+			game.field.get_entity_by_id(id).is_none(),
+			"a pushed spawn must wait for the mutation phase"
+		);
+
+		game.dispatch();
+
+		let spawned = game
+			.field
+			.get_entity_by_id(id)
+			.expect("dispatch must place the spawned being in the field");
+		assert_eq!(spawned.get_position(), (7, 3), "it lands where the event said");
 	}
 
 	/// The first-person view needs walls to cast against; an empty field renders
