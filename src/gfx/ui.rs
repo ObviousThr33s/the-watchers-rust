@@ -104,6 +104,17 @@ fn draw_invty<'a> (style:Style, border:BorderType) -> Paragraph <'a>{
 	invty
 }
 
+/// The controls overlay: a one-line HUD of the key binds, floated along the
+/// bottom of the first-person view so what you can do stays on screen, not in your
+/// head. Later this same overlay is where the "NPC/item ahead" indicator lands.
+const CONTROLS: &str = " [wasd] move    [r] drop    [q] quit ";
+
+fn draw_controls<'a>() -> Paragraph<'a> {
+	Paragraph::new(Text::from(CONTROLS))
+		.style(Style::new().fg(Color::DarkGray))
+		.alignment(Alignment::Center)
+}
+
 /// The top log bar: the title carries the product name and version, the body the
 /// live developer log.
 fn draw_log <'a> (style:Style, border:BorderType, log_:&Logger) -> Paragraph <'a>{
@@ -173,6 +184,17 @@ pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&
 	frame.render_widget(logger_ui,layout[0]);
 	//mid
 	frame.render_widget(frame1, layout[1]);
+
+	// Controls overlay: a one-line HUD along the bottom edge of the view. Always on
+	// for now; it's the seam the NPC/item indicator will share.
+	let controls_area = Rect {
+		x: layout[1].x,
+		y: layout[1].y + layout[1].height.saturating_sub(1),
+		width: layout[1].width,
+		height: 1,
+	};
+	frame.render_widget(Clear, controls_area);
+	frame.render_widget(draw_controls(), controls_area);
 
 	// An entity reveals itself: when the portal holds art (the player can see
 	// something), draw it as a bordered panel floating over the view. The frame
