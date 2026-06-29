@@ -10,7 +10,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let terminal = ratatui::init();
 	let game:Game = Game::new(/*server stuff?*/ );
 
-	let mut game: MainLoop = MainLoop::new(start, terminal, game, "0.4.37".to_string());
+	//Max:1.0.0
+	//Max-1:0.99.39
+	let mut version:String = "0.5.0";
+	let mut game: MainLoop = MainLoop::new(start, terminal, game, version.to_string());
 
 	game.run_game();
 
