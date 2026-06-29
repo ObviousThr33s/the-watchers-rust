@@ -11,6 +11,9 @@
 
 use noise::{NoiseFn, Perlin};
 
+use crate::game::entity::PLAYER;
+use crate::game::spaces::field::Field;
+
 /// How high the ground stands at a world cell — the one fact the renderer reads.
 /// Answered for *every* `(x, y)`, on-map or off, so a ray can march clean past
 /// the edge of anything finite without a special case; the generator decides what
@@ -62,9 +65,37 @@ impl Heightmap for NoiseGround {
 	}
 }
 
+/// How tall a solid field entity stands above the ground it sits on — enough to
+/// clear the eye and read as a wall rather than a bump.
+const WALL_RISE: u8 = 16;
+
+/// The world's surface as the renderer sees it: the noise [`ground`](Self::ground),
+/// with every solid thing standing in the [`field`](Self::field) — a wall, a tree —
+/// raised into a tall column on top of it. This is the seam that ties the
+/// first-person view to the Map: a wall *on the Map* becomes a wall *ahead of you*,
+/// at the very same cell. The player is left flat — they are the camera, not a
+/// structure, so their cell is never raised.
+pub struct Surface<'a> {
+	pub ground: &'a NoiseGround,
+	pub field: &'a Field,
+}
+
+impl Heightmap for Surface<'_> {
+	fn height(&self, x: i16, y: i16) -> u8 {
+		let ground = self.ground.height(x, y);
+		// A solid entity here (anything but the player) stands as a column on the
+		// ground; an empty cell is just the ground.
+		match self.field.get_entity_by_position(x, y) {
+			Some(e) if e.id != PLAYER => ground.saturating_add(WALL_RISE),
+			_ => ground,
+		}
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::game::entity::{Entity, Priority};
 
 	#[test]
 	fn a_closure_is_a_heightmap() {
@@ -99,5 +130,37 @@ mod tests {
 		let datum = g.height(0, 0);
 		let differs = (-30..30).any(|x| g.height(x, 0) != datum);
 		assert!(differs, "the land must have relief, not lie flat");
+	}
+
+	#[test]
+	fn a_wall_stands_as_a_column_on_the_surface() {
+		let ground = NoiseGround::new(1);
+		let mut field = Field::new();
+		field.add_entity(Entity::new(5, 5, '#', 1, Priority::LOW));
+		let surface = Surface { ground: &ground, field: &field };
+
+		assert!(
+			surface.height(5, 5) > ground.height(5, 5),
+			"a wall on the Map rises into a column ahead of you",
+		);
+		assert_eq!(
+			surface.height(6, 6),
+			ground.height(6, 6),
+			"an empty cell is just the bare ground",
+		);
+	}
+
+	#[test]
+	fn the_player_is_not_a_wall() {
+		let ground = NoiseGround::new(1);
+		let mut field = Field::new();
+		field.add_entity(Entity::new(2, 2, '^', PLAYER, Priority::MED));
+		let surface = Surface { ground: &ground, field: &field };
+
+		assert_eq!(
+			surface.height(2, 2),
+			ground.height(2, 2),
+			"the camera's own cell stays flat — the player is no wall",
+		);
 	}
 }

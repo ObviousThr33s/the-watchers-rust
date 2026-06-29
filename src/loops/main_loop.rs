@@ -6,6 +6,7 @@
 use ratatui::DefaultTerminal;
 use crate::game::Game;
 use crate::game::entity::PLAYER;
+use crate::game::spaces::heightmap::Surface;
 use crate::gfx::voxel::Voxel;
 use crate::gfx::portal::Portal;
 use crate::gfx::render;
@@ -168,15 +169,16 @@ impl MainLoop {
 		// updated by `run` on each directional key).
 		let angle = self.facing;
 
-		// The first-person view is the ground itself now: march the heightmap into
-		// relief from where the player stands and faces. Field entities (flora,
-		// beings) drop out of this panel until the sprite pass composites them back
-		// over the terrain — they still show on the top-down Map meanwhile.
+		// The first-person view is the world's surface: the noise ground with every
+		// solid field entity (walls, flora) raised into a column on top of it, so
+		// what stands ahead matches what the Map shows around you. Marched into
+		// relief from where the player stands and faces.
+		let surface = Surface { ground: &self.game.ground, field: &self.game.field };
 		let view = self.voxel.render(
 			player_pos.0 as f32,
 			player_pos.1 as f32,
 			angle,
-			&self.game.ground,
+			&surface,
 		);
 
 		render(
