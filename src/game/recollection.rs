@@ -26,8 +26,13 @@ pub struct Sighting {
 /// What the watcher remembers of the beings it has seen, keyed by being id.
 pub struct Recollection {
 	sightings: HashMap<String, Sighting>,
-	/// Clarity lost per tick that a remembered being goes unseen.
+	/// Clarity lost per tick that a remembered being goes unseen. Linear by default;
+	/// at the world's end it is the geometric rate instead (see `liminal`).
 	fade: f32,
+	/// Whether forgetting is *liminal* — a geometric fade that only ever approaches
+	/// zero and never forgets (the world's end), rather than the linear fade that
+	/// reaches zero and lets go. See [`at_worlds_end`](Self::at_worlds_end).
+	liminal: bool,
 }
 
 
@@ -36,7 +41,17 @@ impl Recollection {
 	/// `fade` is how much clarity (out of `1.0`) is lost each tick a being goes
 	/// unseen — e.g. `0.1` forgets a still-unseen being over ten ticks.
 	pub fn new(fade: f32) -> Self {
-		Self { sightings: HashMap::new(), fade }
+		Self { sightings: HashMap::new(), fade, liminal: false }
+	}
+
+	/// Recollection at the end of the universe: a **liminal fade**. Clarity leaves
+	/// full at once but decays *geometrically*, only ever approaching zero — so a
+	/// remembered being's place holds still and she is never wholly forgotten.
+	/// (Lore: `docs/lore/mnemosyne-and-lethe.md`; `docs/ideologues/the-liminal-fade.md`.)
+	pub fn at_worlds_end() -> Self {
+		// A small per-tick decay factor: large enough that the fade keeps moving, small
+		// enough that even 100_000 ticks of forgetting never reach zero in f32.
+		Self { sightings: HashMap::new(), fade: 0.0005, liminal: true }
 	}
 
 	/// Record a being seen *right now*: refreshed to full clarity at her true
@@ -55,12 +70,20 @@ impl Recollection {
 	/// being still in view is left untouched at full clarity.
 	pub fn fade_unseen(&mut self, seen_now: &HashSet<String>) {
 		let fade = self.fade;
+		let liminal = self.liminal;
 		self.sightings.retain(|id, s| {
 			if seen_now.contains(id) {
 				return true; // still seen — left at the clarity glimpse just set
 			}
-			s.clarity -= fade;
-			s.clarity > 0.0
+			if liminal {
+				// Geometric: clarity approaches zero but never arrives, and the memory
+				// is never wholly forgotten — the place holds at the world's end.
+				s.clarity *= 1.0 - fade;
+				true
+			} else {
+				s.clarity -= fade;
+				s.clarity > 0.0
+			}
 		});
 	}
 
