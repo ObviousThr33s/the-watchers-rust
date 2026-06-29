@@ -30,7 +30,7 @@ fn draw_portal<'a>(screen: &'a String) -> Paragraph<'a> {
 
 /// The "Field" panel: a top-down rasterized view of the field, drawn into a
 /// fresh [`Render`] panel and handed over as styled text so colour survives.
-fn draw_center<'a>(width: u16, height: u16, entity:&Field, style: Style, border: BorderType) -> Paragraph<'a> {
+fn draw_center<'a>(width: u16, height: u16, entity:&Field, player_pos:(i16, i16), style: Style, border: BorderType) -> Paragraph<'a> {
 
 	// A neat frame so this map reads as a panel of its own, matching the "Map"
 	// minimap beside it — same border type and colour as the rest of the bottom UI.
@@ -38,10 +38,15 @@ fn draw_center<'a>(width: u16, height: u16, entity:&Field, style: Style, border:
 		.title("Field")
 		.title_style(style)
 		.border_type(border);
-	
+
 	let mut lamp: Render = Render::init(width.into(), height.into());
 
-	lamp.rasterize(entity);
+	// Scroll the field so the player rides the middle: the world slides past as they
+	// move instead of them walking off a fixed view. That motion is the cool part —
+	// the field itself tells you you're travelling.
+	let origin_x = player_pos.0 - (width as i16) / 2;
+	let origin_y = player_pos.1 - (height as i16) / 2;
+	lamp.rasterize_at(entity, origin_x, origin_y);
 
 	// Hand the panel over as styled text so cell colour/attributes survive to the
 	// screen (a flat string would drop them).
@@ -208,7 +213,7 @@ pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&
 
 	// Now that each panel's Rect is resolved, size its content to exactly that box
 	// instead of the whole frame — each panel wills its own extent.
-	let frame0 = draw_center(inner_cent.width, inner_cent.height, entities, style, border);
+	let frame0 = draw_center(inner_cent.width, inner_cent.height, entities, player_pos, style, border);
 	let minimap:Paragraph = draw_minimap(inner_minimap.width, inner_minimap.height, style, border, entities, player_pos);
 
 	frame.render_widget(invty, inner_left);

@@ -41,15 +41,30 @@ impl Render {
 	}
 		/// Renders all entities from the field to the screen buffer
 	pub fn rasterize(&mut self, field: &Field) {
-		self.rasterize_visible(field, |_, _| true);
+		self.rasterize_window(field, 0, 0, |_, _| true);
 	}
 
-	/// Renders the field through a visibility gate. A cell the watcher can see
-	/// shows its highest-priority entity (or blank floor); a cell it cannot see
-	/// shows [`FOG`]. `is_visible(x, y)` is supplied by the caller — e.g. backed
-	/// by [`crate::game::vision::can_see`] — so the watcher's map finally has a
-	/// notion of the unseen instead of revealing the whole field at once.
+	/// Renders the field scrolled so the panel's top-left cell is world
+	/// `(origin_x, origin_y)`. The view follows the origin, so the player can be
+	/// kept in frame as they move — the world slides past instead of them walking
+	/// off the edge. No fog gate (yet).
+	pub fn rasterize_at(&mut self, field: &Field, origin_x: i16, origin_y: i16) {
+		self.rasterize_window(field, origin_x, origin_y, |_, _| true);
+	}
+
+	/// Renders the field through a visibility gate, at world origin (0,0). A cell
+	/// the watcher can see shows its highest-priority entity (or blank floor); a
+	/// cell it cannot see shows [`FOG`]. `is_visible(x, y)` is supplied by the
+	/// caller — e.g. backed by [`crate::game::vision::can_see`] — so the watcher's
+	/// map has a notion of the unseen instead of revealing the whole field at once.
 	pub fn rasterize_visible<F: Fn(i16, i16) -> bool>(&mut self, field: &Field, is_visible: F) {
+		self.rasterize_window(field, 0, 0, is_visible);
+	}
+
+	/// Shared core: paint the panel-sized window whose top-left is world
+	/// `(origin_x, origin_y)`, gated by `is_visible(world_x, world_y)`. The centered,
+	/// omniscient, and scrolled rasterizers differ only in the origin they pass.
+	fn rasterize_window<F: Fn(i16, i16) -> bool>(&mut self, field: &Field, origin_x: i16, origin_y: i16, is_visible: F) {
 		// Wipe the panel back to bare paper before repainting.
 		self.render.clear();
 
@@ -80,10 +95,10 @@ impl Render {
 		let fog = Cell::wash(FOG, Color::DarkGray, Modifier::DIM);
 		for y in 0..self.render.y {
 			for x in 0..self.render.x {
-				let (cx, cy) = (x as i16, y as i16);
-				if !is_visible(cx, cy) {
+				let (wx, wy) = (x as i16 + origin_x, y as i16 + origin_y);
+				if !is_visible(wx, wy) {
 					self.render.set(x, y, fog);
-				} else if let Some(entity) = position_map.get(&(cx, cy)) {
+				} else if let Some(entity) = position_map.get(&(wx, wy)) {
 					self.render.put(x, y, entity.self_);
 				}
 			}
@@ -129,5 +144,20 @@ mod tests {
 		let out = r.to_string();
 		assert!(out.contains('F'));
 		assert!(!out.contains(FOG));
+	}
+
+	#[test]
+	fn rasterize_at_scrolls_the_window_to_follow_the_origin() {
+		let mut field = Field::new();
+		field.add_entity(Entity::new(10, 10, 'P', 1, Priority::MED));
+		let mut r = Render::init(5, 5);
+
+		// At origin (0,0) the 5x5 window is world [0,5): the far entity is off-screen.
+		r.rasterize_at(&field, 0, 0);
+		assert!(!r.to_string().contains('P'), "an entity outside the window is not drawn");
+
+		// Scroll the window onto it — top-left world (8,8) covers (10,10).
+		r.rasterize_at(&field, 8, 8);
+		assert!(r.to_string().contains('P'), "scrolling the origin brings the world into view");
 	}
 }
