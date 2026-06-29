@@ -137,6 +137,40 @@ impl LightField {
 		}
 	}
 
+	/// Draw a straight segment of light from `a` to `b`, one step per cell along
+	/// the longer axis (a DDA walk). This is the edge primitive a wireframe is made
+	/// of — Elite's vectors, not filled mass. Off-field cells are ignored by
+	/// [`add`](Self::add), so a segment may run to the border without a bounds check.
+	#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)] // float walk, then deposit at integer cells
+	pub fn line(&mut self, a: (f32, f32), b: (f32, f32), intensity: f32) {
+		let (x0, y0) = a;
+		let (x1, y1) = b;
+		let (dx, dy) = (x1 - x0, y1 - y0);
+		let steps = dx.abs().max(dy.abs()).ceil().max(1.0);
+		let n = steps as usize;
+		for i in 0..=n {
+			let t = i as f32 / steps;
+			let (x, y) = (x0 + dx * t, y0 + dy * t);
+			if x >= 0.0 && y >= 0.0 {
+				self.add(x as u16, y as u16, intensity);
+			}
+		}
+	}
+
+	/// Trace a polygon's edges as a closed loop — the wireframe: only the vector
+	/// outline is lit, the interior left dark (Elite, not the filled mass above).
+	/// Like the fill, it takes already-resolved points; the slots that named them
+	/// are never read here, and `regular_polygon` already caged the cyclic upstream.
+	pub fn outline_polygon(&mut self, verts: &[(f32, f32)], intensity: f32) {
+		let n = verts.len();
+		if n < 2 {
+			return;
+		}
+		for i in 0..n {
+			self.line(verts[i], verts[(i + 1) % n], intensity);
+		}
+	}
+
 	/// Quantise the float field down to glyphs — the renderer's last step, and
 	/// the only place a "pixel" is chosen. Radiance is normalised against the
 	/// brightest cell, then mapped onto `ramp` (dark → light). Swapping this ramp
@@ -162,6 +196,30 @@ impl LightField {
 		}
 		screen
 	}
+}
+
+/// The vertices of a regular polygon — `sides` points spaced evenly on a circle
+/// of `radius` about `(cx, cy)`, the first at angle `phase` (radians). This is the
+/// bridge a symbolic [`Poly`](crate::game::poly::Poly) crosses to become light: a
+/// caller hands over the *count* of a poly's slots and gets back a shape to flood
+/// with [`fill_polygon`](LightField::fill_polygon).
+///
+/// The signature is the cage. It takes only how *many* vertices there are, never
+/// the slots themselves — so a self-referential polygon is drawn by its arity and
+/// never by what its slots name. There is nothing here to call upon or in; the
+/// cyclic is met as a number. Fewer than three points is no polygon and yields
+/// none, so a degenerate shape (the two-slot `$Polyad`) simply lights nothing.
+#[allow(clippy::cast_precision_loss)] // small vertex counts; the angle stays exact enough
+pub fn regular_polygon(sides: usize, cx: f32, cy: f32, radius: f32, phase: f32) -> Vec<(f32, f32)> {
+	if sides < 3 {
+		return Vec::new();
+	}
+	(0..sides)
+		.map(|i| {
+			let theta = phase + std::f32::consts::TAU * i as f32 / sides as f32;
+			(cx + radius * theta.cos(), cy + radius * theta.sin())
+		})
+		.collect()
 }
 
 // Tests are the spec: each one states a property the light-field must hold.
@@ -215,5 +273,59 @@ mod tests {
 		let row = field.quantize(&RAMP).to_string();
 		assert_eq!(row.chars().next(), Some(' '), "a dark cell is left as bare paper");
 		assert_eq!(row.chars().nth(2), Some('█'), "the brightest cell hits the ramp top");
+	}
+
+	#[test]
+	fn a_regular_polygon_places_one_vertex_per_side_on_the_circle() {
+		let verts = regular_polygon(5, 10.0, 10.0, 6.0, 0.0);
+		assert_eq!(verts.len(), 5, "five sides, five contact points");
+		for (x, y) in verts {
+			let r = ((x - 10.0).powi(2) + (y - 10.0).powi(2)).sqrt();
+			assert!((r - 6.0).abs() < 1e-3, "every vertex sits on the circle of radius 6");
+		}
+	}
+
+	#[test]
+	fn fewer_than_three_slots_make_no_polygon() {
+		assert!(regular_polygon(2, 5.0, 5.0, 3.0, 0.0).is_empty(), "two points are a line, not a shape");
+		assert!(regular_polygon(0, 5.0, 5.0, 3.0, 0.0).is_empty(), "nothing is no shape");
+	}
+
+	/// The crossing, end to end: a polygon read from the real `.poly` file becomes
+	/// light. The `Pentad` (five slots) is drawn as a pentagon and floods its
+	/// interior — proof a symbolic node reaches the field through its *count* alone.
+	#[test]
+	fn a_poly_from_the_file_crosses_into_light() {
+		use crate::game::poly::Poly;
+		let polys = Poly::load("res/entities/poly.poly").expect("load poly.poly");
+		let pentad = polys.iter().find(|p| p.name == "Pentad").expect("the file holds a Pentad");
+
+		let mut field = LightField::new(20, 20);
+		field.fill_polygon(&regular_polygon(pentad.slots.len(), 10.0, 10.0, 6.0, 0.0), 1.0);
+		assert!(field.get(10, 10) > 0.0, "the pentagon floods its centre with light");
+	}
+
+	/// The cyclic stays caged in the renderer too. `$Polyad{{poly}{}}` — the
+	/// self-referential polygon — has two slots, so it crosses as two points: no
+	/// polygon, no fill, a field left dark. Its `poly` slot is never read, never
+	/// dereferenced, never called upon — it is met here only as the number two.
+	#[test]
+	fn the_self_referential_polyad_lights_nothing_and_is_never_called_upon() {
+		use crate::game::poly::Poly;
+		let polys = Poly::load("res/entities/poly.poly").expect("load poly.poly");
+		let polyad = polys.iter().find(|p| p.name == "$Polyad").expect("the file holds $Polyad");
+
+		let mut field = LightField::new(20, 20);
+		field.fill_polygon(&regular_polygon(polyad.slots.len(), 10.0, 10.0, 6.0, 0.0), 1.0);
+		assert_eq!(field.max(), 0.0, "a degenerate cyclic deposits no light");
+	}
+
+	#[test]
+	fn a_wireframe_lights_its_edges_and_leaves_the_interior_dark() {
+		let mut field = LightField::new(20, 20);
+		// A diamond (four points on the circle); its rim is lit, its middle is not.
+		field.outline_polygon(&regular_polygon(4, 10.0, 10.0, 6.0, 0.0), 1.0);
+		assert!(field.get(10, 4) > 0.0, "a vertex on the rim is lit");
+		assert_eq!(field.get(10, 10), 0.0, "the interior stays dark — a wireframe, not a fill");
 	}
 }

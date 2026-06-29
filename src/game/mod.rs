@@ -25,6 +25,7 @@ use crate::{utils::logger};
 
 pub mod entity;
 pub mod spaces;
+pub mod poly;
 pub mod vision;
 pub mod recollection;
 pub mod haps;
