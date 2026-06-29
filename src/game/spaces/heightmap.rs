@@ -11,7 +11,7 @@
 
 use noise::{NoiseFn, Perlin};
 
-use crate::game::entity::PLAYER;
+use crate::game::entity::{Priority, PLAYER};
 use crate::game::spaces::field::Field;
 
 /// How high the ground stands at a world cell — the one fact the renderer reads.
@@ -114,9 +114,14 @@ impl Heightmap for NoiseGround {
 	}
 }
 
-/// How tall a solid field entity stands above the ground it sits on — enough to
-/// clear the eye and read as a wall rather than a bump.
+/// How tall terrain (a wall, a tree) stands above the ground it sits on — enough
+/// to clear the eye and read as a wall.
 const WALL_RISE: u8 = 16;
+
+/// How tall a being or object (the NPC, the fairy, an item) stands — kept below
+/// the eye, so it reads as a low presence on the ground rather than a wall that
+/// fills the view at close range.
+const OBJECT_RISE: u8 = 2;
 
 /// The world's surface as the renderer sees it: the noise [`ground`](Self::ground),
 /// with every solid thing standing in the [`field`](Self::field) — a wall, a tree —
@@ -132,11 +137,15 @@ pub struct Surface<'a> {
 impl Heightmap for Surface<'_> {
 	fn height(&self, x: i16, y: i16) -> u8 {
 		let ground = self.ground.height(x, y);
-		// A solid entity here (anything but the player) stands as a column on the
-		// ground; an empty cell is just the ground.
+		// A solid entity stands as a column on the ground. Terrain (walls, flora —
+		// LOW priority) stands wall-tall; beings and objects (the NPC, the fairy,
+		// items — MED) stand low, a presence rather than a wall. The player is the
+		// camera, never a column.
 		match self.field.get_entity_by_position(x, y) {
-			Some(e) if e.id != PLAYER => ground.saturating_add(WALL_RISE),
-			_ => ground,
+			Some(e) if e.id == PLAYER => ground,
+			Some(e) if e.priority == Priority::LOW => ground.saturating_add(WALL_RISE),
+			Some(_) => ground.saturating_add(OBJECT_RISE),
+			None => ground,
 		}
 	}
 
@@ -219,6 +228,20 @@ mod tests {
 			ground.height(2, 2),
 			"the camera's own cell stays flat — the player is no wall",
 		);
+	}
+
+	#[test]
+	fn an_object_stands_lower_than_a_wall() {
+		let ground = NoiseGround::new(1);
+		let mut field = Field::new();
+		field.add_entity(Entity::new(5, 5, '#', 1, Priority::LOW)); // terrain
+		field.add_entity(Entity::new(6, 6, '!', 2, Priority::MED)); // an object
+		let surface = Surface { ground: &ground, field: &field };
+
+		let wall_rise = surface.height(5, 5) - ground.height(5, 5);
+		let object_rise = surface.height(6, 6) - ground.height(6, 6);
+		assert!(object_rise > 0, "an object still rises into a presence");
+		assert!(wall_rise > object_rise, "but a wall stands taller than an object");
 	}
 
 	/// Over a small patch of sub-dots, two textures differ when *any* dot differs.

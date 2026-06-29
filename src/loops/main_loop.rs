@@ -149,6 +149,14 @@ impl MainLoop {
 					self.sel_panel ^= 1; // swap Stats <-> Inventory
 					self.cursor = 0;
 				}
+				// Drop the *selected* item straight from the focused Inventory.
+				PlayerMove::DROP if self.sel_panel == 1 => {
+					if let Some(name) = self.game.drop_selected(self.cursor as usize, self.facing) {
+						self.logger.log(&format!("Dropped {name}."));
+					} else {
+						self.logger.log("Nowhere to set it down.");
+					}
+				}
 				_ => {}
 			}
 		} else if player_input == PlayerMove::TALK {
@@ -161,9 +169,13 @@ impl MainLoop {
 				}
 			}
 		} else if player_input == PlayerMove::DROP {
-			// Set a carried item down on the cell the player faces.
-			if let Some(name) = self.game.drop_ahead(self.facing) {
+			// Set the most-recent carried item down nearby, with feedback either way.
+			if self.game.inventory.is_empty() {
+				self.logger.log("Nothing to drop.");
+			} else if let Some(name) = self.game.drop_ahead(self.facing) {
 				self.logger.log(&format!("Dropped {name}."));
+			} else {
+				self.logger.log("Nowhere to set it down.");
 			}
 		} else if let Some((dx, dy, angle, glyph)) = facing_of(&player_input) {
 			self.facing = angle;

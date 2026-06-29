@@ -193,7 +193,9 @@ impl Game {
 	/// returning the id it was minted with.
 	pub fn place_item(&mut self, x: i16, y: i16, glyph: char, name: &str) -> entity::EntityId {
 		let id = self.field.mint();
-		self.field.add_entity(entity::Entity::new(x, y, glyph, id, entity::Priority::LOW));
+		// MED priority marks it an object, not terrain — so the voxel view stands it
+		// low, a presence on the ground rather than a wall.
+		self.field.add_entity(entity::Entity::new(x, y, glyph, id, entity::Priority::MED));
 		self.ground_items.push(item::Item { id, glyph, name: name.to_owned() });
 		id
 	}
@@ -223,7 +225,7 @@ impl Game {
 		let Some(item) = self.inventory.pop() else {
 			return false; // empty pockets
 		};
-		self.field.add_entity(entity::Entity::new(x, y, item.glyph, item.id, entity::Priority::LOW));
+		self.field.add_entity(entity::Entity::new(x, y, item.glyph, item.id, entity::Priority::MED));
 		self.ground_items.push(item);
 		true
 	}
@@ -243,13 +245,42 @@ impl Game {
 
 	/// Drop a carried item onto the cell the player faces (`facing` in the
 	/// ray-caster convention). Returns whether anything was dropped.
-	pub fn drop_ahead(&mut self, facing: f32) -> Option<String> {
+	/// An open cell to set something down on: the cell the player faces first, then
+	/// the four neighbours. `None` only when the player is walled in on every side.
+	fn open_spot(&self, facing: f32) -> Option<(i16, i16)> {
 		let (px, py) = self.field.get_entity_by_id(entity::PLAYER).map(|e| e.get_position())?;
 		let dx = facing.cos().round() as i16;
 		let dy = facing.sin().round() as i16;
-		// Peek the name before it leaves the pocket, then report it only if it landed.
-		let name = self.inventory.last().map(|it| it.name.clone());
-		self.drop_at(px + dx, py + dy).then_some(name).flatten()
+		[(px + dx, py + dy), (px, py - 1), (px + 1, py), (px, py + 1), (px - 1, py)]
+			.into_iter()
+			.find(|&(x, y)| self.field.get_entity_by_position(x, y).is_none())
+	}
+
+	/// Set the inventory item at `index` down on an open cell near the player
+	/// (facing `facing` first). Returns its name if it landed; `None` if the index
+	/// is out of range or the player is walled in on every side.
+	fn drop_at_index_near(&mut self, index: usize, facing: f32) -> Option<String> {
+		if index >= self.inventory.len() {
+			return None;
+		}
+		let (x, y) = self.open_spot(facing)?;
+		let item = self.inventory.remove(index);
+		let name = item.name.clone();
+		self.field.add_entity(entity::Entity::new(x, y, item.glyph, item.id, entity::Priority::MED));
+		self.ground_items.push(item);
+		Some(name)
+	}
+
+	/// Drop the most-recently-carried item — the normal-mode drop. It lands on the
+	/// nearest open cell, so a wall or the NPC dead ahead no longer means "can't drop."
+	pub fn drop_ahead(&mut self, facing: f32) -> Option<String> {
+		self.inventory.len().checked_sub(1).and_then(|i| self.drop_at_index_near(i, facing))
+	}
+
+	/// Drop the inventory item at `index` — the inspect-mode drop, for setting down
+	/// the very item selected in the Inventory read-out.
+	pub fn drop_selected(&mut self, index: usize, facing: f32) -> Option<String> {
+		self.drop_at_index_near(index, facing)
 	}
 
 	/// What the player's gaze lands on, looking along `facing`: the first item on a
@@ -441,6 +472,24 @@ mod tests {
 		game.field.add_entity(entity::Entity::new(4, 2, '#', 999, entity::Priority::LOW));
 		assert!(!game.drop_at(4, 2), "a blocked cell refuses the drop");
 		assert_eq!(game.inventory.first().map(|i| i.id), Some(lantern), "the item stays carried");
+	}
+
+	#[test]
+	fn dropping_finds_an_open_cell_even_when_the_way_ahead_is_blocked() {
+		use std::f32::consts::FRAC_PI_2;
+		let mut game = Game::new();
+		game.field.add_entity(entity::Entity::new(2, 2, '^', entity::PLAYER, entity::Priority::MED));
+		// A wall dead ahead (up); the neighbours are open.
+		game.field.add_entity(entity::Entity::new(2, 1, '#', 900, entity::Priority::LOW));
+		game.inventory.push(item::Item { id: 901, glyph: '!', name: "a small lantern".to_owned() });
+
+		let dropped = game.drop_ahead(-FRAC_PI_2); // facing straight into the wall
+		assert_eq!(
+			dropped.as_deref(),
+			Some("a small lantern"),
+			"a blocked way ahead no longer means 'can't drop' — it finds an open neighbour",
+		);
+		assert!(game.inventory.is_empty(), "and the pocket is emptied");
 	}
 
 	#[test]
