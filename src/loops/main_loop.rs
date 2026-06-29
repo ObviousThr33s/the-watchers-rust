@@ -271,6 +271,21 @@ impl MainLoop {
 			_ => self.portal.stats.lines().count().max(1) as u16,
 		};
 		self.cursor = self.cursor.min(panel_len.saturating_sub(1));
+
+		// Inspecting the Inventory: the Stats window reads out the *selected* item
+		// instead of the gaze, so picking an item in the pack shows its details right
+		// then — and the world-gaze overlay steps aside while you're in the pack.
+		if self.inspecting && self.sel_panel == 1 {
+			if let Some((glyph, name)) = self
+				.game
+				.inventory
+				.get(self.cursor as usize)
+				.map(|it| (it.glyph, it.name.clone()))
+			{
+				self.portal.set_portal(String::new(), String::new(), format!("{glyph}  {name}\n(carried)"));
+			}
+		}
+
 		let selection = PanelSel {
 			active: self.inspecting,
 			panel: self.sel_panel,
