@@ -12,7 +12,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 	//Max:1.0.0
 	//Max-1:0.99.39
-	let version:String = "0.5.1".to_owned();
+	// The version is read from Cargo.toml at build time (CARGO_PKG_VERSION), so the one
+	// versioning tool (../version.ps1) only ever edits the cargo file and it flows here.
+	let version:String = env!("CARGO_PKG_VERSION").to_owned();
 	let mut game: MainLoop = MainLoop::new(start, terminal, game, version.to_string());
 
 	game.run_game();
