@@ -6,7 +6,7 @@
 use ratatui::DefaultTerminal;
 use crate::game::Game;
 use crate::game::entity::PLAYER;
-use crate::gfx::Viewport;
+use crate::gfx::voxel::Voxel;
 use crate::gfx::portal::Portal;
 use crate::gfx::render;
 use crate::input::{handle_events, PlayerMove};
@@ -28,7 +28,7 @@ fn facing_of(input: &PlayerMove) -> Option<(i16, i16, f32, char)> {
 
 //See new() to update version
 /// Everything one running session needs: the run clock and logger, the [`Game`]
-/// world, the terminal, the first-person [`Viewport`], the [`Portal`] reveal
+/// world, the terminal, the first-person [`Voxel`] view, the [`Portal`] reveal
 /// state, and the angle the player currently faces.
 pub struct MainLoop{
 	pub start: Time,
@@ -40,7 +40,7 @@ pub struct MainLoop{
 	state:GameStates,
 	terminal:DefaultTerminal,
 	_output:String,
-	viewport: Viewport,
+	voxel: Voxel,
 	portal: Portal,
 	/// The ray-caster angle the player is currently facing (updated on each
 	/// directional key). Starts facing "up" to match the player's `^` glyph.
@@ -68,7 +68,7 @@ impl MainLoop {
 			
 			state: GameStates::Init,
 			
-			viewport: Viewport::new(80, 20, std::f32::consts::PI / 3.0),
+			voxel: Voxel::new(80, 20, std::f32::consts::PI / 3.0),
 			tick:0,
 
 			//Set game version here
@@ -146,9 +146,9 @@ impl MainLoop {
 			}
 		};
 
-		// Size the first-person viewport to the terminal, leaving room for the UI
+		// Size the first-person voxel view to the terminal, leaving room for the UI
 		// chrome (borders + the bottom panels).
-		self.viewport = Viewport::new(
+		self.voxel = Voxel::new(
 			(w as usize).saturating_sub(2),
 			(h as usize).saturating_sub(10),
 			std::f32::consts::PI / 3.0,
@@ -168,21 +168,15 @@ impl MainLoop {
 		// updated by `run` on each directional key).
 		let angle = self.facing;
 
-		// Every entity other than the player is a solid wall for the ray caster.
-		let walls: Vec<(i16, i16)> = self
-			.game
-			.field
-			.entities
-			.values()
-			.map(|e| (e.x, e.y))
-			.filter(|&pos| pos != player_pos)
-			.collect();
-
-		let view = self.viewport.render_raycasted(
+		// The first-person view is the ground itself now: march the heightmap into
+		// relief from where the player stands and faces. Field entities (flora,
+		// beings) drop out of this panel until the sprite pass composites them back
+		// over the terrain — they still show on the top-down Map meanwhile.
+		let view = self.voxel.render(
 			player_pos.0 as f32,
 			player_pos.1 as f32,
 			angle,
-			&walls,
+			&self.game.ground,
 		);
 
 		render(

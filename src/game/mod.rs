@@ -19,6 +19,7 @@ pub mod world;*/
 
 use spaces::field::Field;
 use spaces::terrain::{self, Sowing};
+use spaces::heightmap::NoiseGround;
 use haps::{Event, Haps};
 
 use crate::{utils::logger};
@@ -37,6 +38,10 @@ pub mod rover;
 /// queue ([`Haps`], named `time` for the tempo it keeps).
 pub struct Game {
 	pub field:Field,
+	/// The ground's altitude under the whole world — the heightmap the voxel view
+	/// reads as relief. A seeded noise field for now; generation deepens here later
+	/// (octaves, water and plateau bounds) without the renderer or field noticing.
+	pub ground:NoiseGround,
 	/// The per-tick event bus (wards 1–2): a fixed-capacity ring of pure-data
 	/// [`Event`]s. Systems push facts onto it during the read phase;
 	/// [`dispatch`](Self::dispatch) drains and applies them. Named `time` for the
@@ -50,6 +55,8 @@ impl Game {
 	pub fn new() -> Self {
 		Game {
 			field: Field::new(),
+			// One seed grows one world; the same seed always grows the same ground.
+			ground: NoiseGround::new(1),
 			time: Haps::new(),
 		}
 	}

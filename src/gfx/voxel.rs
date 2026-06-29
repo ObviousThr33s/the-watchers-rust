@@ -25,9 +25,11 @@ pub struct Voxel {
 	pub fov: f32,
 	/// How far a ray marches before it gives up on finding ground.
 	pub max_distance: f32,
-	/// The eye's height on the heightmap's own scale: ground standing above it
-	/// towers over the horizon, ground below it falls away as floor.
-	pub eye: f32,
+	/// How high the eye rides above the ground it stands on. The camera plants
+	/// itself on the terrain under the player each frame, so this is a height
+	/// *above local ground*, not an absolute altitude — ground that rises above the
+	/// eye towers over the horizon, ground below it falls away as floor.
+	pub eye_height: f32,
 	/// Vertical projection gain — how many screen rows a unit of relief spans at
 	/// unit distance. Sized to the view by default.
 	pub scale: f32,
@@ -40,7 +42,7 @@ impl Voxel {
 			height,
 			fov,
 			max_distance: 24.0,
-			eye: 6.0,
+			eye_height: 3.0,
 			scale: height as f32,
 		}
 	}
@@ -54,6 +56,13 @@ impl Voxel {
 		let center_column = self.width as f32 / 2.0;
 		let angle_step = self.fov / self.width.max(1) as f32;
 		let horizon = self.height as f32 / 2.0;
+
+		// The camera stands on the ground under the player and looks out from
+		// `eye_height` above it, so relief is read relative to where you stand —
+		// not from a fixed altitude that would bury you in any tall terrain.
+		let here_x = (px + 0.5).floor() as i16;
+		let here_y = (py + 0.5).floor() as i16;
+		let eye = terrain.height(here_x, here_y) as f32 + self.eye_height;
 
 		for column in 0..self.width {
 			let ray_angle = angle + (column as f32 - center_column) * angle_step;
@@ -79,7 +88,7 @@ impl Voxel {
 				let h = terrain.height(cell_x, cell_y) as f32;
 
 				let dist = (t * cos_off).max(0.0001);
-				let top_f = horizon + (self.eye - h) / dist * self.scale;
+				let top_f = horizon + (eye - h) / dist * self.scale;
 				let top = top_f.round().clamp(0.0, self.height as f32) as usize;
 
 				if top < y_buffer {
