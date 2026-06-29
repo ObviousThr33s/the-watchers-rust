@@ -44,7 +44,7 @@ pub struct NoiseGround {
 impl NoiseGround {
 	/// A noise field seeded by `seed`, with gentle wide hills by default.
 	pub fn new(seed: u32) -> Self {
-		Self { perlin: Perlin::new(seed), scale: 0.08, amplitude: 16 }
+		Self { perlin: Perlin::new(seed), scale: 0.05, amplitude: 12 }
 	}
 
 	/// Same field, but choose how broad the hills run and how tall they may stand.

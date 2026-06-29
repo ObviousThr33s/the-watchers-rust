@@ -14,6 +14,11 @@ use crate::game::spaces::heightmap::Heightmap;
 /// the flat viewport uses, so the two views read as one world.
 const RAMP: [char; 5] = ['█', '▓', '▒', '░', '·'];
 
+/// Where eye level sits down the screen, as a fraction of its height. Low (toward
+/// the bottom) hands most of the panel to relief and distance and keeps the ground
+/// at your feet from eating the frame — you look out over the land, not down at it.
+const HORIZON_FRAC: f32 = 0.5;
+
 /// The first-person voxel camera. Holds only framing and the eye's height above
 /// the ground datum; the land arrives as a [`Heightmap`] at render time and is
 /// never stored here — so one camera renders a fixture, a noise field, or a
@@ -41,9 +46,9 @@ impl Voxel {
 			width,
 			height,
 			fov,
-			max_distance: 24.0,
-			eye_height: 3.0,
-			scale: height as f32,
+			max_distance: 32.0,
+			eye_height: 4.0,
+			scale: height as f32 * 0.5,
 		}
 	}
 
@@ -55,7 +60,7 @@ impl Voxel {
 
 		let center_column = self.width as f32 / 2.0;
 		let angle_step = self.fov / self.width.max(1) as f32;
-		let horizon = self.height as f32 / 2.0;
+		let horizon = self.height as f32 * HORIZON_FRAC;
 
 		// The camera stands on the ground under the player and looks out from
 		// `eye_height` above it, so relief is read relative to where you stand —
