@@ -32,6 +32,7 @@ pub mod recollection;
 pub mod haps;
 pub mod rover;
 pub mod fairy;
+pub mod item;
 
 //pub mod group;
 
@@ -46,6 +47,12 @@ pub struct Game {
 	/// The fairy that flits around the forest — set into and lifted out of the
 	/// field as it comes and goes (see [`flit_fairy`](Self::flit_fairy)).
 	pub fairy:fairy::Fairy,
+	/// Items the player is carrying — picked up off the ground, set back down on
+	/// command (see [`step_player`](Self::step_player) and [`drop_at`](Self::drop_at)).
+	pub inventory:Vec<item::Item>,
+	/// Items still lying in the field, by which the world tells a pick-up-able item
+	/// apart from a wall or a tree.
+	ground_items:Vec<item::Item>,
 	/// The per-tick event bus (wards 1–2): a fixed-capacity ring of pure-data
 	/// [`Event`]s. Systems push facts onto it during the read phase;
 	/// [`dispatch`](Self::dispatch) drains and applies them. Named `time` for the
@@ -66,6 +73,8 @@ impl Game {
 			// One seed grows one world; the same seed always grows the same ground.
 			ground: NoiseGround::new(1),
 			fairy,
+			inventory: Vec::new(),
+			ground_items: Vec::new(),
 			time: Haps::new(),
 		}
 	}
@@ -118,6 +127,10 @@ impl Game {
 			seed: 1,
 		});
 		logger.log(&format!("Sowed {planted} flora from {} kinds", flora.len()));
+
+		// One thing to find: a lantern set just to the player's left, inside the
+		// open alcove, so stepping left picks it up.
+		self.place_item(1, 2, '!', "a small lantern");
 	}
 
 	/// Advance the world by one tick. At tick 0 it bootstraps via [`init`](Self::init);
@@ -150,6 +163,68 @@ impl Game {
 				));
 			}
 		}
+	}
+
+	/// Lay an item in the field at `(x, y)` and remember it as pick-up-able,
+	/// returning the id it was minted with.
+	pub fn place_item(&mut self, x: i16, y: i16, glyph: char, name: &str) -> entity::EntityId {
+		let id = self.field.mint();
+		self.field.add_entity(entity::Entity::new(x, y, glyph, id, entity::Priority::LOW));
+		self.ground_items.push(item::Item { id, glyph, name: name.to_owned() });
+		id
+	}
+
+	/// If a pick-up-able item lies at `(x, y)`, take it out of the field and into the
+	/// inventory. Returns whether anything was picked up. A wall or a tree there is
+	/// left alone — only items the world laid down are carried.
+	pub fn pick_up_at(&mut self, x: i16, y: i16) -> bool {
+		let Some(id) = self.field.get_entity_by_position(x, y).map(|e| e.id) else {
+			return false;
+		};
+		let Some(at) = self.ground_items.iter().position(|it| it.id == id) else {
+			return false;
+		};
+		let item = self.ground_items.remove(at);
+		self.field.remove_entity(id);
+		self.inventory.push(item);
+		true
+	}
+
+	/// Set the most-recently-carried item down at `(x, y)`, if that cell is open.
+	/// Returns whether anything was dropped.
+	pub fn drop_at(&mut self, x: i16, y: i16) -> bool {
+		if self.field.get_entity_by_position(x, y).is_some() {
+			return false; // can't set it down on something solid
+		}
+		let Some(item) = self.inventory.pop() else {
+			return false; // empty pockets
+		};
+		self.field.add_entity(entity::Entity::new(x, y, item.glyph, item.id, entity::Priority::LOW));
+		self.ground_items.push(item);
+		true
+	}
+
+	/// Step the player by `(dx, dy)`, picking up any item on the destination cell as
+	/// you enter it — you walk onto an item to take it. A wall still blocks the step.
+	pub fn step_player(&mut self, dx: i16, dy: i16) {
+		let Some((px, py)) = self.field.get_entity_by_id(entity::PLAYER).map(|e| e.get_position())
+		else {
+			return;
+		};
+		self.pick_up_at(px + dx, py + dy); // frees the cell if it held an item
+		self.field.move_entity(entity::PLAYER, dx, dy);
+	}
+
+	/// Drop a carried item onto the cell the player faces (`facing` in the
+	/// ray-caster convention). Returns whether anything was dropped.
+	pub fn drop_ahead(&mut self, facing: f32) -> bool {
+		let Some((px, py)) = self.field.get_entity_by_id(entity::PLAYER).map(|e| e.get_position())
+		else {
+			return false;
+		};
+		let dx = facing.cos().round() as i16;
+		let dy = facing.sin().round() as i16;
+		self.drop_at(px + dx, py + dy)
 	}
 
 	/// Phases 2 and 3 of a tick (see the wards in `CLAUDE.md`): drain the event
@@ -221,6 +296,46 @@ mod tests {
 		}
 		assert!(present > 0, "the fairy alights in the field on some beats");
 		assert!(absent > 0, "and is gone from it on others");
+	}
+
+	#[test]
+	fn an_item_is_picked_up_by_walking_onto_it_and_can_be_dropped() {
+		let mut game = Game::new();
+		game.field.add_entity(entity::Entity::new(2, 2, '^', entity::PLAYER, entity::Priority::MED));
+		game.place_item(3, 2, '!', "a small lantern");
+
+		assert!(game.inventory.is_empty(), "pockets start empty");
+
+		// Step right, onto the item.
+		game.step_player(1, 0);
+		assert_eq!(game.inventory.len(), 1, "walking onto an item picks it up");
+		assert_eq!(
+			game.field.get_entity_by_id(entity::PLAYER).map(|e| e.get_position()),
+			Some((3, 2)),
+			"and the player ends on the now-cleared cell",
+		);
+
+		// Drop it onto the open cell to the right.
+		assert!(game.drop_at(4, 2), "a carried item drops onto open ground");
+		assert!(game.inventory.is_empty(), "and leaves the pocket");
+		assert_eq!(
+			game.field.get_entity_by_position(4, 2).map(|e| e.self_),
+			Some('!'),
+			"landing back in the field where it was set down",
+		);
+	}
+
+	#[test]
+	fn an_item_cannot_be_dropped_onto_something_solid() {
+		let mut game = Game::new();
+		game.field.add_entity(entity::Entity::new(2, 2, '^', entity::PLAYER, entity::Priority::MED));
+		let lantern = game.place_item(3, 2, '!', "a small lantern");
+		game.step_player(1, 0); // pick it up
+
+		// A wall sits at (4,2); the drop must refuse and keep the item in hand.
+		game.field.add_entity(entity::Entity::new(4, 2, '#', 999, entity::Priority::LOW));
+		assert!(!game.drop_at(4, 2), "a blocked cell refuses the drop");
+		assert_eq!(game.inventory.first().map(|i| i.id), Some(lantern), "the item stays carried");
 	}
 
 	/// The render pipeline itself is sound (see gfx::minimap::render tests); the

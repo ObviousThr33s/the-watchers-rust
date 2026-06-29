@@ -23,7 +23,7 @@ fn facing_of(input: &PlayerMove) -> Option<(i16, i16, f32, char)> {
 		PlayerMove::DOWN  => Some((0,  1,  FRAC_PI_2, 'v')),
 		PlayerMove::LEFT  => Some((-1, 0,  PI,        '<')),
 		PlayerMove::RIGHT => Some((1,  0,  0.0,       '>')),
-		PlayerMove::NONE  => None,
+		PlayerMove::DROP | PlayerMove::NONE => None,
 	}
 }
 
@@ -115,9 +115,13 @@ impl MainLoop {
 		// one cell; a wall blocks the step but the turn still happens. Movement is
 		// grid-based for now — the view and Map follow because they read the
 		// player's position straight from the field.
-		if let Some((dx, dy, angle, glyph)) = facing_of(&player_input) {
+		if player_input == PlayerMove::DROP {
+			// Set a carried item down on the cell the player faces.
+			self.game.drop_ahead(self.facing);
+		} else if let Some((dx, dy, angle, glyph)) = facing_of(&player_input) {
 			self.facing = angle;
-			self.game.field.move_entity(PLAYER, dx, dy);
+			// `step_player` walks the player a cell, picking up any item it steps onto.
+			self.game.step_player(dx, dy);
 			if let Some(player) = self.game.field.get_entity_by_id_mut(PLAYER) {
 				player.self_ = glyph;
 			}

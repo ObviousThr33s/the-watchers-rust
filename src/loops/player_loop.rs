@@ -24,7 +24,7 @@ impl PlayerLoop {
 		match player_move {
 			PlayerMove::LEFT  => { player.add_direction(90.0); return; }
 			PlayerMove::RIGHT => { player.sub_direction(90.0); return; }
-			PlayerMove::NONE  => return,
+			PlayerMove::DROP | PlayerMove::NONE => return,
 			PlayerMove::UP | PlayerMove::DOWN => {}
 		}
 

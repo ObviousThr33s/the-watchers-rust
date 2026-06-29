@@ -20,6 +20,8 @@ pub enum PlayerMove {
 	DOWN,
 	LEFT,
 	RIGHT,
+	/// Set a carried item down on the cell ahead.
+	DROP,
 	NONE
 }
 //Controller support probably.
@@ -63,6 +65,11 @@ pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logge
 			KeyCode::Char('d') => {
 				logger.log("d pressed");
 				mv = PlayerMove::RIGHT;
+				redraw = true;
+			}
+			KeyCode::Char('r') => {
+				logger.log("r pressed — drop");
+				mv = PlayerMove::DROP;
 				redraw = true;
 			}
 			KeyCode::Char(' ') => {
