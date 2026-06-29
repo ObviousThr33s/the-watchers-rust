@@ -18,8 +18,11 @@ pub struct Npc {
 	pub name: String,
 	/// Glyph art shown in the overlay's view when the gaze lands on it.
 	pub art: String,
-	/// The line it speaks when the player talks to it.
+	/// The line it speaks when the player talks to it while it still holds the lens.
 	pub words: String,
+	/// What it says once the lens is already given — so it doesn't keep offering a
+	/// gift it no longer holds.
+	pub parting: String,
 	/// The read-out the Stats area shows while you face it.
 	pub stats: String,
 	/// Its gift — taken once, on the first talk (see [`Game::talk`](crate::game::Game::talk)).
@@ -36,6 +39,7 @@ impl Npc {
 			name: "the Lenskeeper".to_owned(),
 			art: " ___\n(o o)\n/|=|\\\n  |  ".to_owned(),
 			words: "Take this lens. Through it, the grey world shows its colours.".to_owned(),
+			parting: "The lens is yours now. Go — find where the grey gives way.".to_owned(),
 			stats: "the Lenskeeper\nHP 12   ATK 0".to_owned(),
 			lens: Some(Item { id: lens_id, glyph: 'o', name: "a glass lens".to_owned() }),
 		}

@@ -5,11 +5,47 @@
 //! A reveal overlay floats over the view when the player is looking at something.
 
 use ratatui::{
-	layout::{Alignment, Constraint, Direction, Layout, Rect}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Clear, Paragraph}, Frame,
+	layout::{Alignment, Constraint, Direction, Layout, Rect}, style::{Color, Style}, text::{Line, Text}, widgets::{Block, BorderType, Borders, Clear, Paragraph}, Frame,
 };
 use crate::{game::item::Item, game::spaces::field::Field, utils::logger::Logger};
 
 use super::{minimap::render::Render, portal::Portal};
+
+/// A snapshot of the inspect selection the bottom read-outs read: whether inspect
+/// mode is `active`, which `panel` has focus (`0` Stats, `1` Inventory), and the
+/// selected line (`cursor`). When inactive the panels draw plainly.
+#[derive(Clone, Copy)]
+pub struct PanelSel {
+	pub active: bool,
+	pub panel: u8,
+	pub cursor: u16,
+}
+
+impl PanelSel {
+	/// Whether this `panel` is the one in focus right now.
+	fn focused(self, panel: u8) -> bool {
+		self.active && self.panel == panel
+	}
+
+	/// Turn `lines` into styled text, reverse-highlighting the cursor line when this
+	/// `panel` has focus — so the selected entry stands out within the box.
+	fn body<'a>(self, panel: u8, lines: Vec<String>) -> Text<'a> {
+		let focused = self.focused(panel);
+		let rows: Vec<Line> = lines
+			.into_iter()
+			.enumerate()
+			.map(|(i, text)| {
+				let line = Line::from(text);
+				if focused && i as u16 == self.cursor {
+					line.style(Style::new().fg(Color::Black).bg(Color::LightBlue))
+				} else {
+					line
+				}
+			})
+			.collect();
+		Text::from(rows)
+	}
+}
 
 //The big question here has always been, how can the lifetimes be used more efficiently.
 
@@ -57,24 +93,28 @@ fn draw_center<'a>(width: u16, height: u16, entity:&Field, player_pos:(i16, i16)
 
 /// The "Stats" panel: the read-out of whatever the player currently sees, or a
 /// muted dash when nothing is in view.
-fn draw_stats<'a>(style: Style, border: BorderType, readout: &str, scroll: u16) -> Paragraph<'a> {
-	let bot_block_right = Block::bordered()
-		.title("Stats")
+fn draw_stats<'a>(style: Style, border: BorderType, readout: &str, sel: PanelSel) -> Paragraph<'a> {
+	let focused = sel.focused(0);
+	let mut block = Block::bordered()
+		.title(if focused { "▶ Stats" } else { "Stats" })
 		.title_style(style)
 		.border_type(border)
 		.borders(Borders::LEFT);
+	if focused {
+		// In inspect mode the focused box wears a brighter border so it's plain which
+		// read-out the arrows are walking.
+		block = block.border_style(Style::new().fg(Color::LightBlue));
+	}
 
 	// The panel reads out whatever the player can currently see. With nothing in
 	// view there's no signal, so we show a muted dash rather than stale numbers.
-	let body = if readout.trim().is_empty() {
-		"—".to_string()
+	let lines: Vec<String> = if readout.trim().is_empty() {
+		vec!["—".to_string()]
 	} else {
-		readout.to_string()
+		readout.lines().map(str::to_string).collect()
 	};
 
-	// `scroll` lets a long read-out be walked a line at a time (the scroll key), so
-	// it never has to fit the box in one go.
-	Paragraph::new(Text::from(body)).block(bot_block_right).scroll((scroll, 0))
+	Paragraph::new(sel.body(0, lines)).block(block)
 }
 
 /// The "Map" panel: the player-centered minimap, sized to the box it lives in.
@@ -97,31 +137,30 @@ fn draw_minimap<'a>(width:u16, height:u16, style:Style, border:BorderType, entit
 /// The "Inventory" panel: the glyph and name of each thing the player carries, or
 /// a muted note when their hands are empty. A read-out only — there is no selecting
 /// here (looking is the only selector), so it never grows a second control scheme.
-fn draw_invty<'a>(style: Style, border: BorderType, inventory: &[Item], scroll: u16) -> Paragraph<'a> {
-	let bot_block_left = Block::bordered()
-		.title("Inventory")
+fn draw_invty<'a>(style: Style, border: BorderType, inventory: &[Item], sel: PanelSel) -> Paragraph<'a> {
+	let focused = sel.focused(1);
+	let mut block = Block::bordered()
+		.title(if focused { "▶ Inventory" } else { "Inventory" })
 		.title_style(style)
 		.border_type(border)
 		.borders(Borders::RIGHT);
+	if focused {
+		block = block.border_style(Style::new().fg(Color::LightBlue));
+	}
 
-	let body = if inventory.is_empty() {
-		"— empty —".to_string()
+	let lines: Vec<String> = if inventory.is_empty() {
+		vec!["— empty —".to_string()]
 	} else {
-		inventory
-			.iter()
-			.map(|it| format!("{} {}", it.glyph, it.name))
-			.collect::<Vec<_>>()
-			.join("\n")
+		inventory.iter().map(|it| format!("{} {}", it.glyph, it.name)).collect()
 	};
 
-	// Shares the scroll offset with Stats, so the one scroll key walks a full pack.
-	Paragraph::new(Text::from(body)).block(bot_block_left).scroll((scroll, 0))
+	Paragraph::new(sel.body(1, lines)).block(block)
 }
 
 /// The controls overlay: a one-line HUD of the key binds, floated along the
 /// bottom of the first-person view so what you can do stays on screen, not in your
 /// head. Later this same overlay is where the "NPC/item ahead" indicator lands.
-const CONTROLS: &str = " [wasd] move   [e] talk   [r] drop   [v] scroll   [q] quit ";
+const CONTROLS: &str = " [wasd] move   [e] talk   [r] drop   [v] inspect ▲▼   [q] quit ";
 
 fn draw_controls<'a>() -> Paragraph<'a> {
 	Paragraph::new(Text::from(CONTROLS))
@@ -148,14 +187,14 @@ fn draw_log <'a> (style:Style, border:BorderType, log_:&Logger) -> Paragraph <'a
 
 /// Render the whole frame. The entry point [`gfx::render`](crate::gfx::render)
 /// calls; delegates to [`default`], the one layout for now.
-pub(crate) fn draw_(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16), portal:&Portal, inventory:&[Item], scroll:u16) {
-	default(frame, screen, entities, log_, player_pos, portal, inventory, scroll);
+pub(crate) fn draw_(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16), portal:&Portal, inventory:&[Item], selection:PanelSel) {
+	default(frame, screen, entities, log_, player_pos, portal, inventory, selection);
 }
 
 /// The default frame layout: a top log bar, the central first-person view, and
 /// the bottom row of panels — plus the floating reveal overlay when the portal
 /// holds art.
-pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16), portal:&Portal, inventory:&[Item], scroll:u16) {
+pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16), portal:&Portal, inventory:&[Item], selection:PanelSel) {
 	let mut _frame_sizes: Vec<( u16, u16)> = Vec::new();
 
 	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);
@@ -240,8 +279,8 @@ pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&
 
 	frame.render_widget(outter_bottom.clone(), layout[2]);
 
-	let stats:Paragraph = draw_stats(style, border, &portal.stats, scroll);
-	let invty:Paragraph = draw_invty(style, border, inventory, scroll);
+	let stats:Paragraph = draw_stats(style, border, &portal.stats, selection);
+	let invty:Paragraph = draw_invty(style, border, inventory, selection);
 	let inner_left = outter_bottom.inner(bottom_layout[0]);
 	let inner_cent = outter_bottom.inner(bottom_layout[1]);
 	let inner_minimap = outter_bottom.inner(bottom_layout[2]);
@@ -302,10 +341,21 @@ mod tests {
 		let mut terminal =
 			Terminal::new(TestBackend::new(80, 30)).expect("headless test terminal");
 		terminal
-			.draw(|frame| draw_(frame, &view, &game.field, &logger, (0,0), &portal, &game.inventory, 0))
+			.draw(|frame| draw_(frame, &view, &game.field, &logger, (0,0), &portal, &game.inventory, super::PanelSel { active: false, panel: 0, cursor: 0 }))
 			.expect("headless draw");
 
 		// Reaching here = init + a full UI render, no panics.
 		assert!(game.field.get_entity_by_id(crate::game::entity::PLAYER).is_some());
+	}
+
+	#[test]
+	fn only_the_active_panel_in_focus_takes_the_selection() {
+		use super::PanelSel;
+		let on = PanelSel { active: true, panel: 1, cursor: 0 };
+		assert!(on.focused(1), "the focused box, while inspecting, is selected");
+		assert!(!on.focused(0), "the other box is not");
+
+		let off = PanelSel { active: false, panel: 1, cursor: 0 };
+		assert!(!off.focused(1), "with inspect off, nothing is selected");
 	}
 }

@@ -24,8 +24,13 @@ pub enum PlayerMove {
 	DROP,
 	/// Talk to whatever the player faces.
 	TALK,
-	/// Scroll the Stats / Inventory read-outs by a line.
+	/// Enter or leave inspect mode (focus the Stats / Inventory read-outs).
 	SCROLL,
+	/// Move the inspect selection (arrow keys), or switch which box is focused.
+	NavUp,
+	NavDown,
+	NavLeft,
+	NavRight,
 	NONE
 }
 //Controller support probably.
@@ -82,10 +87,15 @@ pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logge
 				redraw = true;
 			}
 			KeyCode::Char('v') | KeyCode::Char('V') => {
-				logger.log("v pressed — scroll");
+				logger.log("v pressed — inspect");
 				mv = PlayerMove::SCROLL;
 				redraw = true;
 			}
+			// Arrow keys drive the inspect selection (and are inert otherwise).
+			KeyCode::Up => { mv = PlayerMove::NavUp; redraw = true; }
+			KeyCode::Down => { mv = PlayerMove::NavDown; redraw = true; }
+			KeyCode::Left => { mv = PlayerMove::NavLeft; redraw = true; }
+			KeyCode::Right => { mv = PlayerMove::NavRight; redraw = true; }
 			KeyCode::Char(' ') => {
 				let _ = terminal.autoresize();
 				logger.log("space pressed and auto resize");

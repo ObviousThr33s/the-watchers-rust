@@ -10,6 +10,7 @@ use crate::game::spaces::heightmap::Surface;
 use crate::gfx::voxel::Voxel;
 use crate::gfx::portal::Portal;
 use crate::gfx::render;
+use crate::gfx::ui::PanelSel;
 use crate::input::{handle_events, PlayerMove};
 use crate::utils::{logger::Logger, time::Time};
 
@@ -23,7 +24,14 @@ fn facing_of(input: &PlayerMove) -> Option<(i16, i16, f32, char)> {
 		PlayerMove::DOWN  => Some((0,  1,  FRAC_PI_2, 'v')),
 		PlayerMove::LEFT  => Some((-1, 0,  PI,        '<')),
 		PlayerMove::RIGHT => Some((1,  0,  0.0,       '>')),
-		PlayerMove::DROP | PlayerMove::TALK | PlayerMove::SCROLL | PlayerMove::NONE => None,
+		PlayerMove::DROP
+		| PlayerMove::TALK
+		| PlayerMove::SCROLL
+		| PlayerMove::NavUp
+		| PlayerMove::NavDown
+		| PlayerMove::NavLeft
+		| PlayerMove::NavRight
+		| PlayerMove::NONE => None,
 	}
 }
 
@@ -46,10 +54,14 @@ pub struct MainLoop{
 	/// The ray-caster angle the player is currently facing (updated on each
 	/// directional key). Starts facing "up" to match the player's `^` glyph.
 	facing: f32,
-	/// How far the Stats / Inventory read-outs are scrolled, in lines. Bumped by the
-	/// scroll key and wrapped, so a long read-out (NPC stats, a full pack) can be
-	/// walked through without a second control scheme.
-	scroll: u16,
+	/// Whether inspect mode is on. While it is, the read-outs take focus, the arrow
+	/// keys move a selection, and player movement is locked — one mode key, no
+	/// second control scheme.
+	inspecting: bool,
+	/// Which read-out has focus in inspect mode: `0` Stats, `1` Inventory.
+	sel_panel: u8,
+	/// The selected line within the focused read-out.
+	cursor: u16,
 }
 
 //state loops definition
@@ -82,7 +94,9 @@ impl MainLoop {
 			terminal:terminal,
 			portal: Portal::new(),
 			facing: -std::f32::consts::FRAC_PI_2, // facing "up", matching '^'
-			scroll: 0,
+			inspecting: false,
+			sel_panel: 0,
+			cursor: 0,
 		}
 	}
 
@@ -121,8 +135,22 @@ impl MainLoop {
 		// grid-based for now — the view and Map follow because they read the
 		// player's position straight from the field.
 		if player_input == PlayerMove::SCROLL {
-			// Walk the Stats / Inventory read-outs by a line, wrapping after a few.
-			self.scroll = (self.scroll + 1) % 8;
+			// Enter or leave inspect mode; entering resets the selection to the top.
+			self.inspecting = !self.inspecting;
+			self.cursor = 0;
+		} else if self.inspecting {
+			// Inspect mode: the arrows move the selection and switch the focused box;
+			// movement and the world keys are locked, so the arrows mean "move the
+			// selection," never "move the player."
+			match player_input {
+				PlayerMove::NavUp => self.cursor = self.cursor.saturating_sub(1),
+				PlayerMove::NavDown => self.cursor = self.cursor.saturating_add(1),
+				PlayerMove::NavLeft | PlayerMove::NavRight => {
+					self.sel_panel ^= 1; // swap Stats <-> Inventory
+					self.cursor = 0;
+				}
+				_ => {}
+			}
 		} else if player_input == PlayerMove::TALK {
 			// Talk to whatever the player faces; the NPC's words land in the log.
 			let before = self.game.inventory.len();
@@ -224,6 +252,19 @@ impl MainLoop {
 			&surface,
 		);
 
+		// Clamp the inspect cursor to the focused read-out's length, then hand the UI
+		// a snapshot of the selection so it can highlight the box and the chosen line.
+		let panel_len = match self.sel_panel {
+			1 => self.game.inventory.len() as u16,
+			_ => self.portal.stats.lines().count().max(1) as u16,
+		};
+		self.cursor = self.cursor.min(panel_len.saturating_sub(1));
+		let selection = PanelSel {
+			active: self.inspecting,
+			panel: self.sel_panel,
+			cursor: self.cursor,
+		};
+
 		render(
 			&mut self.terminal,
 			&self.logger,
@@ -232,7 +273,7 @@ impl MainLoop {
 			player_pos,
 			&self.portal,
 			&self.game.inventory,
-			self.scroll,
+			selection,
 		);
 
 		self.state = GameStates::Run;

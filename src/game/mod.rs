@@ -293,10 +293,15 @@ impl Game {
 		if self.first_seen(facing) != Some(self.npc.id) {
 			return None;
 		}
-		if let Some(lens) = self.npc.lens.take() {
-			self.inventory.push(lens); // given once
+		// The first talk gives the lens and speaks the offer; once it's gone the NPC
+		// knows, and speaks its parting line instead of offering what it no longer holds.
+		match self.npc.lens.take() {
+			Some(lens) => {
+				self.inventory.push(lens);
+				Some(self.npc.words.clone())
+			}
+			None => Some(self.npc.parting.clone()),
 		}
-		Some(self.npc.words.clone())
 	}
 
 	/// Strew up to `count` items across the `width`×`height` rectangle at
@@ -496,10 +501,11 @@ mod tests {
 		assert!(game.npc_ahead(up).is_some(), "the gaze lands on the NPC ahead");
 		assert!(game.inventory.is_empty(), "pockets start empty");
 
-		assert!(game.talk(up).is_some(), "talking returns the NPC's words");
+		let offered = game.talk(up).expect("talking returns the NPC's words");
 		assert_eq!(game.inventory.len(), 1, "the first talk gives the lens");
-		assert!(game.talk(up).is_some(), "you can keep talking");
+		let parting = game.talk(up).expect("you can keep talking");
 		assert_eq!(game.inventory.len(), 1, "but the lens is given only once");
+		assert_ne!(offered, parting, "once given, it no longer offers the lens it lost");
 
 		// Facing away, the talk key is inert — no one to talk to.
 		assert!(game.talk(FRAC_PI_2).is_none(), "nothing to say to empty air");
