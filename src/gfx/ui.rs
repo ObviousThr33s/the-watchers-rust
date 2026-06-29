@@ -70,18 +70,21 @@ fn draw_stats<'a>(style: Style, border: BorderType, readout: &str) -> Paragraph<
 	Paragraph::new(Text::from(body)).block(bot_block_right)
 }
 
-/// The "Map" panel: a small ASCII minimap scrolled to keep the player centered.
-fn draw_minimap<'a>(style:Style, border:BorderType, entity:&Field, player_pos:(i16, i16)) -> Paragraph<'a> {
+/// The "Map" panel: the player-centered minimap, sized to the box it lives in.
+/// Its extent comes from the resolved panel Rect — the place wills its own size,
+/// no hardcoded grid — so it fills its box the way the Field panel does.
+fn draw_minimap<'a>(width:u16, height:u16, style:Style, border:BorderType, entity:&Field, player_pos:(i16, i16)) -> Paragraph<'a> {
 	let bot_block_minimap = Block::bordered()
 		.title("Map")
 		.title_style(style)
 		.border_type(border);
 
-	// A small ASCII map (20x10) scrolled to keep the player centered.
-	let map_text = entity.to_ascii_map(20, 10, player_pos.0, player_pos.1);
+	// The ascii map is sized to the panel's own Rect and snapped to a chunk grid:
+	// it shows the chunk the player stands in and jumps a whole chunk when they
+	// cross its edge. ratatui is about ratios: the box decides the extent.
+	let map_text = entity.to_chunk_map(width.into(), height.into(), player_pos.0, player_pos.1);
 
-	let minimap:Paragraph = Paragraph::new(map_text).block(bot_block_minimap);
-	minimap
+	Paragraph::new(map_text).block(bot_block_minimap)
 }
 
 /// The "Inventory" panel — a placeholder until inventory exists.
@@ -198,15 +201,15 @@ pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&
 
 	let stats:Paragraph = draw_stats(style, border, &portal.stats);
 	let invty:Paragraph = draw_invty(style, border);
-	let minimap:Paragraph = draw_minimap(style, border, entities, player_pos);
 	let inner_left = outter_bottom.inner(bottom_layout[0]);
 	let inner_cent = outter_bottom.inner(bottom_layout[1]);
 	let inner_minimap = outter_bottom.inner(bottom_layout[2]);
 	let inner_right = outter_bottom.inner(bottom_layout[3]);
 
-	// Now that the panel's Rect is resolved, rasterize the Field to exactly that
-	// size instead of the whole frame.
+	// Now that each panel's Rect is resolved, size its content to exactly that box
+	// instead of the whole frame — each panel wills its own extent.
 	let frame0 = draw_center(inner_cent.width, inner_cent.height, entities, style, border);
+	let minimap:Paragraph = draw_minimap(inner_minimap.width, inner_minimap.height, style, border, entities, player_pos);
 
 	frame.render_widget(invty, inner_left);
 	frame.render_widget(frame0, inner_cent);

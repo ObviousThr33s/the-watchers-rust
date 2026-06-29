@@ -125,11 +125,35 @@ impl Field {
 	/// (center_x, center_y) sits in the middle. Centering on the player keeps
 	/// them pinned to the middle of the minimap as they move around the world.
 	pub fn to_ascii_map(&self, width: usize, height: usize, center_x: i16, center_y: i16) -> String {
-		let mut output = vec![vec![' '; width]; height];
-
 		// World coordinate of the visible window's top-left corner.
 		let origin_x = center_x - (width as i16) / 2;
 		let origin_y = center_y - (height as i16) / 2;
+		self.window_to_ascii(width, height, origin_x, origin_y)
+	}
+
+	/// Renders entities to an ASCII map snapped to a chunk grid: the world is tiled
+	/// into `width`×`height` chunks, and the window shows whichever chunk contains
+	/// `(at_x, at_y)`. The view holds still while you move inside a chunk and *snaps*
+	/// a whole chunk over the moment you cross its edge — room-to-room, never a
+	/// smooth scroll. (Chunk size equals the view for now; decoupling the two is the
+	/// "viewport separate from chunk data" refinement.)
+	pub fn to_chunk_map(&self, width: usize, height: usize, at_x: i16, at_y: i16) -> String {
+		// Top-left of the chunk containing (at_x, at_y). `div_euclid` floors toward
+		// negative infinity, so the snap stays correct on both sides of the origin;
+		// `.max(1)` keeps a zero-width panel from dividing by zero.
+		let chunk_w = (width as i16).max(1);
+		let chunk_h = (height as i16).max(1);
+		let origin_x = at_x.div_euclid(chunk_w) * chunk_w;
+		let origin_y = at_y.div_euclid(chunk_h) * chunk_h;
+		self.window_to_ascii(width, height, origin_x, origin_y)
+	}
+
+	/// Paint every entity falling inside the `width`×`height` window whose top-left
+	/// world cell is `(origin_x, origin_y)`, as newline-joined ASCII rows. The shared
+	/// core behind [`to_ascii_map`] (centered) and [`to_chunk_map`] (snapped); they
+	/// differ only in how they choose the origin.
+	fn window_to_ascii(&self, width: usize, height: usize, origin_x: i16, origin_y: i16) -> String {
+		let mut output = vec![vec![' '; width]; height];
 
 		for entity in self.entities.values() {
 			let sx = entity.x - origin_x;
@@ -167,6 +191,34 @@ mod tests {
 
 		assert_eq!(rows[2].chars().nth(2), Some('^'), "player should be centered");
 		assert_eq!(rows[1].chars().nth(2), Some('#'), "wall should sit one row above");
+	}
+
+	#[test]
+	fn the_grid_snaps_a_whole_chunk_when_you_cross_its_edge() {
+		let mut field = Field::new();
+		// Landmarks one chunk apart: A at world (0,0) in chunk 0, B at (4,0) in chunk 1.
+		field.add_entity(Entity::new(0, 0, 'A', 1, Priority::LOW));
+		field.add_entity(Entity::new(4, 0, 'B', 2, Priority::LOW));
+
+		// Standing inside chunk 0 (x=1): the window is [0,4); A shows, B is off-screen.
+		let chunk0 = field.to_chunk_map(4, 1, 1, 0);
+		assert_eq!(chunk0.chars().next(), Some('A'), "the current chunk's landmark shows");
+		assert!(!chunk0.contains('B'), "the next chunk's landmark is off-screen");
+
+		// Cross the edge to x=4 (chunk 1): the window snaps to [4,8); B shows, A is gone.
+		let chunk1 = field.to_chunk_map(4, 1, 4, 0);
+		assert_eq!(chunk1.chars().next(), Some('B'), "the view snapped a whole chunk over");
+		assert!(!chunk1.contains('A'), "the chunk left behind fell away");
+	}
+
+	#[test]
+	fn the_view_holds_still_while_you_move_inside_a_chunk() {
+		let mut field = Field::new();
+		field.add_entity(Entity::new(0, 0, 'A', 1, Priority::LOW));
+		// x=1 and x=3 are both inside chunk [0,4): the view must not budge until the edge.
+		let near = field.to_chunk_map(4, 1, 1, 0);
+		let far = field.to_chunk_map(4, 1, 3, 0);
+		assert_eq!(near, far, "moving within a chunk does not scroll the view");
 	}
 
 	#[test]
