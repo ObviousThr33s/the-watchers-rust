@@ -8,6 +8,7 @@ pub mod ui;
 pub mod minimap;
 pub mod portal;
 pub mod viewport;
+pub mod voxel;
 
 pub mod screen;
 pub mod light;
