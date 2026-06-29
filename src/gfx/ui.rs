@@ -7,7 +7,7 @@
 use ratatui::{
 	layout::{Alignment, Constraint, Direction, Layout, Rect}, style::{Color, Style}, text::Text, widgets::{Block, BorderType, Borders, Clear, Paragraph}, Frame,
 };
-use crate::{game::spaces::field::Field, utils::logger::Logger};
+use crate::{game::item::Item, game::spaces::field::Field, utils::logger::Logger};
 
 use super::{minimap::render::Render, portal::Portal};
 
@@ -92,16 +92,27 @@ fn draw_minimap<'a>(width:u16, height:u16, style:Style, border:BorderType, entit
 	Paragraph::new(map_text).block(bot_block_minimap)
 }
 
-/// The "Inventory" panel — a placeholder until inventory exists.
-fn draw_invty<'a> (style:Style, border:BorderType) -> Paragraph <'a>{
+/// The "Inventory" panel: the glyph and name of each thing the player carries, or
+/// a muted note when their hands are empty. A read-out only — there is no selecting
+/// here (looking is the only selector), so it never grows a second control scheme.
+fn draw_invty<'a>(style: Style, border: BorderType, inventory: &[Item]) -> Paragraph<'a> {
 	let bot_block_left = Block::bordered()
 		.title("Inventory")
 		.title_style(style)
 		.border_type(border)
 		.borders(Borders::RIGHT);
 
-	let invty:Paragraph = Paragraph::new("Inventory").block(bot_block_left);
-	invty
+	let body = if inventory.is_empty() {
+		"— empty —".to_string()
+	} else {
+		inventory
+			.iter()
+			.map(|it| format!("{} {}", it.glyph, it.name))
+			.collect::<Vec<_>>()
+			.join("\n")
+	};
+
+	Paragraph::new(Text::from(body)).block(bot_block_left)
 }
 
 /// The controls overlay: a one-line HUD of the key binds, floated along the
@@ -134,14 +145,14 @@ fn draw_log <'a> (style:Style, border:BorderType, log_:&Logger) -> Paragraph <'a
 
 /// Render the whole frame. The entry point [`gfx::render`](crate::gfx::render)
 /// calls; delegates to [`default`], the one layout for now.
-pub(crate) fn draw_(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16), portal:&Portal) {
-	default(frame, screen, entities, log_, player_pos, portal);
+pub(crate) fn draw_(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16), portal:&Portal, inventory:&[Item]) {
+	default(frame, screen, entities, log_, player_pos, portal, inventory);
 }
 
 /// The default frame layout: a top log bar, the central first-person view, and
 /// the bottom row of panels — plus the floating reveal overlay when the portal
 /// holds art.
-pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16), portal:&Portal) {
+pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16), portal:&Portal, inventory:&[Item]) {
 	let mut _frame_sizes: Vec<( u16, u16)> = Vec::new();
 
 	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);
@@ -227,7 +238,7 @@ pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&
 	frame.render_widget(outter_bottom.clone(), layout[2]);
 
 	let stats:Paragraph = draw_stats(style, border, &portal.stats);
-	let invty:Paragraph = draw_invty(style, border);
+	let invty:Paragraph = draw_invty(style, border, inventory);
 	let inner_left = outter_bottom.inner(bottom_layout[0]);
 	let inner_cent = outter_bottom.inner(bottom_layout[1]);
 	let inner_minimap = outter_bottom.inner(bottom_layout[2]);
@@ -287,7 +298,7 @@ mod tests {
 		let mut terminal =
 			Terminal::new(TestBackend::new(80, 30)).expect("headless test terminal");
 		terminal
-			.draw(|frame| draw_(frame, &view, &game.field, &logger, (0,0), &portal))
+			.draw(|frame| draw_(frame, &view, &game.field, &logger, (0,0), &portal, &game.inventory))
 			.expect("headless draw");
 
 		// Reaching here = init + a full UI render, no panics.

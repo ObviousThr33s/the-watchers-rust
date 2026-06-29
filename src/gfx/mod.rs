@@ -20,9 +20,9 @@ use portal::Portal;
 /// Draw one frame: hand the whole UI — first-person view, map, log, and panels —
 /// to ratatui to lay out and paint. A failed draw is swallowed, since a dropped
 /// frame beats a panic mid-render.
-pub fn render(terminal: &mut ratatui::DefaultTerminal, log:&Logger, field:&Field, viewport_text:&String, player_pos:(i16, i16), portal:&Portal) {
+pub fn render(terminal: &mut ratatui::DefaultTerminal, log:&Logger, field:&Field, viewport_text:&String, player_pos:(i16, i16), portal:&Portal, inventory:&[crate::game::item::Item]) {
 	//thank you ratatui for TUI-ing so I could TUI something cool with the robots.
-	let _ = terminal.draw(|frame| ui::draw_(frame, viewport_text, field, log, player_pos, portal) );
+	let _ = terminal.draw(|frame| ui::draw_(frame, viewport_text, field, log, player_pos, portal, inventory) );
 
 }
 

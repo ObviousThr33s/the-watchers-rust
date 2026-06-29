@@ -205,6 +205,7 @@ impl MainLoop {
 			&view,
 			player_pos,
 			&self.portal,
+			&self.game.inventory,
 		);
 
 		self.state = GameStates::Run;
