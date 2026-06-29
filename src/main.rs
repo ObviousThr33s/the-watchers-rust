@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 	//Max:1.0.0
 	//Max-1:0.99.39
-	let mut version:String = "0.5.0";
+	let version:String = "0.5.0".to_owned();
 	let mut game: MainLoop = MainLoop::new(start, terminal, game, version.to_string());
 
 	game.run_game();
