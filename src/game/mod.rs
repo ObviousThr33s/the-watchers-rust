@@ -31,6 +31,7 @@ pub mod vision;
 pub mod recollection;
 pub mod haps;
 pub mod rover;
+pub mod fairy;
 
 //pub mod group;
 
@@ -42,6 +43,9 @@ pub struct Game {
 	/// reads as relief. A seeded noise field for now; generation deepens here later
 	/// (octaves, water and plateau bounds) without the renderer or field noticing.
 	pub ground:NoiseGround,
+	/// The fairy that flits around the forest — set into and lifted out of the
+	/// field as it comes and goes (see [`flit_fairy`](Self::flit_fairy)).
+	pub fairy:fairy::Fairy,
 	/// The per-tick event bus (wards 1–2): a fixed-capacity ring of pure-data
 	/// [`Event`]s. Systems push facts onto it during the read phase;
 	/// [`dispatch`](Self::dispatch) drains and applies them. Named `time` for the
@@ -53,10 +57,15 @@ impl Game {
 	/// An empty world — a bare field and an empty event queue. Call [`init`](Self::init)
 	/// (or the first [`update`](Self::update)) to populate it.
 	pub fn new() -> Self {
+		let mut field = Field::new();
+		// The fairy takes a stable id up front (minted before any flora), so the
+		// world can set it down and lift it off cleanly as it flits.
+		let fairy = fairy::Fairy::new(field.mint(), (8, 8));
 		Game {
-			field: Field::new(),
+			field,
 			// One seed grows one world; the same seed always grows the same ground.
 			ground: NoiseGround::new(1),
+			fairy,
 			time: Haps::new(),
 		}
 	}
@@ -128,6 +137,21 @@ impl Game {
 		// pass, once art/prompt live in game state instead of being threaded out.
 	}
 
+	/// Advance the fairy one beat: lift it off wherever it stood, then set it back
+	/// down on its new haunt — but only on open ground, so it slips between the
+	/// trees and never clobbers one. When it has slipped out of sight it simply
+	/// stays lifted. This is what makes it appear and disappear around the forest.
+	pub fn flit_fairy(&mut self) {
+		self.field.remove_entity(self.fairy.id);
+		if let Some((x, y)) = self.fairy.flit() {
+			if self.field.get_entity_by_position(x, y).is_none() {
+				self.field.add_entity(entity::Entity::new(
+					x, y, fairy::FAIRY_GLYPH, self.fairy.id, entity::Priority::MED,
+				));
+			}
+		}
+	}
+
 	/// Phases 2 and 3 of a tick (see the wards in `CLAUDE.md`): drain the event
 	/// queue in arrival order and apply each event to the field. [`apply`](Self::apply)
 	/// is handed the field *alone*, never the queue, so a handler structurally
@@ -181,6 +205,22 @@ mod tests {
 			game.field.get_entity_by_id(entity::PLAYER).is_some(),
 			"init must place the player in the field"
 		);
+	}
+
+	#[test]
+	fn the_fairy_comes_and_goes_in_the_field() {
+		let mut game = Game::new();
+		let (mut present, mut absent) = (0, 0);
+		for _ in 0..12 {
+			game.flit_fairy();
+			if game.field.get_entity_by_id(game.fairy.id).is_some() {
+				present += 1;
+			} else {
+				absent += 1;
+			}
+		}
+		assert!(present > 0, "the fairy alights in the field on some beats");
+		assert!(absent > 0, "and is gone from it on others");
 	}
 
 	/// The render pipeline itself is sound (see gfx::minimap::render tests); the

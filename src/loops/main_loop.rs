@@ -129,6 +129,9 @@ impl MainLoop {
 		// straight back to the blocking read instead.
 		if redraw {
 			self.tick += 1;
+			// Each beat (one player action) the fairy flits — appearing and slipping
+			// away around the forest, moving while you act.
+			self.game.flit_fairy();
 			self.logger.log(&format!("Tick: {}", self.tick));
 			self.state = GameStates::Render;
 		} else {
