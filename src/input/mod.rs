@@ -22,6 +22,10 @@ pub enum PlayerMove {
 	RIGHT,
 	/// Set a carried item down on the cell ahead.
 	DROP,
+	/// Talk to whatever the player faces.
+	TALK,
+	/// Scroll the Stats / Inventory read-outs by a line.
+	SCROLL,
 	NONE
 }
 //Controller support probably.
@@ -70,6 +74,16 @@ pub fn handle_events(terminal:&mut Terminal<CrosstermBackend<Stdout>>, mut logge
 			KeyCode::Char('r') => {
 				logger.log("r pressed — drop");
 				mv = PlayerMove::DROP;
+				redraw = true;
+			}
+			KeyCode::Char('e') => {
+				logger.log("e pressed — talk");
+				mv = PlayerMove::TALK;
+				redraw = true;
+			}
+			KeyCode::Char('v') | KeyCode::Char('V') => {
+				logger.log("v pressed — scroll");
+				mv = PlayerMove::SCROLL;
 				redraw = true;
 			}
 			KeyCode::Char(' ') => {

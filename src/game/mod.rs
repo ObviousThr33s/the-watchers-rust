@@ -33,6 +33,7 @@ pub mod haps;
 pub mod rover;
 pub mod fairy;
 pub mod item;
+pub mod npc;
 
 //pub mod group;
 
@@ -47,6 +48,10 @@ pub struct Game {
 	/// The fairy that flits around the forest — set into and lifted out of the
 	/// field as it comes and goes (see [`flit_fairy`](Self::flit_fairy)).
 	pub fairy:fairy::Fairy,
+	/// The stationary NPC (the Lenskeeper). Stands in the field; faced, its data
+	/// fills the Portal through the same gaze as anything else; talked to, it gives
+	/// the lens (see [`talk`](Self::talk)).
+	pub npc:npc::Npc,
 	/// Items the player is carrying — picked up off the ground, set back down on
 	/// command (see [`step_player`](Self::step_player) and [`drop_at`](Self::drop_at)).
 	pub inventory:Vec<item::Item>,
@@ -68,11 +73,15 @@ impl Game {
 		// The fairy takes a stable id up front (minted before any flora), so the
 		// world can set it down and lift it off cleanly as it flits.
 		let fairy = fairy::Fairy::new(field.mint(), (8, 8));
+		// The NPC and its gift each take an id too — the lens is a real carryable
+		// item, so it needs one of its own.
+		let npc = npc::Npc::lenskeeper(field.mint(), field.mint());
 		Game {
 			field,
 			// One seed grows one world; the same seed always grows the same ground.
 			ground: NoiseGround::new(1),
 			fairy,
+			npc,
 			inventory: Vec::new(),
 			ground_items: Vec::new(),
 			time: Haps::new(),
@@ -131,6 +140,16 @@ impl Game {
 		// One thing to find close at hand: a lantern set just to the player's left,
 		// inside the open alcove, so stepping left picks it up.
 		self.place_item(1, 2, '!', "a small lantern");
+
+		// The Lenskeeper stands one cell ahead of the up-facing player, so the gaze
+		// lands on it at once: face it to read it, press the talk key for the lens.
+		self.field.add_entity(entity::Entity::new(
+			2, 1, self.npc.glyph, self.npc.id, entity::Priority::MED,
+		));
+		logger.log(&format!(
+			"{} stands at (2,1); the fairy haunts (8,8)",
+			self.npc.name,
+		));
 
 		// And a scattered hoard to wander after, strewn across the sown region on a
 		// fixed seed so the same world always holds the same finds.
@@ -211,25 +230,26 @@ impl Game {
 
 	/// Step the player by `(dx, dy)`, picking up any item on the destination cell as
 	/// you enter it — you walk onto an item to take it. A wall still blocks the step.
-	pub fn step_player(&mut self, dx: i16, dy: i16) {
-		let Some((px, py)) = self.field.get_entity_by_id(entity::PLAYER).map(|e| e.get_position())
-		else {
-			return;
-		};
-		self.pick_up_at(px + dx, py + dy); // frees the cell if it held an item
+	pub fn step_player(&mut self, dx: i16, dy: i16) -> Option<String> {
+		let (px, py) = self.field.get_entity_by_id(entity::PLAYER).map(|e| e.get_position())?;
+		// Picking up frees the cell, so the step into it can then succeed.
+		let picked = self
+			.pick_up_at(px + dx, py + dy)
+			.then(|| self.inventory.last().map(|it| it.name.clone()))
+			.flatten();
 		self.field.move_entity(entity::PLAYER, dx, dy);
+		picked
 	}
 
 	/// Drop a carried item onto the cell the player faces (`facing` in the
 	/// ray-caster convention). Returns whether anything was dropped.
-	pub fn drop_ahead(&mut self, facing: f32) -> bool {
-		let Some((px, py)) = self.field.get_entity_by_id(entity::PLAYER).map(|e| e.get_position())
-		else {
-			return false;
-		};
+	pub fn drop_ahead(&mut self, facing: f32) -> Option<String> {
+		let (px, py) = self.field.get_entity_by_id(entity::PLAYER).map(|e| e.get_position())?;
 		let dx = facing.cos().round() as i16;
 		let dy = facing.sin().round() as i16;
-		self.drop_at(px + dx, py + dy)
+		// Peek the name before it leaves the pocket, then report it only if it landed.
+		let name = self.inventory.last().map(|it| it.name.clone());
+		self.drop_at(px + dx, py + dy).then_some(name).flatten()
 	}
 
 	/// What the player's gaze lands on, looking along `facing`: the first item on a
@@ -238,22 +258,45 @@ impl Game {
 	/// of the spine: one short ray per look, the same gaze the Portal reads from, so
 	/// looking is the only selector and no menu is ever needed.
 	pub fn look_ahead(&self, facing: f32) -> Option<&item::Item> {
+		let id = self.first_seen(facing)?;
+		self.ground_items.iter().find(|it| it.id == id)
+	}
+
+	/// The NPC, if the gaze along `facing` lands on it. Same short ray as
+	/// [`look_ahead`](Self::look_ahead) — a wall or tree in the way hides it.
+	pub fn npc_ahead(&self, facing: f32) -> Option<&npc::Npc> {
+		(self.first_seen(facing) == Some(self.npc.id)).then_some(&self.npc)
+	}
+
+	/// The id of the first entity the gaze meets along `facing`, or `None` for open
+	/// air. The shared heart of every "what am I looking at" question — one short
+	/// ray, stopping at the first solid thing (you can't see past it).
+	fn first_seen(&self, facing: f32) -> Option<entity::EntityId> {
 		const GAZE_RANGE: i16 = 8;
-		let Some((px, py)) = self.field.get_entity_by_id(entity::PLAYER).map(|e| e.get_position())
-		else {
-			return None;
-		};
+		let (px, py) = self.field.get_entity_by_id(entity::PLAYER).map(|e| e.get_position())?;
 		let (dx, dy) = (facing.cos(), facing.sin());
 		for step in 1..=GAZE_RANGE {
 			let x = (px as f32 + dx * step as f32).round() as i16;
 			let y = (py as f32 + dy * step as f32).round() as i16;
 			if let Some(seen) = self.field.get_entity_by_position(x, y) {
-				// The gaze stops at the first solid thing: an item there is what you
-				// see; a wall or tree blocks it and you see nothing behind.
-				return self.ground_items.iter().find(|it| it.id == seen.id);
+				return Some(seen.id);
 			}
 		}
 		None
+	}
+
+	/// Talk to the NPC if the gaze is on it: the first time, its gift (the lens)
+	/// passes into the inventory; every time, it returns the words it speaks. `None`
+	/// when you aren't facing it, so the one talk key is inert unless there's someone
+	/// to talk to.
+	pub fn talk(&mut self, facing: f32) -> Option<String> {
+		if self.first_seen(facing) != Some(self.npc.id) {
+			return None;
+		}
+		if let Some(lens) = self.npc.lens.take() {
+			self.inventory.push(lens); // given once
+		}
+		Some(self.npc.words.clone())
 	}
 
 	/// Strew up to `count` items across the `width`×`height` rectangle at
@@ -439,6 +482,27 @@ mod tests {
 
 		// Facing the other way, there's nothing to see.
 		assert!(game.look_ahead(FRAC_PI_2).is_none(), "nothing behind to land on");
+	}
+
+	#[test]
+	fn talking_to_the_lenskeeper_gives_the_lens_once() {
+		use std::f32::consts::FRAC_PI_2;
+		let mut game = Game::new();
+		game.field.add_entity(entity::Entity::new(2, 2, '^', entity::PLAYER, entity::Priority::MED));
+		// Stand the NPC one cell up, as init does.
+		game.field.add_entity(entity::Entity::new(2, 1, game.npc.glyph, game.npc.id, entity::Priority::MED));
+
+		let up = -FRAC_PI_2;
+		assert!(game.npc_ahead(up).is_some(), "the gaze lands on the NPC ahead");
+		assert!(game.inventory.is_empty(), "pockets start empty");
+
+		assert!(game.talk(up).is_some(), "talking returns the NPC's words");
+		assert_eq!(game.inventory.len(), 1, "the first talk gives the lens");
+		assert!(game.talk(up).is_some(), "you can keep talking");
+		assert_eq!(game.inventory.len(), 1, "but the lens is given only once");
+
+		// Facing away, the talk key is inert — no one to talk to.
+		assert!(game.talk(FRAC_PI_2).is_none(), "nothing to say to empty air");
 	}
 
 	/// The render pipeline itself is sound (see gfx::minimap::render tests); the

@@ -57,7 +57,7 @@ fn draw_center<'a>(width: u16, height: u16, entity:&Field, player_pos:(i16, i16)
 
 /// The "Stats" panel: the read-out of whatever the player currently sees, or a
 /// muted dash when nothing is in view.
-fn draw_stats<'a>(style: Style, border: BorderType, readout: &str) -> Paragraph<'a> {
+fn draw_stats<'a>(style: Style, border: BorderType, readout: &str, scroll: u16) -> Paragraph<'a> {
 	let bot_block_right = Block::bordered()
 		.title("Stats")
 		.title_style(style)
@@ -72,7 +72,9 @@ fn draw_stats<'a>(style: Style, border: BorderType, readout: &str) -> Paragraph<
 		readout.to_string()
 	};
 
-	Paragraph::new(Text::from(body)).block(bot_block_right)
+	// `scroll` lets a long read-out be walked a line at a time (the scroll key), so
+	// it never has to fit the box in one go.
+	Paragraph::new(Text::from(body)).block(bot_block_right).scroll((scroll, 0))
 }
 
 /// The "Map" panel: the player-centered minimap, sized to the box it lives in.
@@ -95,7 +97,7 @@ fn draw_minimap<'a>(width:u16, height:u16, style:Style, border:BorderType, entit
 /// The "Inventory" panel: the glyph and name of each thing the player carries, or
 /// a muted note when their hands are empty. A read-out only — there is no selecting
 /// here (looking is the only selector), so it never grows a second control scheme.
-fn draw_invty<'a>(style: Style, border: BorderType, inventory: &[Item]) -> Paragraph<'a> {
+fn draw_invty<'a>(style: Style, border: BorderType, inventory: &[Item], scroll: u16) -> Paragraph<'a> {
 	let bot_block_left = Block::bordered()
 		.title("Inventory")
 		.title_style(style)
@@ -112,13 +114,14 @@ fn draw_invty<'a>(style: Style, border: BorderType, inventory: &[Item]) -> Parag
 			.join("\n")
 	};
 
-	Paragraph::new(Text::from(body)).block(bot_block_left)
+	// Shares the scroll offset with Stats, so the one scroll key walks a full pack.
+	Paragraph::new(Text::from(body)).block(bot_block_left).scroll((scroll, 0))
 }
 
 /// The controls overlay: a one-line HUD of the key binds, floated along the
 /// bottom of the first-person view so what you can do stays on screen, not in your
 /// head. Later this same overlay is where the "NPC/item ahead" indicator lands.
-const CONTROLS: &str = " [wasd] move    [r] drop    [q] quit ";
+const CONTROLS: &str = " [wasd] move   [e] talk   [r] drop   [v] scroll   [q] quit ";
 
 fn draw_controls<'a>() -> Paragraph<'a> {
 	Paragraph::new(Text::from(CONTROLS))
@@ -145,14 +148,14 @@ fn draw_log <'a> (style:Style, border:BorderType, log_:&Logger) -> Paragraph <'a
 
 /// Render the whole frame. The entry point [`gfx::render`](crate::gfx::render)
 /// calls; delegates to [`default`], the one layout for now.
-pub(crate) fn draw_(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16), portal:&Portal, inventory:&[Item]) {
-	default(frame, screen, entities, log_, player_pos, portal, inventory);
+pub(crate) fn draw_(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16), portal:&Portal, inventory:&[Item], scroll:u16) {
+	default(frame, screen, entities, log_, player_pos, portal, inventory, scroll);
 }
 
 /// The default frame layout: a top log bar, the central first-person view, and
 /// the bottom row of panels — plus the floating reveal overlay when the portal
 /// holds art.
-pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16), portal:&Portal, inventory:&[Item]) {
+pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&Logger, player_pos:(i16, i16), portal:&Portal, inventory:&[Item], scroll:u16) {
 	let mut _frame_sizes: Vec<( u16, u16)> = Vec::new();
 
 	let style:Style = Style::new().fg(Color::LightBlue).bg(Color::Black);
@@ -237,8 +240,8 @@ pub(crate) fn default(frame: &mut Frame, screen:&String, entities:&Field, log_:&
 
 	frame.render_widget(outter_bottom.clone(), layout[2]);
 
-	let stats:Paragraph = draw_stats(style, border, &portal.stats);
-	let invty:Paragraph = draw_invty(style, border, inventory);
+	let stats:Paragraph = draw_stats(style, border, &portal.stats, scroll);
+	let invty:Paragraph = draw_invty(style, border, inventory, scroll);
 	let inner_left = outter_bottom.inner(bottom_layout[0]);
 	let inner_cent = outter_bottom.inner(bottom_layout[1]);
 	let inner_minimap = outter_bottom.inner(bottom_layout[2]);
@@ -271,25 +274,26 @@ fn centered_rect(area: Rect, width: u16, height: u16) -> Rect {
 mod tests {
 	use super::draw_;
 	use crate::game::Game;
-	use crate::gfx::Viewport;
+	use crate::game::spaces::heightmap::Surface;
 	use crate::gfx::portal::Portal;
+	use crate::gfx::voxel::Voxel;
 	use crate::utils::{logger::Logger, time::Time};
 	use ratatui::{backend::TestBackend, Terminal};
 
 	#[test]
 	fn game_runs_and_renders_headless() {
-		// Drive the runtime end to end without a terminal: init the game, then a
-		// full UI render through a headless backend. A panic or an out-of-bounds
-		// anywhere fails this — which "it compiles" cannot catch. (Per-tick logic
-		// will be folded in here once Game::update is wired.)
+		// Drive the runtime end to end without a terminal: init the game, render the
+		// first-person view the live loop renders — the voxel renderer over the world
+		// Surface (ground + raised field structures) — then a full UI render through a
+		// headless backend. A panic or an out-of-bounds anywhere fails this, which
+		// "it compiles" cannot catch.
 		let mut logger = Logger::new(Time::new(), "test".to_owned());
 		let mut game = Game::new();
 		game.init(&mut logger);
 
-		let walls: Vec<(i16, i16)> =
-			game.field.entities.values().map(|e| (e.x, e.y)).collect();
-		let viewport = Viewport::new(78, 20, std::f32::consts::PI / 3.0);
-		let view = viewport.render_raycasted(0.0, 0.0, 0.0, &walls);
+		let cam = Voxel::new(78, 14, std::f32::consts::PI / 3.0);
+		let surface = Surface { ground: &game.ground, field: &game.field };
+		let view = cam.render(2.0, 2.0, -std::f32::consts::FRAC_PI_2, &surface);
 
 		// Force the reveal panel on, so its overlay path renders too.
 		let mut portal = Portal::new();
@@ -298,7 +302,7 @@ mod tests {
 		let mut terminal =
 			Terminal::new(TestBackend::new(80, 30)).expect("headless test terminal");
 		terminal
-			.draw(|frame| draw_(frame, &view, &game.field, &logger, (0,0), &portal, &game.inventory))
+			.draw(|frame| draw_(frame, &view, &game.field, &logger, (0,0), &portal, &game.inventory, 0))
 			.expect("headless draw");
 
 		// Reaching here = init + a full UI render, no panics.

@@ -23,7 +23,7 @@ fn facing_of(input: &PlayerMove) -> Option<(i16, i16, f32, char)> {
 		PlayerMove::DOWN  => Some((0,  1,  FRAC_PI_2, 'v')),
 		PlayerMove::LEFT  => Some((-1, 0,  PI,        '<')),
 		PlayerMove::RIGHT => Some((1,  0,  0.0,       '>')),
-		PlayerMove::DROP | PlayerMove::NONE => None,
+		PlayerMove::DROP | PlayerMove::TALK | PlayerMove::SCROLL | PlayerMove::NONE => None,
 	}
 }
 
@@ -46,6 +46,10 @@ pub struct MainLoop{
 	/// The ray-caster angle the player is currently facing (updated on each
 	/// directional key). Starts facing "up" to match the player's `^` glyph.
 	facing: f32,
+	/// How far the Stats / Inventory read-outs are scrolled, in lines. Bumped by the
+	/// scroll key and wrapped, so a long read-out (NPC stats, a full pack) can be
+	/// walked through without a second control scheme.
+	scroll: u16,
 }
 
 //state loops definition
@@ -78,6 +82,7 @@ impl MainLoop {
 			terminal:terminal,
 			portal: Portal::new(),
 			facing: -std::f32::consts::FRAC_PI_2, // facing "up", matching '^'
+			scroll: 0,
 		}
 	}
 
@@ -115,13 +120,29 @@ impl MainLoop {
 		// one cell; a wall blocks the step but the turn still happens. Movement is
 		// grid-based for now — the view and Map follow because they read the
 		// player's position straight from the field.
-		if player_input == PlayerMove::DROP {
+		if player_input == PlayerMove::SCROLL {
+			// Walk the Stats / Inventory read-outs by a line, wrapping after a few.
+			self.scroll = (self.scroll + 1) % 8;
+		} else if player_input == PlayerMove::TALK {
+			// Talk to whatever the player faces; the NPC's words land in the log.
+			let before = self.game.inventory.len();
+			if let Some(words) = self.game.talk(self.facing) {
+				self.logger.log(&format!("✦ {words}"));
+				if self.game.inventory.len() > before {
+					self.logger.log("Received the lens — colour waits behind it.");
+				}
+			}
+		} else if player_input == PlayerMove::DROP {
 			// Set a carried item down on the cell the player faces.
-			self.game.drop_ahead(self.facing);
+			if let Some(name) = self.game.drop_ahead(self.facing) {
+				self.logger.log(&format!("Dropped {name}."));
+			}
 		} else if let Some((dx, dy, angle, glyph)) = facing_of(&player_input) {
 			self.facing = angle;
 			// `step_player` walks the player a cell, picking up any item it steps onto.
-			self.game.step_player(dx, dy);
+			if let Some(name) = self.game.step_player(dx, dy) {
+				self.logger.log(&format!("Picked up {name}."));
+			}
 			if let Some(player) = self.game.field.get_entity_by_id_mut(PLAYER) {
 				player.self_ = glyph;
 			}
@@ -178,12 +199,17 @@ impl MainLoop {
 
 		// The spine: gaze along the facing, and whatever the look lands on fills the
 		// Portal — which the Stats panel and the floating overlay already read. No
-		// selecting, no menus; looking is the only selector. The item's words go to
-		// the stats area, its glyph to the overlay's item view.
-		let seen = self.game.look_ahead(self.facing).map(|it| (it.glyph, it.name.clone()));
-		match seen {
-			Some((glyph, name)) => self.portal.set_portal(glyph.to_string(), String::new(), name),
-			None => self.portal = Portal::new(),
+		// selecting, no menus; looking is the only selector. An NPC and an item can't
+		// share a cell, so one Portal serves whichever you face: the NPC's art +
+		// stats (with a talk hint), or the item's glyph + words.
+		let npc = self.game.npc_ahead(self.facing).map(|n| (n.art.clone(), n.stats.clone()));
+		let item = self.game.look_ahead(self.facing).map(|it| (it.glyph, it.name.clone()));
+		if let Some((art, stats)) = npc {
+			self.portal.set_portal(art, "[e] talk".to_owned(), stats);
+		} else if let Some((glyph, name)) = item {
+			self.portal.set_portal(glyph.to_string(), String::new(), name);
+		} else {
+			self.portal = Portal::new();
 		}
 
 		// The first-person view is the world's surface: the noise ground with every
@@ -206,6 +232,7 @@ impl MainLoop {
 			player_pos,
 			&self.portal,
 			&self.game.inventory,
+			self.scroll,
 		);
 
 		self.state = GameStates::Run;
