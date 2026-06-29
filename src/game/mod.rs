@@ -128,9 +128,14 @@ impl Game {
 		});
 		logger.log(&format!("Sowed {planted} flora from {} kinds", flora.len()));
 
-		// One thing to find: a lantern set just to the player's left, inside the
-		// open alcove, so stepping left picks it up.
+		// One thing to find close at hand: a lantern set just to the player's left,
+		// inside the open alcove, so stepping left picks it up.
 		self.place_item(1, 2, '!', "a small lantern");
+
+		// And a scattered hoard to wander after, strewn across the sown region on a
+		// fixed seed so the same world always holds the same finds.
+		let strewn = self.strew_items(0xB0B, 16, 0, 0, 48, 30);
+		logger.log(&format!("Strewed {strewn} items across the world"));
 	}
 
 	/// Advance the world by one tick. At tick 0 it bootstraps via [`init`](Self::init);
@@ -225,6 +230,34 @@ impl Game {
 		let dx = facing.cos().round() as i16;
 		let dy = facing.sin().round() as i16;
 		self.drop_at(px + dx, py + dy)
+	}
+
+	/// Strew up to `count` items across the `width`×`height` rectangle at
+	/// `(x0, y0)`, choosing kind and place from `seed` so the same seed always
+	/// scatters the same hoard. Items only land on open ground — never over a wall,
+	/// a tree, or each other — so a crowded region may hold fewer than asked.
+	/// Returns how many were actually laid down.
+	pub fn strew_items(&mut self, seed: u64, count: usize, x0: i16, y0: i16, width: i16, height: i16) -> usize {
+		use rand::{rngs::StdRng, Rng, SeedableRng};
+
+		let mut rng = StdRng::seed_from_u64(seed);
+		let (w, h) = (width.max(1), height.max(1));
+		let mut placed = 0;
+		// Bounded tries, so a packed region can't spin forever hunting open ground.
+		for _ in 0..count.saturating_mul(40) {
+			if placed >= count {
+				break;
+			}
+			let x = x0 + rng.random_range(0..w);
+			let y = y0 + rng.random_range(0..h);
+			if self.field.get_entity_by_position(x, y).is_some() {
+				continue;
+			}
+			let (glyph, name) = item::KINDS[rng.random_range(0..item::KINDS.len())];
+			self.place_item(x, y, glyph, name);
+			placed += 1;
+		}
+		placed
 	}
 
 	/// Phases 2 and 3 of a tick (see the wards in `CLAUDE.md`): drain the event
@@ -336,6 +369,34 @@ mod tests {
 		game.field.add_entity(entity::Entity::new(4, 2, '#', 999, entity::Priority::LOW));
 		assert!(!game.drop_at(4, 2), "a blocked cell refuses the drop");
 		assert_eq!(game.inventory.first().map(|i| i.id), Some(lantern), "the item stays carried");
+	}
+
+	#[test]
+	fn the_item_generator_is_seeded_and_lays_them_on_open_ground() {
+		let cells = |g: &Game| -> Vec<(i16, i16, char)> {
+			let mut v: Vec<_> = g
+				.ground_items
+				.iter()
+				.filter_map(|it| g.field.get_entity_by_id(it.id).map(|e| (e.x, e.y, e.self_)))
+				.collect();
+			v.sort();
+			v
+		};
+
+		let mut a = Game::new();
+		let na = a.strew_items(0xB0B, 12, 0, 0, 20, 20);
+		let mut b = Game::new();
+		let nb = b.strew_items(0xB0B, 12, 0, 0, 20, 20);
+
+		assert!(na > 0, "the generator actually lays items down");
+		assert_eq!(na, nb, "the same seed strews the same count");
+		assert_eq!(cells(&a), cells(&b), "and in the same places, with the same kinds");
+
+		// No two share a cell — each landed on open ground.
+		let mut spots: Vec<(i16, i16)> = cells(&a).into_iter().map(|(x, y, _)| (x, y)).collect();
+		let before = spots.len();
+		spots.dedup();
+		assert_eq!(before, spots.len(), "no two strewn items share a cell");
 	}
 
 	/// The render pipeline itself is sound (see gfx::minimap::render tests); the

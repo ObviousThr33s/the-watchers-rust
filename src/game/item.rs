@@ -13,3 +13,13 @@ pub struct Item {
 	pub glyph: char,
 	pub name: String,
 }
+
+/// The kinds of thing the world strews about — a glyph and a name apiece. Data,
+/// not logic: a richer `.item` file format can replace this table later without
+/// touching the generator that scatters them.
+pub const KINDS: [(char, &str); 4] = [
+	('!', "a small lantern"),
+	('§', "a curl of rope"),
+	('○', "a copper coin"),
+	('†', "a notched key"),
+];
