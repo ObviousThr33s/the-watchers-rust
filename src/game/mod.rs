@@ -232,6 +232,30 @@ impl Game {
 		self.drop_at(px + dx, py + dy)
 	}
 
+	/// What the player's gaze lands on, looking along `facing`: the first item on a
+	/// short ray ahead, or `None` if the look meets open air or is stopped by a wall
+	/// or tree first — you can't see an item through something solid. The cheap heart
+	/// of the spine: one short ray per look, the same gaze the Portal reads from, so
+	/// looking is the only selector and no menu is ever needed.
+	pub fn look_ahead(&self, facing: f32) -> Option<&item::Item> {
+		const GAZE_RANGE: i16 = 8;
+		let Some((px, py)) = self.field.get_entity_by_id(entity::PLAYER).map(|e| e.get_position())
+		else {
+			return None;
+		};
+		let (dx, dy) = (facing.cos(), facing.sin());
+		for step in 1..=GAZE_RANGE {
+			let x = (px as f32 + dx * step as f32).round() as i16;
+			let y = (py as f32 + dy * step as f32).round() as i16;
+			if let Some(seen) = self.field.get_entity_by_position(x, y) {
+				// The gaze stops at the first solid thing: an item there is what you
+				// see; a wall or tree blocks it and you see nothing behind.
+				return self.ground_items.iter().find(|it| it.id == seen.id);
+			}
+		}
+		None
+	}
+
 	/// Strew up to `count` items across the `width`×`height` rectangle at
 	/// `(x0, y0)`, choosing kind and place from `seed` so the same seed always
 	/// scatters the same hoard. Items only land on open ground — never over a wall,
@@ -397,6 +421,24 @@ mod tests {
 		let before = spots.len();
 		spots.dedup();
 		assert_eq!(before, spots.len(), "no two strewn items share a cell");
+	}
+
+	#[test]
+	fn the_gaze_lands_on_an_item_ahead_and_nothing_through_a_wall() {
+		use std::f32::consts::FRAC_PI_2;
+		let mut game = Game::new();
+		game.field.add_entity(entity::Entity::new(2, 2, '^', entity::PLAYER, entity::Priority::MED));
+		let lantern = game.place_item(2, 0, '!', "a small lantern"); // two cells up
+
+		let up = -FRAC_PI_2;
+		assert_eq!(game.look_ahead(up).map(|i| i.id), Some(lantern), "the gaze finds the item ahead");
+
+		// A wall one cell up blocks the line of sight to the item beyond it.
+		game.field.add_entity(entity::Entity::new(2, 1, '#', 999, entity::Priority::LOW));
+		assert!(game.look_ahead(up).is_none(), "a wall between hides the item");
+
+		// Facing the other way, there's nothing to see.
+		assert!(game.look_ahead(FRAC_PI_2).is_none(), "nothing behind to land on");
 	}
 
 	/// The render pipeline itself is sound (see gfx::minimap::render tests); the

@@ -176,6 +176,16 @@ impl MainLoop {
 		// updated by `run` on each directional key).
 		let angle = self.facing;
 
+		// The spine: gaze along the facing, and whatever the look lands on fills the
+		// Portal — which the Stats panel and the floating overlay already read. No
+		// selecting, no menus; looking is the only selector. The item's words go to
+		// the stats area, its glyph to the overlay's item view.
+		let seen = self.game.look_ahead(self.facing).map(|it| (it.glyph, it.name.clone()));
+		match seen {
+			Some((glyph, name)) => self.portal.set_portal(glyph.to_string(), String::new(), name),
+			None => self.portal = Portal::new(),
+		}
+
 		// The first-person view is the world's surface: the noise ground with every
 		// solid field entity (walls, flora) raised into a column on top of it, so
 		// what stands ahead matches what the Map shows around you. Marched into
