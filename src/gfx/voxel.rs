@@ -1,18 +1,14 @@
-//! The voxel renderer — altitude turned into an ASCII view, Voxel-Space style.
+//! The voxel renderer — altitude turned into a Braille view, Voxel-Space style.
 //!
 //! Where [`Viewport`](crate::gfx::Viewport) casts flat walls (one height, Doom's
-//! limit), this reads a [`Heightmap`] and draws *relief*: one ray per screen
-//! column, marched near to far, projecting each ground sample's height onto the
-//! column, with a per-column y-buffer so nearer or taller land hides whatever
+//! limit), this reads a [`Heightmap`] and draws *relief*: one ray per Braille
+//! sub-column, marched near to far, projecting each ground sample's height onto
+//! the column, with a per-column y-buffer so nearer or taller land hides whatever
 //! stands behind it. Hidden-surface removal falls out of the march for free — no
 //! depth buffer, no overdraw — which is what keeps it cheap enough to draw one
 //! frame per move and not a stroke more.
 
 use crate::game::spaces::heightmap::Heightmap;
-
-/// Brightness ramp, nearest/brightest to farthest/faintest — the same depth cue
-/// the flat viewport uses, so the two views read as one world.
-const RAMP: [char; 5] = ['█', '▓', '▒', '░', '·'];
 
 /// Where eye level sits down the screen, as a fraction of its height. Low (toward
 /// the bottom) hands most of the panel to relief and distance and keeps the ground
@@ -56,11 +52,21 @@ impl Voxel {
 	/// `+y` down — the ray-caster convention). One column march each, near to far,
 	/// with a y-buffer per column; the frame comes back as newline-joined rows.
 	pub fn render(&self, px: f32, py: f32, angle: f32, terrain: &impl Heightmap) -> String {
-		let mut output = vec![vec![' '; self.width]; self.height];
+		// Braille gives every cell a 2x4 grid of dots, so the view is built at a
+		// sub-cell resolution of `(2*width) x (4*height)` and only packed down to
+		// glyphs at the very end — eight times the detail of a cell-block fill, which
+		// is what lets a skyline read as a curve instead of a staircase. Dots are
+		// on/off only; depth shading and material return later, carried by colour.
+		let sub_w = self.width * 2;
+		let sub_h = self.height * 4;
+		let mut dots = vec![false; sub_w * sub_h];
 
-		let center_column = self.width as f32 / 2.0;
-		let angle_step = self.fov / self.width.max(1) as f32;
-		let horizon = self.height as f32 * HORIZON_FRAC;
+		let center = sub_w as f32 / 2.0;
+		let angle_step = self.fov / sub_w.max(1) as f32;
+		let horizon = sub_h as f32 * HORIZON_FRAC;
+		// `scale` is in cell-rows; the sub-grid is four times finer, so the
+		// projection scales up to match and the geometry is unchanged.
+		let scale = self.scale * 4.0;
 
 		// The camera stands on the ground under the player and looks out from
 		// `eye_height` above it, so relief is read relative to where you stand —
@@ -69,18 +75,19 @@ impl Voxel {
 		let here_y = (py + 0.5).floor() as i16;
 		let eye = terrain.height(here_x, here_y) as f32 + self.eye_height;
 
-		for column in 0..self.width {
-			let ray_angle = angle + (column as f32 - center_column) * angle_step;
+		// One ray per sub-column — twice the columns of the cell grid.
+		for sx in 0..sub_w {
+			let ray_angle = angle + (sx as f32 - center) * angle_step;
 			let dir_x = ray_angle.cos();
 			let dir_y = ray_angle.sin();
 			// Perpendicular distance, so a straight ridge reads straight (no fisheye bow).
 			let cos_off = (ray_angle - angle).cos();
 
-			// `y_buffer` is the topmost row already filled in this column; it starts
-			// at the screen bottom (nothing drawn). Nearer land fills down to it and
-			// lowers it, so farther land can only ever add what pokes *above* — that
-			// is the whole of the occlusion, paid for once per sample.
-			let mut y_buffer = self.height;
+			// `y_buffer` is the topmost sub-row already filled in this column; it
+			// starts at the screen bottom (nothing drawn). Nearer land fills down to
+			// it and lowers it, so farther land can only ever add what pokes *above* —
+			// that is the whole of the occlusion, paid for once per sample.
+			let mut y_buffer = sub_h;
 
 			let mut t = 0.0_f32;
 			while t < self.max_distance {
@@ -93,13 +100,12 @@ impl Voxel {
 				let h = terrain.height(cell_x, cell_y) as f32;
 
 				let dist = (t * cos_off).max(0.0001);
-				let top_f = horizon + (eye - h) / dist * self.scale;
-				let top = top_f.round().clamp(0.0, self.height as f32) as usize;
+				let top_f = horizon + (eye - h) / dist * scale;
+				let top = top_f.round().clamp(0.0, sub_h as f32) as usize;
 
 				if top < y_buffer {
-					let ch = shade(dist, self.max_distance);
-					for row in output.iter_mut().take(y_buffer).skip(top) {
-						row[column] = ch;
+					for sy in top..y_buffer {
+						dots[sy * sub_w + sx] = true;
 					}
 					y_buffer = top;
 					if y_buffer == 0 {
@@ -111,19 +117,46 @@ impl Voxel {
 			}
 		}
 
-		output
-			.iter()
-			.map(|row| row.iter().collect::<String>())
-			.collect::<Vec<_>>()
-			.join("\n")
+		pack_braille(&dots, sub_w, self.width, self.height)
 	}
 }
 
-/// Pick a ramp glyph from corrected distance — near is solid, far fades out.
-fn shade(dist: f32, max_distance: f32) -> char {
-	let span = max_distance.max(1.0);
-	let band = ((dist / span) * RAMP.len() as f32) as usize;
-	RAMP[band.min(RAMP.len() - 1)]
+/// Pack a `(2*width) x (4*height)` dot grid down to one Braille glyph per cell.
+/// A cell with no dots set comes back as a plain space, so empty sky stays bare
+/// paper rather than a wall of blank-Braille glyphs.
+fn pack_braille(dots: &[bool], sub_w: usize, width: usize, height: usize) -> String {
+	// Dot -> bit within a Braille cell (the glyph is U+2800 + the set bits),
+	// indexed `[row][col]` over the cell's 2-wide, 4-tall dot grid.
+	const BIT: [[u8; 2]; 4] = [
+		[0x01, 0x08],
+		[0x02, 0x10],
+		[0x04, 0x20],
+		[0x40, 0x80],
+	];
+
+	let mut out = String::with_capacity((width + 1) * height);
+	for cy in 0..height {
+		for cx in 0..width {
+			let mut bits = 0u8;
+			for (dy, row) in BIT.iter().enumerate() {
+				for (dx, bit) in row.iter().enumerate() {
+					let sy = cy * 4 + dy;
+					let sx = cx * 2 + dx;
+					if dots[sy * sub_w + sx] {
+						bits |= bit;
+					}
+				}
+			}
+			out.push(match bits {
+				0 => ' ',
+				_ => char::from_u32(0x2800 + u32::from(bits)).unwrap_or(' '),
+			});
+		}
+		if cy + 1 < height {
+			out.push('\n');
+		}
+	}
+	out
 }
 
 #[cfg(test)]
@@ -180,7 +213,8 @@ mod tests {
 		let without = cam.render(0.0, 0.0, 0.0, &ridge);
 		let with = cam.render(0.0, 0.0, 0.0, &ridge_and_bump);
 
-		assert!(without.contains('█'), "the ridge itself must actually render");
+		let drew_something = without.chars().any(|c| c != ' ' && c != '\n');
+		assert!(drew_something, "the ridge itself must actually render");
 		assert_eq!(without, with, "a feature behind the ridge cannot change the frame");
 	}
 }
