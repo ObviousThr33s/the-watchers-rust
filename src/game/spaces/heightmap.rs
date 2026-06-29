@@ -20,6 +20,55 @@ use crate::game::spaces::field::Field;
 /// lies out there (open sea, endless hills, a wall of mountains).
 pub trait Heightmap {
 	fn height(&self, x: i16, y: i16) -> u8;
+
+	/// What the surface is made of at this cell — picks the dot [`Texture`] the
+	/// renderer stipples its column with. Defaults to open [`Ground`](Texture::Ground),
+	/// so a bare height function (a closure, the noise field) needs only give heights.
+	fn texture(&self, _x: i16, _y: i16) -> Texture {
+		Texture::Ground
+	}
+}
+
+/// A monochrome dot texture, chosen per cell, that the renderer stipples a column
+/// with — so the ground reads differently from a wall, and one kind of thing from
+/// another, before any colour arrives. Patterns are in screen sub-pixels for now;
+/// world-locked texturing can come later.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Texture {
+	/// Open ground: horizontal lines, clearly a floor and not a solid mass.
+	Ground,
+	/// A standing structure; the pattern is keyed by `seed` (its glyph), so two
+	/// different kinds of thing take different stipples.
+	Structure(u32),
+}
+
+impl Texture {
+	/// The texture a structure wears, keyed by its glyph — different glyphs land
+	/// on different patterns, so a tree need not look like a wall.
+	pub fn of(glyph: char) -> Self {
+		Texture::Structure(glyph as u32)
+	}
+
+	/// Whether the sub-dot at screen `(sx, sy)` is lit for this texture. A handful
+	/// of distinct stipples; ground is none of them, so a floor never reads as a wall.
+	pub fn fills(self, sx: usize, sy: usize) -> bool {
+		match self {
+			Texture::Ground => sy % 2 == 0, // horizontal lines — a floor, not a wall
+			Texture::Structure(seed) => {
+				// Mix the glyph first so neighbouring codepoints don't clump onto one
+				// pattern (raw `% n` makes '#' and '♣' collide), then pick a stipple.
+				let pattern = (seed.wrapping_mul(2_654_435_761) >> 28) % 6;
+				match pattern {
+					0 => true,                       // solid
+					1 => sx % 2 == 0,                // vertical bars
+					2 => (sx + sy) % 2 == 0,         // checker
+					3 => sx % 4 == 0 || sy % 4 == 0, // lattice
+					4 => sx % 2 == 0 && sy % 2 == 0, // sparse dots
+					_ => (sx + sy) % 3 == 0,         // diagonal
+				}
+			}
+		}
+	}
 }
 
 /// Any `Fn(i16, i16) -> u8` *is* a heightmap. This is the seam fixtures lean on —
@@ -88,6 +137,14 @@ impl Heightmap for Surface<'_> {
 		match self.field.get_entity_by_position(x, y) {
 			Some(e) if e.id != PLAYER => ground.saturating_add(WALL_RISE),
 			_ => ground,
+		}
+	}
+
+	fn texture(&self, x: i16, y: i16) -> Texture {
+		// A structure wears the texture of its glyph; bare ground wears Ground.
+		match self.field.get_entity_by_position(x, y) {
+			Some(e) if e.id != PLAYER => Texture::of(e.self_),
+			_ => Texture::Ground,
 		}
 	}
 }
@@ -161,6 +218,47 @@ mod tests {
 			surface.height(2, 2),
 			ground.height(2, 2),
 			"the camera's own cell stays flat — the player is no wall",
+		);
+	}
+
+	/// Over a small patch of sub-dots, two textures differ when *any* dot differs.
+	fn patterns_differ(a: Texture, b: Texture) -> bool {
+		(0..8).any(|sx| (0..8).any(|sy| a.fills(sx, sy) != b.fills(sx, sy)))
+	}
+
+	#[test]
+	fn ground_is_a_stipple_not_a_solid_mass() {
+		// The whole point of texturing the ground: it must have gaps, so a floor
+		// never reads as a filled wall.
+		let g = Texture::Ground;
+		let any_off = (0..8).any(|sx| (0..8).any(|sy| !g.fills(sx, sy)));
+		assert!(any_off, "ground must have gaps — it's a stipple, not a mass");
+	}
+
+	#[test]
+	fn ground_does_not_look_like_a_wall() {
+		assert!(
+			patterns_differ(Texture::Ground, Texture::of('#')),
+			"a floor must not wear the same dots as a wall",
+		);
+	}
+
+	#[test]
+	fn different_kinds_take_a_range_of_textures() {
+		// A spread of glyphs must not all collapse onto one pattern — that range is
+		// what lets you tell one voxel from another.
+		let grids: std::collections::HashSet<Vec<bool>> = ['#', '♣', 'Y', 'T', '|', 'o', '*', '%']
+			.into_iter()
+			.map(|g| {
+				(0..8)
+					.flat_map(|sx| (0..8).map(move |sy| Texture::of(g).fills(sx, sy)))
+					.collect()
+			})
+			.collect();
+		assert!(
+			grids.len() >= 3,
+			"a spread of kinds should wear several textures, got {}",
+			grids.len(),
 		);
 	}
 }

@@ -104,8 +104,15 @@ impl Voxel {
 				let top = top_f.round().clamp(0.0, sub_h as f32) as usize;
 
 				if top < y_buffer {
+					// Stipple the run by this cell's texture, so ground reads unlike a
+					// wall and one kind of thing unlike another. `y_buffer` still drops
+					// to the geometric `top` regardless of which dots the texture lights,
+					// so occlusion stays exact — a patterned wall still hides what's behind.
+					let tex = terrain.texture(cell_x, cell_y);
 					for sy in top..y_buffer {
-						dots[sy * sub_w + sx] = true;
+						if tex.fills(sx, sy) {
+							dots[sy * sub_w + sx] = true;
+						}
 					}
 					y_buffer = top;
 					if y_buffer == 0 {
